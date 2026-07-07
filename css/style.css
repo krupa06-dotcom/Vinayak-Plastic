@@ -76,8 +76,17 @@ input,textarea,button{font-family:inherit}
 /* ===== NAVIGATION ===== */
 .site-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-height);background:var(--deep-navy);border-bottom:1px solid rgba(255,255,255,0.06)}
 .site-nav .container{display:flex;align-items:center;justify-content:space-between;height:100%}
-.nav-logo{display:flex;align-items:center}
+.nav-logo{display:flex;align-items:center;gap:10px}
 .logo-img{height:42px;width:auto;display:block}
+.logo-text{font-family:var(--font-display);font-weight:700;font-size:1.1rem;color:var(--white);text-transform:uppercase;letter-spacing:-0.01em;line-height:1}
+.nav-search{flex:1;max-width:420px;margin:0 24px}
+.search-form{display:flex;align-items:center;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:6px;overflow:hidden;transition:border-color 0.2s}
+.search-form:focus-within{border-color:var(--orange)}
+.search-form input{background:none;border:none;padding:8px 14px;color:var(--white);font-size:0.85rem;width:100%;outline:none;font-family:var(--font-body)}
+.search-form input::placeholder{color:rgba(255,255,255,0.35)}
+.search-form button{background:none;border:none;padding:8px 12px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;transition:color 0.2s}
+.search-form button:hover{color:var(--orange-light)}
+.search-form button svg{width:18px;height:18px}
 .nav-inner{display:flex;align-items:center;gap:32px}
 .nav-links{display:flex;gap:28px}
 .nav-links a{font-size:0.85rem;font-weight:500;color:rgba(255,255,255,0.75);transition:color 0.2s;position:relative;padding:4px 0}
@@ -255,6 +264,8 @@ input,textarea,button{font-family:inherit}
 @media(max-width:1024px){
   .hero-home .container{gap:40px}
   .product-grid{grid-template-columns:repeat(2,1fr)}
+  .nav-inner{gap:16px}
+  .nav-search{max-width:280px;margin:0 12px}
   .trust-grid{grid-template-columns:repeat(2,1fr);gap:24px}
   .why-grid,.about-intro .container,.prod-detail,.contact-grid{grid-template-columns:1fr;gap:40px}
   .why-visual,.about-image,.prod-detail .prod-visual{max-width:500px;margin:0 auto}
@@ -265,10 +276,12 @@ input,textarea,button{font-family:inherit}
 }
 
 @media(max-width:768px){
-  .nav-inner{gap:16px}
+  .nav-inner{gap:12px}
+  .logo-text{display:none}
   .nav-links{display:none;position:absolute;top:var(--nav-height);left:0;right:0;background:var(--deep-navy);flex-direction:column;padding:16px 24px 24px;gap:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
   .nav-links.nav-open{display:flex}
   .nav-links a{font-size:0.95rem}
+  .nav-search{display:none}
   .nav-phone{display:none}
   .nav-toggle{display:flex}
 
