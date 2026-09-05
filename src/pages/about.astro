@@ -1,0 +1,106 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { Image } from 'astro:assets';
+import plasticPallets from '../assets/images/plastic-pallets.webp';
+import { path } from '../lib/site';
+---
+
+<Layout 
+  title="About Vinayak Plastics | Material Handling & Packaging"
+  description="About Vinayak Plastics — business house supplying material handling & packaging products — plastic crates, pallets, waste bins and hand pallet trucks — to warehouses, dairy and municipal buyers across India."
+>
+  <Header currentPage="/about" />
+
+  <main id="main">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href={path('/')}>Home</a> / About Us</p>
+      <h1 class="display-800">About Vinayak Plastics</h1>
+      <p>Business House Engaged In Supply of All Type of Material Handling &amp; Packaging Products.</p>
+    </div>
+  </section>
+
+  <!-- ===== INTRO ===== -->
+  <section class="about-intro">
+    <div class="container">
+      <div class="about-image reveal">
+        <Image
+          src={plasticPallets}
+          alt="Industrial plastic pallets stacked in warehouse"
+          width={600}
+          height={400}
+          widths={[400, 600]}
+          sizes="(max-width: 1024px) 80vw, 40vw"
+          loading="lazy"
+        />
+      </div>
+      <div class="reveal">
+        <h2 class="display-700">Your Partner in<br><span class="text-orange">Material Handling</span></h2>
+        <p>Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in providing plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems to warehouses, dairy distributors, municipal corporations, and commercial buyers across India.</p>
+        <p>Our product range is manufactured using HDPE and PP grades — materials chosen for impact resistance, UV stability, and long service life in demanding industrial environments. We work with buyers to deliver products that meet specific size, color, and load-bearing requirements.</p>
+        <p>Every enquiry is handled directly — no distributor layers, no automated systems. You speak with the team that understands the product.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section class="section-warm">
+    <div class="container">
+      <div class="about-stats reveal">
+        <div class="about-stat">
+          <div class="num">6+</div>
+          <div class="label">Product Categories</div>
+        </div>
+        <div class="about-stat">
+          <div class="num">HDPE</div>
+          <div class="label">&amp; PP Grade Manufacturing</div>
+        </div>
+        <div class="about-stat">
+          <div class="num">B2B</div>
+          <div class="label">Warehouse &amp; Municipal Supply</div>
+        </div>
+        <div class="about-stat">
+          <div class="num">Pan-India</div>
+          <div class="label">Dispatch Network</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VISION & MISSION ===== -->
+  <section class="section">
+    <div class="container-sm">
+      <div class="section-header reveal">
+        <h2 class="display-700">What Drives Us</h2>
+      </div>
+      <div class="vm-grid reveal">
+        <div class="vm-card">
+          <h3>Our Range</h3>
+          <p>From plastic crates for dairy and bakery storage to industrial pallets for warehouse racking, waste bins for municipal use, and hand pallet trucks for loading operations — we cover the full spectrum of material handling needs under one roof.</p>
+        </div>
+        <div class="vm-card">
+          <h3>Our Approach</h3>
+          <p>We believe in straightforward, no‑layers communication. Every enquiry is followed up by a person who knows the product specifications, dispatch timelines, and pricing — not a chatbot or an automated form. This is how industrial buyers prefer to work.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-banner" aria-label="Get in touch">
+    <div class="container reveal">
+      <h2 class="display-700">Discuss Your Requirements</h2>
+      <p>Call or WhatsApp us for pricing, product specifications, and dispatch timelines.</p>
+      <div class="cta-buttons">
+        <a href="tel:+91XXXXXXXXXX" class="btn btn-primary">Call +91 XXXXX-XXXXX</a>
+        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+      </div>
+    </div>
+  </section>
+
+  </main>
+  <Footer />
+</Layout>

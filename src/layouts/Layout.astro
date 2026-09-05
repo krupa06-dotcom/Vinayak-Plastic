@@ -1,0 +1,160 @@
+---
+import '../styles/style.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  /** JSON-LD structured data rendered on the page (passed as an object). */
+  structuredData?: string;
+}
+
+const { 
+  title, 
+  description = "Vinayak Plastics supplies material handling & packaging products — plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks — for warehouses, dairy, municipal and commercial buyers across India.",
+  canonical,
+  ogImage = "/images/vp-logo.png",
+  structuredData
+} = Astro.props;
+
+const SITE = 'https://krupa06-dotcom.github.io';
+const BASE = '/Vinayak-Plastic';
+
+// Ensure a consistent canonical: always include a trailing slash and the base path.
+function toAbsolute(path: string): string {
+  const clean = path.startsWith('/') ? path : `/${path}`;
+  const withBase = clean.startsWith(BASE) ? clean : `${BASE}${clean}`;
+  const withSlash = withBase.length > 1 && !withBase.endsWith('/') ? `${withBase}/` : withBase;
+  return new URL(withSlash, SITE).toString();
+}
+
+// Convert a public-asset path into a base-aware absolute URL.
+function publicURL(path: string): string {
+  const clean = path.startsWith('/') ? path : `/${path}`;
+  const withBase = clean.startsWith(BASE) ? clean : `${BASE}${clean}`;
+  return new URL(withBase, SITE).toString();
+}
+
+const canonicalURL = canonical || toAbsolute(Astro.url.pathname);
+const ogImageURL = publicURL(ogImage);
+
+const organizationSchema = `{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Vinayak Plastics",
+  "url": "${SITE}${BASE}",
+  "logo": "${publicURL('/images/vp-logo.png')}",
+  "description": "Business house supplying material handling and packaging products — plastic crates, pallets, waste bins and hand pallet trucks.",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "sales",
+    "telephone": "+91-XXXXX-XXXXX"
+  }
+}`;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <meta name="robots" content="index, follow" />
+  <meta name="generator" content="Astro" />
+  <meta name="theme-color" content="#0A1A33" />
+  <title>{title}</title>
+  <script is:inline>document.documentElement.classList.add('js')</script>
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href={canonicalURL} />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Vinayak Plastics" />
+  <meta property="og:locale" content="en_IN" />
+  <meta property="og:url" content={canonicalURL} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={ogImageURL} />
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content={canonicalURL} />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImageURL} />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href={`${BASE}/favicon.svg`} />
+  <link rel="apple-touch-icon" href={`${BASE}/images/vp-logo.png`} />
+  
+  <!-- Structured data -->
+  <script type="application/ld+json" set:html={structuredData || organizationSchema}></script>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+  <slot />
+  
+  <script>
+    // Mobile nav toggle
+    (function(){
+      'use strict';
+      
+      const toggle = document.querySelector('.nav-toggle');
+      const navLinks = document.querySelector('.nav-links');
+      
+      if (toggle && navLinks) {
+        toggle.addEventListener('click', function() {
+          const expanded = toggle.getAttribute('aria-expanded') === 'true' ? false : true;
+          toggle.setAttribute('aria-expanded', expanded.toString());
+          navLinks.classList.toggle('nav-open');
+        });
+        
+        navLinks.querySelectorAll('a').forEach(function(link) {
+          link.addEventListener('click', function() {
+            navLinks.classList.remove('nav-open');
+            toggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+      }
+    })();
+    
+    // Scroll reveal with IntersectionObserver
+    (function(){
+      'use strict';
+      
+      const reveals = document.querySelectorAll('.reveal');
+      
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        
+        reveals.forEach(function(el) { 
+          observer.observe(el); 
+        });
+      } else {
+        // Fallback for older browsers
+        reveals.forEach(function(el) { 
+          el.classList.add('visible'); 
+        });
+      }
+      
+      // Respect prefers-reduced-motion
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (prefersReducedMotion.matches) {
+        document.querySelectorAll('.reveal').forEach(function(el) {
+          el.classList.add('visible');
+          el.style.transition = 'none';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

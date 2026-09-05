@@ -1,0 +1,280 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { Image } from 'astro:assets';
+import plasticCratesImg from '../../assets/images/plastic-crates.webp';
+import plasticPalletsImg from '../../assets/images/plastic-pallets.webp';
+import plasticWastebinsImg from '../../assets/images/plastic-wastebins.webp';
+import handPalletTruckImg from '../../assets/images/hand-pallet-truck.webp';
+import { path } from '../../lib/site';
+
+// Product data - in Phase 1 this is static, will be moved to database in Phase 3
+const products = {
+  'plastic-crates': {
+    title: 'Plastic Crates',
+    subtitle: 'Durable, Lightweight & Stackable',
+    description: 'Our plastic crates are manufactured using high-grade HDPE and PP materials, designed for heavy-duty material handling in dairy, bakery, cold storage, and warehouse environments. Available in multiple sizes and colors.',
+    image: plasticCratesImg,
+    imageAlt: 'Plastic crates stacked in warehouse',
+    features: [
+      'HDPE / PP grade — impact & UV resistant',
+      'Stackable with locking rims for safe transport',
+      'Nestable designs for space-saving return logistics',
+      'Ventilated and solid base options available',
+      'Custom colors and logo hot-stamping on request'
+    ],
+    specifications: [
+      { model: 'VPC-400', size: '400 × 300 × 130', weight: '~750g', capacity: '15kg', material: 'PP / HDPE' },
+      { model: 'VPC-500', size: '500 × 350 × 150', weight: '~1050g', capacity: '20kg', material: 'PP / HDPE' },
+      { model: 'VPC-600', size: '600 × 400 × 200', weight: '~1400g', capacity: '25kg', material: 'HDPE' },
+      { model: 'VPC-650', size: '650 × 450 × 250', weight: '~1800g', capacity: '30kg', material: 'HDPE' },
+      { model: 'VPC-700', size: '700 × 500 × 300', weight: '~2200g', capacity: '35kg', material: 'HDPE' }
+    ],
+    applications: [
+      { name: 'Dairy', description: 'Milk pouch crates, curd and paneer transport crates with ventilation for moisture management.' },
+      { name: 'Bakery', description: 'Bread and confectionery crates designed for stacking in delivery vehicles and storage racks.' },
+      { name: 'Cold Storage', description: 'Frozen food and ice cream crates that withstand sub-zero temperatures without brittleness.' },
+      { name: 'Warehouse', description: 'General material handling crates for inventory storage, order picking, and internal logistics.' }
+    ],
+    ctaTitle: 'Need Custom Sizes or Bulk Pricing?',
+    ctaDescription: 'We supply to dairy distributors, warehouses, and municipal buyers across India. Call or WhatsApp for a quote.'
+  },
+  'plastic-pallets': {
+    title: 'Plastic Pallets',
+    subtitle: 'Heavy-Duty Industrial Pallets',
+    description: 'Industrial-grade plastic pallets manufactured from high-strength HDPE for warehouse racking, logistics, and export applications. Available in single-face, double-face, and nestable configurations.',
+    image: plasticPalletsImg,
+    imageAlt: 'Industrial plastic pallets stacked',
+    features: [
+      'HDPE construction for maximum load capacity',
+      'Single-face and double-face designs available',
+      'Nestable options for return logistics efficiency',
+      'Four-way forklift entry for easy handling',
+      'Custom dimensions and colors available'
+    ],
+    specifications: [
+      { model: 'VPP-1200', size: '1200 × 1000 × 150', weight: '~18kg', capacity: '1500kg', material: 'HDPE' },
+      { model: 'VPP-1100', size: '1100 × 1100 × 150', weight: '~20kg', capacity: '1800kg', material: 'HDPE' },
+      { model: 'VPP-1208', size: '1200 × 800 × 150', weight: '~15kg', capacity: '1200kg', material: 'HDPE' },
+      { model: 'VPP-NEST', size: '1200 × 1000 × 160', weight: '~22kg', capacity: '2000kg', material: 'HDPE' }
+    ],
+    applications: [
+      { name: 'Warehouse Racking', description: 'Heavy-duty storage in selective and drive-in racking systems with consistent dimensions.' },
+      { name: 'Export Shipping', description: 'Lightweight alternative to wooden pallets for international freight with no fumigation required.' },
+      { name: 'Manufacturing', description: 'Work-in-process handling and finished goods staging in production facilities.' },
+      { name: 'Distribution', description: 'Cross-docking and last-mile delivery applications with durability and reusability.' }
+    ],
+    ctaTitle: 'Need Export-Grade Pallets?',
+    ctaDescription: 'We supply ISPM-15 compliant plastic pallets for international shipping and heavy-duty warehouse applications.'
+  },
+  'waste-bins': {
+    title: 'Waste Bins / Dustbins',
+    subtitle: 'Municipal & Commercial Waste Solutions',
+    description: 'Industrial-grade waste bins and dustbins for municipal, commercial, and factory applications. Available in multiple capacities with wheeled, lidded, and color-coded options for waste segregation.',
+    image: plasticWastebinsImg,
+    imageAlt: 'Industrial waste bins and dustbins',
+    features: [
+      'HDPE construction for weather resistance',
+      'Wheeled options for easy mobility',
+      'Tight-fitting lids to prevent spillage',
+      'Color coding for waste segregation',
+      'UV stabilized for outdoor use'
+    ],
+    specifications: [
+      { model: 'VWB-120', size: '480 × 550 × 930', weight: '~8kg', capacity: '120L', material: 'HDPE' },
+      { model: 'VWB-240', size: '580 × 740 × 1100', weight: '~14kg', capacity: '240L', material: 'HDPE' },
+      { model: 'VWB-360', size: '620 × 860 × 1200', weight: '~18kg', capacity: '360L', material: 'HDPE' },
+      { model: 'VWB-660', size: '800 × 1200 × 1350', weight: '~28kg', capacity: '660L', material: 'HDPE' }
+    ],
+    applications: [
+      { name: 'Municipal Collection', description: 'Street-side waste collection bins for residential and commercial areas with wheeled mobility.' },
+      { name: 'Factory & Industrial', description: 'Heavy-duty waste containers for manufacturing facilities and industrial complexes.' },
+      { name: 'Commercial Buildings', description: 'Office complexes, shopping centers, and institutional waste management systems.' },
+      { name: 'Segregation Systems', description: 'Color-coded bins for recyclable, organic, and general waste separation programs.' }
+    ],
+    ctaTitle: 'Municipal Waste Management Solutions?',
+    ctaDescription: 'We supply waste bins to municipal corporations and commercial facilities across India with bulk pricing.'
+  },
+  'hand-pallet-trucks': {
+    title: 'Hand Pallet Trucks',
+    subtitle: 'Manual Material Handling Equipment',
+    description: 'Heavy-duty hand pallet trucks (pallet jacks) for warehouse loading, unloading, and material transport. Available in 2.5T and 3T capacities with nylon or polyurethane wheel options.',
+    image: handPalletTruckImg,
+    imageAlt: 'Hand pallet truck in warehouse operation',
+    features: [
+      '2.5T and 3T load capacity options',
+      'Nylon or polyurethane wheel configurations',
+      'Ergonomic handle design for operator comfort',
+      'Precision hydraulic lifting mechanism',
+      'Heavy-duty steel construction'
+    ],
+    specifications: [
+      { model: 'VPT-2500', size: '1150 × 550 × 1200', weight: '~68kg', capacity: '2500kg', material: 'Steel' },
+      { model: 'VPT-3000', size: '1150 × 550 × 1200', weight: '~75kg', capacity: '3000kg', material: 'Steel' },
+      { model: 'VPT-2500-PU', size: '1150 × 550 × 1200', weight: '~70kg', capacity: '2500kg', material: 'Steel + PU' },
+      { model: 'VPT-3000-PU', size: '1150 × 550 × 1200', weight: '~78kg', capacity: '3000kg', material: 'Steel + PU' }
+    ],
+    applications: [
+      { name: 'Warehouse Loading', description: 'Loading and unloading trucks, containers, and warehouse racking systems efficiently.' },
+      { name: 'Manufacturing', description: 'Moving raw materials, work-in-process, and finished goods within production facilities.' },
+      { name: 'Retail & Distribution', description: 'Back-of-house operations in retail stores and distribution centers for inventory handling.' },
+      { name: 'Cross-Docking', description: 'Fast-paced material transfer in logistics hubs and transportation terminals.' }
+    ],
+    ctaTitle: 'Need Heavy-Duty Pallet Trucks?',
+    ctaDescription: 'We supply manual pallet trucks to warehouses and factories across India with service support.'
+  }
+};
+
+export async function getStaticPaths() {
+  return [
+    { params: { slug: 'plastic-crates' } },
+    { params: { slug: 'plastic-pallets' } },
+    { params: { slug: 'waste-bins' } },
+    { params: { slug: 'hand-pallet-trucks' } }
+  ];
+}
+
+const { slug } = Astro.params;
+const product = products[slug as keyof typeof products];
+
+if (!product) {
+  return Astro.redirect('/products');
+}
+
+const breadcrumbTitle = product.title;
+const pageTitle = `${product.title} | Vinayak Plastics`;
+const pageDescription = `${product.description.slice(0, 150)}...`;
+
+const BASE_SITE = 'https://krupa06-dotcom.github.io';
+// The schema "image" is only consumed by search-engine crawlers (never fetched
+// by the browser at render time), so point it at the stable public logo image
+// instead of the full-resolution source PNG. This keeps the built site from
+// shipping the heavy unoptimized originals in /_astro.
+const productSchema = `{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "${product.title}",
+  "description": ${JSON.stringify(product.description)},
+  "image": "${BASE_SITE}/Vinayak-Plastic/images/vp-logo.png",
+  "brand": { "@type": "Brand", "name": "Vinayak Plastics" },
+  "category": "Material Handling Equipment",
+  "material": "HDPE / PP"
+}`;
+---
+
+<Layout 
+  title={pageTitle}
+  description={pageDescription}
+  structuredData={productSchema}
+>
+  <Header currentPage="/products" />
+
+  <main id="main">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / {breadcrumbTitle}</p>
+      <h1 class="display-800">{product.title}</h1>
+      <p>{product.subtitle}</p>
+    </div>
+  </section>
+
+  <!-- ===== PRODUCT INTRO ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="pd-intro">
+        <div class="pd-image reveal">
+          <Image
+            src={product.image}
+            alt={product.imageAlt}
+            width={product.image.width}
+            height={product.image.height}
+            widths={[400, 768, 1000]}
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            loading="lazy"
+          />
+        </div>
+        <div class="pd-summary reveal">
+          <h2>{product.subtitle}</h2>
+          <p>{product.description}</p>
+          <ul class="pd-features">
+            {product.features.map(feature => (
+              <li>{feature}</li>
+            ))}
+          </ul>
+          <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SPECS TABLE ===== -->
+  <section class="section-warm">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2 class="display-700">Standard Specifications</h2>
+        <p>Common {product.title.toLowerCase()} dimensions produced by our unit. Custom sizes available on request.</p>
+      </div>
+      <div class="specs-table-wrap reveal">
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>External Size (L × W × H) mm</th>
+              <th>Weight</th>
+              <th>Load Capacity</th>
+              <th>Material</th>
+            </tr>
+          </thead>
+          <tbody>
+            {product.specifications.map(spec => (
+              <tr>
+                <td>{spec.model}</td>
+                <td>{spec.size}</td>
+                <td>{spec.weight}</td>
+                <td>{spec.capacity}</td>
+                <td>{spec.material}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
+        <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== APPLICATIONS ===== -->
+  <section class="section">
+    <div class="container-sm">
+      <div class="section-header reveal">
+        <h2 class="display-700">Common Applications</h2>
+      </div>
+      <div class="app-grid reveal">
+        {product.applications.map(app => (
+          <div class="app-card">
+            <h3>{app.name}</h3>
+            <p>{app.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-banner" aria-label={`Buy ${product.title.toLowerCase()}`}>
+    <div class="container reveal">
+      <h2 class="display-700">{product.ctaTitle || `Need Custom ${product.title}?`}</h2>
+      <p>{product.ctaDescription || `We supply ${product.title.toLowerCase()} to businesses across India. Call or WhatsApp for a quote.`}</p>
+      <div class="cta-buttons">
+        <a href="tel:+91XXXXXXXXXX" class="btn btn-primary">Call +91 XXXXX-XXXXX</a>
+        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+      </div>
+    </div>
+  </section>
+
+  </main>
+  <Footer />
+</Layout>

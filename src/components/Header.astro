@@ -1,0 +1,57 @@
+---
+import { Image } from 'astro:assets';
+import vpLogo from '../assets/images/vp-logo.webp';
+import { path } from '../lib/site';
+
+export interface Props {
+  currentPage?: string;
+}
+
+const { currentPage = '' } = Astro.props;
+
+// Helper function to determine if a link is active
+function isActive(templatePath: string): boolean {
+  if (templatePath === '/' && currentPage === '/') return true;
+  if (templatePath !== '/' && currentPage.startsWith(templatePath)) return true;
+  return false;
+}
+---
+
+<nav class="site-nav" role="navigation" aria-label="Main navigation">
+  <div class="container">
+    <a href={path('/')} class="nav-logo">
+      <Image src={vpLogo} alt="Vinayak Plastics" class="logo-img" width={120} height={92} loading="eager" decoding="sync" />
+      <span class="logo-text">Vinayak Plastics</span>
+    </a>
+    
+    <div class="nav-search">
+      <form class="search-form" role="search" action={path('/products')} method="get">
+        <input type="search" name="q" placeholder="Search products..." aria-label="Search products">
+        <button type="submit" aria-label="Submit search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+          </svg>
+        </button>
+      </form>
+    </div>
+    
+    <div class="nav-inner">
+      <div class="nav-links" id="nav-links">
+        <a href={path('/')} class={isActive('/') ? 'active' : ''}>Home</a>
+        <a href={path('/about')} class={isActive('/about') ? 'active' : ''}>About Us</a>
+        <a href={path('/products')} class={isActive('/products') ? 'active' : ''}>Products</a>
+        <a href={path('/contact')} class={isActive('/contact') ? 'active' : ''}>Contact</a>
+      </div>
+      <div class="nav-right">
+        <a href="tel:+91XXXXXXXXXX" class="nav-phone" aria-label="Call us">+91 XXXXX-XXXXX</a>
+        <a href={path('/contact')} class="nav-cta">Get a Quote</a>
+        <button class="nav-toggle" aria-label="Toggle menu" aria-controls="nav-links" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

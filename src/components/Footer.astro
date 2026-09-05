@@ -1,0 +1,43 @@
+---
+import { Image } from 'astro:assets';
+import vpLogo from '../assets/images/vp-logo.webp';
+import { path } from '../lib/site';
+// Footer component - no props needed for now
+---
+
+<footer class="site-footer" id="contact">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href={path('/')} class="nav-logo">
+          <Image src={vpLogo} alt="Vinayak Plastics" class="logo-img" width={120} height={92} loading="lazy" />
+        </a>
+        <p>Business House Engaged In Supply of All Type of Material Handling & Packaging Products — Crates, Dustbin, Ice Box, Storage Bins, Racking System, Hand Pallet Truck Etc.</p>
+      </div>
+      
+      <div class="footer-col">
+        <h3>Products</h3>
+        <a href={path('/products/plastic-crates')}>Plastic Crates</a>
+        <a href={path('/products/plastic-pallets')}>Plastic Pallets</a>
+        <a href={path('/products/waste-bins')}>Waste Bins / Dustbins</a>
+        <a href={path('/products/hand-pallet-trucks')}>Hand Pallet Trucks</a>
+        <a href={path('/products')}>Ice Boxes & Racking</a>
+      </div>
+      
+      <div class="footer-col">
+        <h3>Contact</h3>
+        <p>Phone: +91 XXXXX-XXXXX</p>
+        <p>WhatsApp: +91 XXXXX-XXXXX</p>
+        <p>Email: info@vinayakplastics.in</p>
+        <p>Address: [City, State]</p>
+        <span class="footer-placeholder">Placeholder — replace before publishing</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer-bottom">
+    <div class="container">
+      <p>&copy; 2026 Vinayak Plastics. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
