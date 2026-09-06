@@ -1,0 +1,146 @@
+---
+import { Image } from 'astro:assets';
+import cratesImg from '../assets/images/crates.jpeg';
+import palletsImg from '../assets/images/pallets.jpeg';
+import binsImg from '../assets/images/bins.jpeg';
+import trucksImg from '../assets/images/pallet-trucks.jpeg';
+
+const slides = [
+  { img: cratesImg, alt: 'Plastic crates stacked in a warehouse', label: 'Plastic Crates' },
+  { img: palletsImg, alt: 'Plastic pallets for logistics and racking', label: 'Plastic Pallets' },
+  { img: binsImg, alt: 'Plastic waste bins for municipal and commercial use', label: 'Waste Bins' },
+  { img: trucksImg, alt: 'Hand pallet trucks for material transport', label: 'Hand Pallet Trucks' }
+];
+
+const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
+---
+
+<section class="story" id="story" aria-roledescription="carousel" aria-label="Featured products">
+  <h1 class="sr-only">Vinayak Plastics — Industrial Products for Storage, Handling and Logistics</h1>
+
+  <div class="story__slides">
+    {slides.map((s, i) => (
+      <article
+        class:list={['story__slide', i === 0 && 'is-active']}
+        aria-roledescription="slide"
+        aria-label={`${i + 1} of ${slides.length}: ${s.label}`}
+        aria-hidden={i !== 0}
+      >
+        <Image
+          class="story__shot"
+          src={s.img}
+          alt={s.alt}
+          widths={[640, 1000, 1376]}
+          sizes="100vw"
+          quality={60}
+          priority={i === 0}
+        />
+      </article>
+    ))}
+  </div>
+
+  <div class="story__scrim" aria-hidden="true"></div>
+
+  <div class="story__bar">
+    <div class="story__progress" aria-hidden="true"><span class="story__progress-fill"></span></div>
+    <div class="story__bar-inner">
+      <div class="story__row">
+        <nav class="story__nav" aria-label="Featured product slides">
+          {navLabels.map((label, i) => (
+            <button
+              type="button"
+              class:list={['story__nav-btn', i === 0 && 'is-active']}
+              aria-selected={i === 0}
+              data-slide={i}
+            >
+              <span class="story__nav-num" aria-hidden="true">0{i + 1}</span>{label}
+            </button>
+          ))}
+        </nav>
+        <p class="story__count" aria-hidden="true">
+          <span class="story__count-cur">01</span><span class="story__count-total"> / 04</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+(function () {
+  'use strict';
+
+  var root = document.querySelector('.story');
+  if (!root) return;
+
+  var slides = Array.prototype.slice.call(root.querySelectorAll('.story__slide'));
+  var navBtns = Array.prototype.slice.call(root.querySelectorAll('.story__nav-btn'));
+  var counter = root.querySelector('.story__count-cur');
+  var fill = root.querySelector('.story__progress-fill');
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var current = 0;
+  var delay = 6000;
+  var timer = null;
+
+  function go(next) {
+    var t = (next + slides.length) % slides.length;
+    if (t === current) return;
+    current = t;
+    slides.forEach(function (slide, i) {
+      slide.classList.toggle('is-active', i === current);
+      slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+    });
+    navBtns.forEach(function (btn, i) {
+      btn.classList.toggle('is-active', i === current);
+      btn.setAttribute('aria-selected', i === current ? 'true' : 'false');
+    });
+    if (counter) counter.textContent = String(current + 1).padStart(2, '0');
+    restartProgress();
+    restartTimer();
+  }
+
+  function restartProgress() {
+    if (!fill || reduced) return;
+    root.classList.remove('is-running');
+    void root.offsetWidth;
+    root.classList.add('is-running');
+  }
+
+  function stop() {
+    root.classList.add('is-paused');
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  function start() {
+    root.classList.remove('is-paused');
+    if (!reduced && !timer) { timer = setInterval(function () { go(current + 1); }, delay); }
+  }
+
+  function restartTimer() {
+    if (reduced) return;
+    if (timer) { clearInterval(timer); timer = null; }
+    timer = setInterval(function () { go(current + 1); }, delay);
+  }
+
+  navBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { go(parseInt(btn.getAttribute('data-slide'), 10)); });
+  });
+
+  root.addEventListener('mouseenter', stop);
+  root.addEventListener('mouseleave', function () {
+    if (!root.contains(document.activeElement)) start();
+  });
+  root.addEventListener('focusin', stop);
+  root.addEventListener('focusout', function (e) {
+    if (!root.contains(e.relatedTarget)) start();
+  });
+
+  root.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { go(current + 1); }
+    else if (e.key === 'ArrowLeft') { go(current - 1); }
+  });
+
+  restartProgress();
+  if (!reduced) { timer = setInterval(function () { go(current + 1); }, delay); }
+})();
+</script>
