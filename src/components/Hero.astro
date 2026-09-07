@@ -1,65 +1,104 @@
 ---
 import { Image } from 'astro:assets';
-import cratesImg from '../assets/images/crates.jpeg';
-import palletsImg from '../assets/images/pallets.jpeg';
-import binsImg from '../assets/images/bins.jpeg';
-import trucksImg from '../assets/images/pallet-trucks.jpeg';
+import slide1 from '../assets/images/stack-crates.jpeg';
+import slide2 from '../assets/images/plastic-pallets.jpeg';
+import slide3 from '../assets/images/truck-pallets.jpeg';
+import slide4 from '../assets/images/dustbins.jpeg';
 
 const slides = [
-  { img: cratesImg, alt: 'Plastic crates stacked in a warehouse', label: 'Plastic Crates' },
-  { img: palletsImg, alt: 'Plastic pallets for logistics and racking', label: 'Plastic Pallets' },
-  { img: binsImg, alt: 'Plastic waste bins for municipal and commercial use', label: 'Waste Bins' },
-  { img: trucksImg, alt: 'Hand pallet trucks for material transport', label: 'Hand Pallet Trucks' }
+  {
+    img: slide1,
+    alt: 'Stacked plastic crates in an industrial warehouse',
+    tag: 'Storage Solutions',
+    title: 'Engineered Plastic Solutions for Industry',
+    sub: 'Manufacturing durable crates, pallets, waste bins and material handling equipment for warehouses, logistics and municipal operations across India.'
+  },
+  {
+    img: slide2,
+    alt: 'Heavy-duty plastic pallets for warehouse logistics',
+    tag: 'Material Handling',
+    title: 'Built to Move. Built to Last.',
+    sub: 'High-density polyethylene pallets engineered for racking, stacking and repeated industrial use — reducing cost per cycle.'
+  },
+  {
+    img: slide3,
+    alt: 'Truck loaded with plastic pallets for distribution',
+    tag: 'Logistics & Supply Chain',
+    title: 'Reliable Supply Chain Starts Here',
+    sub: 'From factory floor to distribution centre — reusable pallets and crates that withstand the rigours of pan-India logistics.'
+  },
+  {
+    img: slide4,
+    alt: 'Industrial plastic dustbins for waste management',
+    tag: 'Waste Management',
+    title: 'Municipal & Commercial Waste Solutions',
+    sub: 'Robust, UV-stabilised dustbins and waste containers designed for municipal contracts, commercial complexes and factory campuses.'
+  }
 ];
-
-const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
 ---
 
-<section class="story" id="story" aria-roledescription="carousel" aria-label="Featured products">
-  <h1 class="sr-only">Vinayak Plastics — Industrial Products for Storage, Handling and Logistics</h1>
+<section class="hero" id="hero" aria-roledescription="carousel" aria-label="Vinayak Plastics overview">
+  <h1 class="sr-only">Vinayak Plastics — Engineered Plastic Products for Industry</h1>
 
-  <div class="story__slides">
+  <div class="hero__slides">
     {slides.map((s, i) => (
       <article
-        class:list={['story__slide', i === 0 && 'is-active']}
+        class:list={['hero__slide', i === 0 && 'is-active']}
         aria-roledescription="slide"
-        aria-label={`${i + 1} of ${slides.length}: ${s.label}`}
+        aria-label={`${i + 1} of ${slides.length}: ${s.tag}`}
         aria-hidden={i !== 0}
       >
-        <Image
-          class="story__shot"
-          src={s.img}
-          alt={s.alt}
-          widths={[640, 1000, 1376]}
-          sizes="100vw"
-          quality={60}
-          priority={i === 0}
-        />
+        <div class="hero__img-wrap">
+          <Image
+            class="hero__img"
+            src={s.img}
+            alt={s.alt}
+            widths={[640, 1024, 1536]}
+            sizes="100vw"
+            quality={65}
+            priority={i === 0}
+          />
+        </div>
       </article>
     ))}
   </div>
 
-  <div class="story__scrim" aria-hidden="true"></div>
+  <div class="hero__overlay" aria-hidden="true"></div>
 
-  <div class="story__bar">
-    <div class="story__progress" aria-hidden="true"><span class="story__progress-fill"></span></div>
-    <div class="story__bar-inner">
-      <div class="story__row">
-        <nav class="story__nav" aria-label="Featured product slides">
-          {navLabels.map((label, i) => (
-            <button
-              type="button"
-              class:list={['story__nav-btn', i === 0 && 'is-active']}
-              aria-selected={i === 0}
-              data-slide={i}
-            >
-              <span class="story__nav-num" aria-hidden="true">0{i + 1}</span>{label}
-            </button>
-          ))}
-        </nav>
-        <p class="story__count" aria-hidden="true">
-          <span class="story__count-cur">01</span><span class="story__count-total"> / 04</span>
-        </p>
+  <div class="hero__content">
+    <div class="hero__text">
+      {slides.map((s, i) => (
+        <div class:list={['hero__slide-text', i === 0 && 'is-active']} data-text={i}>
+          <span class="hero__tag">{s.tag}</span>
+          <h2 class="hero__title">{s.title}</h2>
+          <p class="hero__sub">{s.sub}</p>
+          <div class="hero__actions">
+            <a href="/Vinayak-Plastic/products/" class="btn btn-primary">Explore Products</a>
+            <a href="/Vinayak-Plastic/contact/" class="btn btn-secondary">Get a Quote</a>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div class="hero__bottom">
+      <div class="hero__dots" role="tablist" aria-label="Slide navigation">
+        {slides.map((s, i) => (
+          <button
+            type="button"
+            class:list={['hero__dot', i === 0 && 'is-active']}
+            role="tab"
+            aria-selected={i === 0}
+            aria-label={`${s.tag}`}
+            data-slide={i}
+          >
+            <span class="hero__dot-fill"></span>
+          </button>
+        ))}
+      </div>
+      <div class="hero__counter" aria-hidden="true">
+        <span class="hero__counter-cur">01</span>
+        <span class="hero__counter-sep">/</span>
+        <span class="hero__counter-total">04</span>
       </div>
     </div>
   </div>
@@ -69,13 +108,13 @@ const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
 (function () {
   'use strict';
 
-  var root = document.querySelector('.story');
+  var root = document.querySelector('.hero');
   if (!root) return;
 
-  var slides = Array.prototype.slice.call(root.querySelectorAll('.story__slide'));
-  var navBtns = Array.prototype.slice.call(root.querySelectorAll('.story__nav-btn'));
-  var counter = root.querySelector('.story__count-cur');
-  var fill = root.querySelector('.story__progress-fill');
+  var imgSlides = Array.prototype.slice.call(root.querySelectorAll('.hero__slide'));
+  var textSlides = Array.prototype.slice.call(root.querySelectorAll('.hero__slide-text'));
+  var dots = Array.prototype.slice.call(root.querySelectorAll('.hero__dot'));
+  var counter = root.querySelector('.hero__counter-cur');
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var current = 0;
@@ -83,27 +122,30 @@ const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
   var timer = null;
 
   function go(next) {
-    var t = (next + slides.length) % slides.length;
+    var t = (next + imgSlides.length) % imgSlides.length;
     if (t === current) return;
+
+    imgSlides.forEach(function (s, i) {
+      s.classList.toggle('is-active', i === t);
+      s.setAttribute('aria-hidden', i === t ? 'false' : 'true');
+    });
+    textSlides.forEach(function (s, i) {
+      s.classList.toggle('is-active', i === t);
+    });
+    dots.forEach(function (d, i) {
+      d.classList.toggle('is-active', i === t);
+      d.setAttribute('aria-selected', i === t ? 'true' : 'false');
+    });
+
     current = t;
-    slides.forEach(function (slide, i) {
-      slide.classList.toggle('is-active', i === current);
-      slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
-    });
-    navBtns.forEach(function (btn, i) {
-      btn.classList.toggle('is-active', i === current);
-      btn.setAttribute('aria-selected', i === current ? 'true' : 'false');
-    });
     if (counter) counter.textContent = String(current + 1).padStart(2, '0');
-    restartProgress();
     restartTimer();
   }
 
-  function restartProgress() {
-    if (!fill || reduced) return;
-    root.classList.remove('is-running');
-    void root.offsetWidth;
-    root.classList.add('is-running');
+  function restartTimer() {
+    if (reduced) return;
+    if (timer) { clearInterval(timer); timer = null; }
+    timer = setInterval(function () { go(current + 1); }, delay);
   }
 
   function stop() {
@@ -116,14 +158,10 @@ const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
     if (!reduced && !timer) { timer = setInterval(function () { go(current + 1); }, delay); }
   }
 
-  function restartTimer() {
-    if (reduced) return;
-    if (timer) { clearInterval(timer); timer = null; }
-    timer = setInterval(function () { go(current + 1); }, delay);
-  }
-
-  navBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () { go(parseInt(btn.getAttribute('data-slide'), 10)); });
+  dots.forEach(function (dot) {
+    dot.addEventListener('click', function () {
+      go(parseInt(dot.getAttribute('data-slide'), 10));
+    });
   });
 
   root.addEventListener('mouseenter', stop);
@@ -136,11 +174,10 @@ const navLabels = ['Crates', 'Pallets', 'Waste Bins', 'Pallet Trucks'];
   });
 
   root.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') { go(current + 1); }
-    else if (e.key === 'ArrowLeft') { go(current - 1); }
+    if (e.key === 'ArrowRight') go(current + 1);
+    else if (e.key === 'ArrowLeft') go(current - 1);
   });
 
-  restartProgress();
   if (!reduced) { timer = setInterval(function () { go(current + 1); }, delay); }
 })();
 </script>
