@@ -11,64 +11,25 @@ import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 
-// Editorial product panels — large imagery + catalogue-style numbering.
-const panels = [
-  {
-    num: '01',
-    name: 'Plastic Crates',
-    desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.',
-    slug: '/products/plastic-crates',
-    src: plasticCrates,
-    alt: 'Plastic crates stacked in warehouse',
-    w: 600,
-    h: 500
-  },
-  {
-    num: '02',
-    name: 'Plastic Pallets',
-    desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.',
-    slug: '/products/plastic-pallets',
-    src: plasticPallets,
-    alt: 'Industrial plastic pallets stacked',
-    w: 600,
-    h: 400
-  },
-  {
-    num: '03',
-    name: 'Waste Bins',
-    desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.',
-    slug: '/products/waste-bins',
-    src: plasticWastebins,
-    alt: 'Industrial waste bins and dustbins',
-    w: 604,
-    h: 508
-  },
-  {
-    num: '04',
-    name: 'Hand Pallet Trucks',
-    desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.',
-    slug: '/products/hand-pallet-trucks',
-    src: handPalletTruck,
-    alt: 'Hand pallet truck in warehouse operation',
-    w: 1200,
-    h: 800
-  }
+const products = [
+  { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/products/plastic-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse' },
+  { name: 'Plastic Pallets', desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.', slug: '/products/plastic-pallets', src: plasticPallets, alt: 'Industrial plastic pallets stacked' },
+  { name: 'Waste Bins', desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.', slug: '/products/waste-bins', src: plasticWastebins, alt: 'Industrial waste bins and dustbins' },
+  { name: 'Hand Pallet Trucks', desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.', slug: '/products/hand-pallet-trucks', src: handPalletTruck, alt: 'Hand pallet truck in warehouse' }
 ];
 
-// Application areas — all drawn from existing product-page content.
 const applications = [
-  { num: '01', name: 'Warehousing', desc: 'Storage, racking and internal material movement — crates, pallets and pallet trucks for warehouse operations.' },
-  { num: '02', name: 'Manufacturing', desc: 'Work-in-process handling, parts storage and finished-goods staging within production facilities.' },
-  { num: '03', name: 'Logistics & Distribution', desc: 'Palletized freight, cross-docking and last-mile delivery with durable, reusable equipment.' },
-  { num: '04', name: 'Dairy & Municipal', desc: 'Dairy transport and cold-storage crates, plus municipal and commercial waste-collection bins.' }
+  { name: 'Warehousing', desc: 'Storage, racking and internal material movement — crates, pallets and pallet trucks.', icon: 'warehouse' },
+  { name: 'Manufacturing', desc: 'Work-in-process handling, parts storage and finished-goods staging.', icon: 'factory' },
+  { name: 'Logistics', desc: 'Palletized freight, cross-docking and last-mile delivery equipment.', icon: 'truck' },
+  { name: 'Municipal', desc: 'Dairy transport, cold-storage crates and commercial waste-collection bins.', icon: 'building' }
 ];
 
-// Why Vinayak — numbered pillars built from existing site claims.
 const reasons = [
-  { num: '01', label: 'HDPE / PP', text: 'Crates, bins and pallets molded from HDPE / PP copolymer for impact resistance, UV stability and long service life in demanding environments.' },
-  { num: '02', label: 'Custom Sizing', text: 'Production to specific size and color requirements for warehouse rack fit, branding or municipal contract specifications.' },
-  { num: '03', label: 'Industrial Applications', text: 'One source for crates, pallets, waste bins and hand pallet trucks — serving warehouses, dairy and municipal buyers.' },
-  { num: '04', label: 'Pan-India Dispatch', text: 'Direct enquiry to dispatch — pricing, spec sheets and timelines handled in a single call, with no distributor layers.' }
+  { label: 'HDPE / PP Construction', text: 'Molded from HDPE and PP copolymer for impact resistance, UV stability and long service life in demanding industrial environments.' },
+  { label: 'Custom Sizing & Colour', text: 'Production to specific size and colour requirements for warehouse rack fit, branding or municipal contract specifications.' },
+  { label: 'Complete Product Range', text: 'One source for crates, pallets, waste bins and hand pallet trucks — serving warehouses, dairy and municipal buyers.' },
+  { label: 'Pan-India Dispatch', text: 'Direct enquiry to dispatch — pricing, spec sheets and timelines handled in a single call, with no distributor layers.' }
 ];
 ---
 
@@ -78,112 +39,157 @@ const reasons = [
   <main id="main">
   <Hero />
 
-  <!-- ===== PRODUCTS ===== -->
-  <section class="section section-warm prod-editorial" id="products" aria-label="Our Products">
+  <!-- TRUST BAR -->
+  <section class="trustbar" aria-label="Company highlights">
     <div class="container">
-      <header class="sec-head reveal">
-        <p class="sec-index">01 / What We Make</p>
-        <h2 class="sec-title">Industrial products built for <span class="text-orange">everyday operations.</span></h2>
-        <p class="sec-sub">HDPE and PP material handling and packaging equipment for warehouses, dairy distributors, and municipal buyers across India.</p>
+      <div class="trustbar__grid">
+        <div class="trustbar__item">
+          <span class="trustbar__num">25+</span>
+          <span class="trustbar__label">Years in Business</span>
+        </div>
+        <div class="trustbar__divider" aria-hidden="true"></div>
+        <div class="trustbar__item">
+          <span class="trustbar__num">500+</span>
+          <span class="trustbar__label">Clients Served</span>
+        </div>
+        <div class="trustbar__divider" aria-hidden="true"></div>
+        <div class="trustbar__item">
+          <span class="trustbar__num">4</span>
+          <span class="trustbar__label">Product Categories</span>
+        </div>
+        <div class="trustbar__divider" aria-hidden="true"></div>
+        <div class="trustbar__item">
+          <span class="trustbar__num">Pan-India</span>
+          <span class="trustbar__label">Delivery Network</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about-home" id="about" aria-label="About Vinayak Plastics">
+    <div class="container">
+      <div class="about-home__grid">
+        <div class="about-home__media reveal">
+          <Image
+            src={warehouseInterior}
+            alt="Spacious warehouse with organized storage and material handling"
+            width={1125}
+            height={750}
+            widths={[480, 700]}
+            sizes="(max-width: 900px) 100vw, 48vw"
+            loading="lazy"
+          />
+        </div>
+        <div class="about-home__body reveal">
+          <p class="sec-index">About Us</p>
+          <h2 class="about-home__title">Trusted manufacturer & supplier of <span class="text-orange">industrial plastic products</span></h2>
+          <p class="about-home__text">Vinayak Plastics is a business house engaged in the manufacture and supply of all types of material handling and packaging products. From plastic crates and pallets to waste bins and hand pallet trucks — we serve warehouses, dairy distributors, municipal buyers and manufacturing facilities across India.</p>
+          <p class="about-home__text">Our commitment to quality materials, competitive pricing and direct-to-buyer service has made us a trusted partner for businesses that depend on reliable equipment every day.</p>
+          <a href={path('/about')} class="btn btn-ghost">Learn More About Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="products-home" id="products" aria-label="Our Products">
+    <div class="container">
+      <header class="products-home__head reveal">
+        <p class="sec-index">What We Make</p>
+        <h2 class="products-home__title">Industrial products built for <span class="text-orange">everyday operations.</span></h2>
+        <p class="products-home__sub">HDPE and PP material handling and packaging equipment for warehouses, dairy distributors, and municipal buyers across India.</p>
       </header>
 
-      <div class="prod-panels">
-        {panels.map((p, i) => (
-          <article class={`prod-panel reveal${i % 2 === 1 ? ' prod-panel--flip' : ''}`}>
-            <div class="prod-panel-media">
-              <Image
-                src={p.src}
-                alt={p.alt}
-                width={p.w}
-                height={p.h}
-                widths={[480, 720]}
-                sizes="(max-width: 900px) 100vw, 52vw"
-                loading="lazy"
-              />
-            </div>
-            <div class="prod-panel-body">
-              <span class="prod-panel-num">{p.num}</span>
-              <div class="prod-panel-info">
-                <h3 class="prod-panel-name">{p.name}</h3>
-                <p class="prod-panel-desc">{p.desc}</p>
+      <div class="products-home__grid">
+        {products.map((p) => (
+          <article class="ph-card reveal">
+            <a href={path(p.slug)} class="ph-card__link">
+              <div class="ph-card__img">
+                <Image src={p.src} alt={p.alt} width={600} height={450} widths={[360, 520]} sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" />
               </div>
-              <a class="prod-panel-link" href={path(p.slug)}>View Products <span aria-hidden="true">→</span></a>
-            </div>
+              <div class="ph-card__body">
+                <h3 class="ph-card__name">{p.name}</h3>
+                <p class="ph-card__desc">{p.desc}</p>
+                <span class="ph-card__cta">View Products <span aria-hidden="true">→</span></span>
+              </div>
+            </a>
           </article>
         ))}
       </div>
     </div>
   </section>
 
-  <!-- ===== APPLICATIONS ===== -->
-  <section class="section apps-vp" id="applications" aria-label="Applications">
+  <!-- APPLICATIONS -->
+  <section class="apps-home" id="applications" aria-label="Applications">
     <div class="container">
-      <header class="sec-head reveal">
-        <p class="sec-index">02 / Applications</p>
-        <h2 class="sec-title">Where Vinayak products do the work.</h2>
-        <p class="sec-sub">Material handling equipment in service across production, storage, distribution and waste collection.</p>
+      <header class="apps-home__head reveal">
+        <p class="sec-index">Applications</p>
+        <h2 class="apps-home__title">Where Vinayak products <span class="text-orange">do the work.</span></h2>
       </header>
 
-      <div class="apps-grid">
+      <div class="apps-home__grid">
         {applications.map((a) => (
-          <article class="app-block reveal">
-            <span class="app-num" aria-hidden="true">{a.num}</span>
-            <h3 class="app-name">{a.name}</h3>
-            <p class="app-desc">{a.desc}</p>
+          <article class="ap-card reveal">
+            <div class="ap-card__icon" aria-hidden="true">
+              {a.icon === 'warehouse' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21V12h6v9"/><path d="M3 21h18"/></svg>
+              )}
+              {a.icon === 'factory' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>
+              )}
+              {a.icon === 'truck' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              )}
+              {a.icon === 'building' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22V12h6v10"/><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01"/></svg>
+              )}
+            </div>
+            <h3 class="ap-card__name">{a.name}</h3>
+            <p class="ap-card__desc">{a.desc}</p>
           </article>
         ))}
       </div>
     </div>
   </section>
 
-  <!-- ===== WHY VINAYAK ===== -->
-  <section class="section section-warm why-vp" id="why-us" aria-label="Why Vinayak Plastics">
+  <!-- WHY CHOOSE US -->
+  <section class="why-home" id="why-us" aria-label="Why choose Vinayak Plastics">
     <div class="container">
-      <div class="why-grid">
-        <div class="why-intro reveal">
-          <header class="sec-head sec-head--tight">
-            <p class="sec-index">03 / Why Vinayak?</p>
-            <h2 class="sec-title">Reliable plastic solutions for demanding <span class="text-orange">industrial environments.</span></h2>
-            <p class="sec-sub">A business house engaged in the supply of all types of material handling and packaging products — direct enquiry, no layers.</p>
-          </header>
-          <figure class="why-media">
-            <Image
-              src={warehouseInterior}
-              alt="Spacious warehouse with organized storage and material handling"
-              width={1125}
-              height={750}
-              widths={[480, 700]}
-              sizes="(max-width: 900px) 100vw, 44vw"
-              loading="lazy"
-            />
-          </figure>
+      <div class="why-home__grid">
+        <div class="why-home__intro reveal">
+          <p class="sec-index">Why Vinayak?</p>
+          <h2 class="why-home__title">Reliable plastic solutions for demanding <span class="text-orange">industrial environments.</span></h2>
+          <p class="why-home__sub">A business house engaged in the supply of all types of material handling and packaging products — direct enquiry, no layers.</p>
+          <a href={path('/contact')} class="btn btn-primary">Get a Quote</a>
         </div>
 
-        <ol class="why-list">
+        <div class="why-home__features">
           {reasons.map((r) => (
-            <li class="why-item reveal">
-              <span class="why-num">{r.num}</span>
-              <div>
-                <h3 class="why-label">{r.label}</h3>
-                <p class="why-text">{r.text}</p>
+            <article class="wf-card reveal">
+              <div class="wf-card__check" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               </div>
-            </li>
+              <div>
+                <h3 class="wf-card__label">{r.label}</h3>
+                <p class="wf-card__text">{r.text}</p>
+              </div>
+            </article>
           ))}
-        </ol>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== CTA ===== -->
-  <section class="cta-premium" aria-label="Get a quote">
+  <!-- CTA -->
+  <section class="cta-home" aria-label="Get a quote">
     <div class="container reveal">
-      <p class="sec-index sec-index--light">Get a Quote</p>
-      <h2 class="cta-title">Need the right product<br>for your <span class="text-orange">operation?</span></h2>
-      <p class="cta-sub">Let's discuss your requirement — product, quantity, dimensions and dispatch timeline. Call or WhatsApp us directly.</p>
-      <div class="cta-buttons">
+      <h2 class="cta-home__title">Need the right product<br>for your <span class="text-orange">operation?</span></h2>
+      <p class="cta-home__sub">Let's discuss your requirement — product, quantity, dimensions and dispatch timeline. Call or WhatsApp us directly.</p>
+      <div class="cta-home__buttons">
         <a href={path('/contact')} class="btn btn-primary">Get a Quote</a>
-        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
-        <a href="tel:+91XXXXXXXXXX" class="btn btn-ghost-light">Call +91 XXXXX-XXXXX</a>
+        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-outline-light" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href="tel:+91XXXXXXXXXX" class="btn-ghost-light">Call +91 XXXXX-XXXXX</a>
       </div>
     </div>
   </section>
