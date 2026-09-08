@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import { Image } from 'astro:assets';
 import plasticPallets from '../assets/images/plastic-pallets.webp';
 import { path } from '../lib/site';
+import { CONTACT } from '../lib/contact';
 ---
 
 <Layout 
@@ -95,8 +96,8 @@ import { path } from '../lib/site';
       <h2 class="display-700">Discuss Your Requirements</h2>
       <p>Call or WhatsApp us for pricing, product specifications, and dispatch timelines.</p>
       <div class="cta-buttons">
-        <a href="tel:+91XXXXXXXXXX" class="btn btn-primary">Call +91 XXXXX-XXXXX</a>
-        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
     </div>
   </section>

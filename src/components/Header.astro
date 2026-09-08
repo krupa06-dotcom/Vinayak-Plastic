@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import vpLogo from '../assets/images/vp-logo.webp';
 import { path } from '../lib/site';
+import { CONTACT } from '../lib/contact';
 
 export interface Props {
   currentPage?: string;
@@ -46,7 +47,7 @@ function isActive(templatePath: string): boolean {
             </button>
           </form>
         </div>
-        <a href="tel:+91XXXXXXXXXX" class="nav-phone" aria-label="Call us">+91 XXXXX-XXXXX</a>
+        <a href={CONTACT.phoneHref} class="nav-phone" aria-label="Call us">{CONTACT.phoneDisplay}</a>
         <a href={path('/contact')} class="nav-cta">Get a Quote</a>
         <button class="nav-toggle" aria-label="Toggle menu" aria-controls="nav-links" aria-expanded="false">
           <span></span>

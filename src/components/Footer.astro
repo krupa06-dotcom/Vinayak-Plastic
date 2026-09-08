@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import vpLogo from '../assets/images/vp-logo.webp';
 import { path } from '../lib/site';
-// Footer component - no props needed for now
+import { CONTACT } from '../lib/contact';
 ---
 
 <footer class="site-footer" id="contact">
@@ -26,11 +26,10 @@ import { path } from '../lib/site';
       
       <div class="footer-col">
         <h3>Contact</h3>
-        <p>Phone: +91 XXXXX-XXXXX</p>
-        <p>WhatsApp: +91 XXXXX-XXXXX</p>
-        <p>Email: info@vinayakplastics.in</p>
-        <p>Address: [City, State]</p>
-        <span class="footer-placeholder">Placeholder — replace before publishing</span>
+        <p>Phone: {CONTACT.phoneDisplay}</p>
+        <p>WhatsApp: {CONTACT.phoneDisplay}</p>
+        <p>Email: {CONTACT.email}</p>
+        <p>Address: {CONTACT.address}</p>
       </div>
     </div>
   </div>

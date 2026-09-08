@@ -8,6 +8,7 @@ import plasticPalletsImg from '../../assets/images/plastic-pallets.webp';
 import plasticWastebinsImg from '../../assets/images/plastic-wastebins.webp';
 import handPalletTruckImg from '../../assets/images/hand-pallet-truck.webp';
 import { path } from '../../lib/site';
+import { CONTACT } from '../../lib/contact';
 
 // Product data - in Phase 1 this is static, will be moved to database in Phase 3
 const products = {
@@ -269,8 +270,8 @@ const productSchema = `{
       <h2 class="display-700">{product.ctaTitle || `Need Custom ${product.title}?`}</h2>
       <p>{product.ctaDescription || `We supply ${product.title.toLowerCase()} to businesses across India. Call or WhatsApp for a quote.`}</p>
       <div class="cta-buttons">
-        <a href="tel:+91XXXXXXXXXX" class="btn btn-primary">Call +91 XXXXX-XXXXX</a>
-        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
     </div>
   </section>

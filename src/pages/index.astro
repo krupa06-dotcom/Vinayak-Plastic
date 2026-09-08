@@ -10,6 +10,7 @@ import plasticWastebins from '../assets/images/plastic-wastebins.webp';
 import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
+import { CONTACT } from '../lib/contact';
 
 const products = [
   { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/products/plastic-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse' },
@@ -188,8 +189,8 @@ const reasons = [
       <p>Let's discuss your requirement — product, quantity, dimensions and dispatch timeline. Call or WhatsApp us directly.</p>
       <div class="cta-buttons">
         <a href={path('/contact')} class="btn btn-primary">Get a Quote</a>
-        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
-        <a href="tel:+91XXXXXXXXXX" class="btn btn-ghost-light">Call +91 XXXXX-XXXXX</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href={CONTACT.phoneHref} class="btn btn-ghost-light">Call {CONTACT.phoneDisplay}</a>
       </div>
     </div>
   </section>

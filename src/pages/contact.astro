@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { path } from '../lib/site';
+import { CONTACT } from '../lib/contact';
 ---
 
 <Layout 
@@ -37,7 +38,7 @@ import { path } from '../lib/site';
             </div>
             <div>
               <h3>Phone</h3>
-              <p>+91 XXXXX-XXXXX</p>
+              <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a>
             </div>
           </div>
 
@@ -49,7 +50,7 @@ import { path } from '../lib/site';
             </div>
             <div>
               <h3>WhatsApp</h3>
-              <a href="https://wa.me/91XXXXXXXXXX" target="_blank" rel="noopener">+91 XXXXX-XXXXX</a>
+              <a href={CONTACT.whatsappHref} target="_blank" rel="noopener">{CONTACT.phoneDisplay}</a>
             </div>
           </div>
 
@@ -62,7 +63,7 @@ import { path } from '../lib/site';
             </div>
             <div>
               <h3>Email</h3>
-              <a href="mailto:info@vinayakplastics.in">info@vinayakplastics.in</a>
+              <a href={CONTACT.emailHref}>{CONTACT.email}</a>
             </div>
           </div>
 
@@ -75,13 +76,10 @@ import { path } from '../lib/site';
             </div>
             <div>
               <h3>Address</h3>
-              <p>[City, State, India]</p>
+              <p>{CONTACT.address}</p>
             </div>
           </div>
 
-          <div style="margin-top:20px;padding:12px 16px;background:rgba(232,99,12,0.08);border-radius:6px;border-left:3px solid var(--orange)">
-            <p style="font-size:0.82rem;color:var(--steel)"><strong style="color:#A33A07;font-family:var(--font-mono)">NOTE:</strong> Contact details shown are placeholders. Replace with actual information before publishing.</p>
-          </div>
         </div>
 
         <div class="contact-form-card reveal">
@@ -125,8 +123,8 @@ import { path } from '../lib/site';
       <h2 class="display-700">Prefer to Talk Directly?</h2>
       <p>We're available on phone and WhatsApp for quick responses on pricing and product availability.</p>
       <div class="cta-buttons">
-        <a href="tel:+91XXXXXXXXXX" class="btn btn-primary">Call +91 XXXXX-XXXXX</a>
-        <a href="https://wa.me/91XXXXXXXXXX" class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
     </div>
   </section>
