@@ -8,14 +8,18 @@ import plasticCrates from '../assets/images/plastic-crates.webp';
 import plasticPallets from '../assets/images/plastic-pallets.webp';
 import plasticWastebins from '../assets/images/plastic-wastebins.webp';
 import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
+import lidCrates from '../assets/images/lid-crates.jpeg';
+import dustbin from '../assets/images/dustbin.jpeg';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
 
 const products = [
   { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/products/plastic-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse' },
+  { name: 'Lid Crates', desc: 'Lidded crates for secure, dust-free transport and storage of goods in transit and warehouse.', slug: '/products/plastic-crates', src: lidCrates, alt: 'Lidded plastic crates for secure storage' },
   { name: 'Plastic Pallets', desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.', slug: '/products/plastic-pallets', src: plasticPallets, alt: 'Industrial plastic pallets stacked' },
   { name: 'Waste Bins', desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.', slug: '/products/waste-bins', src: plasticWastebins, alt: 'Industrial waste bins and dustbins' },
+  { name: 'Dustbins', desc: 'Robust, UV-stabilised dustbins for municipal, commercial and factory waste collection.', slug: '/products/waste-bins', src: dustbin, alt: 'Industrial plastic dustbin for waste management' },
   { name: 'Hand Pallet Trucks', desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.', slug: '/products/hand-pallet-trucks', src: handPalletTruck, alt: 'Hand pallet truck in warehouse' }
 ];
 
@@ -107,7 +111,7 @@ const reasons = [
           <article class="ph-card reveal">
             <a href={path(p.slug)} class="ph-card__link">
               <div class="ph-card__img">
-                <Image src={p.src} alt={p.alt} width={600} height={450} widths={[360, 520]} sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" />
+                <Image src={p.src} alt={p.alt} width={600} height={450} widths={[300, 420]} sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" />
               </div>
               <div class="ph-card__body">
                 <h3 class="ph-card__name">{p.name}</h3>
@@ -190,7 +194,7 @@ const reasons = [
       <div class="cta-buttons">
         <a href={path('/contact')} class="btn btn-primary">Get a Quote</a>
         <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
-        <a href={CONTACT.phoneHref} class="btn btn-ghost-light">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.phoneHref} class="btn btn-outline-light">Call {CONTACT.phoneDisplay}</a>
       </div>
     </div>
   </section>

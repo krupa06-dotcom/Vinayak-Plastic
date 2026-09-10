@@ -3,9 +3,53 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { Image } from 'astro:assets';
+import warehouseInterior from '../assets/images/warehouse-interior.webp';
+import plasticCrates from '../assets/images/plastic-crates.webp';
 import plasticPallets from '../assets/images/plastic-pallets.webp';
+import plasticWastebins from '../assets/images/plastic-wastebins.webp';
+import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
+
+const stats = [
+  { num: '25+', label: 'Years in Business' },
+  { num: '500+', label: 'Clients Served' },
+  { num: '6+', label: 'Product Categories' },
+  { num: 'Pan-India', label: 'Dispatch Network' }
+];
+
+const values = [
+  {
+    label: 'Quality Materials',
+    text: 'Products molded from HDPE and PP grades — impact resistant, UV stabilized, and built for long service life in demanding industrial environments.'
+  },
+  {
+    label: 'Direct & Transparent',
+    text: 'No distributor layers, no automated systems. Every enquiry is handled by a person who knows the product, specification, and dispatch timelines.'
+  },
+  {
+    label: 'Custom Capability',
+    text: 'We work with buyers to deliver specific sizes, colors, and load-bearing requirements to match warehouse racking and contract specifications.'
+  },
+  {
+    label: 'Pan-India Reach',
+    text: 'From a single enquiry to dispatch — pricing, spec sheets, and timelines coordinated in one call, serving buyers across the country.'
+  }
+];
+
+const products = [
+  { img: plasticCrates, alt: 'Plastic crates stacked in warehouse', name: 'Plastic Crates' },
+  { img: plasticPallets, alt: 'Industrial plastic pallets stacked', name: 'Plastic Pallets' },
+  { img: plasticWastebins, alt: 'Industrial waste bins and dustbins', name: 'Waste Bins / Dustbins' },
+  { img: handPalletTruck, alt: 'Hand pallet truck in warehouse', name: 'Hand Pallet Trucks' }
+];
+
+const process = [
+  { step: '01', title: 'Enquire', text: 'Call or WhatsApp with your product, quantity, and specification requirements.' },
+  { step: '02', title: 'Quote', text: 'Receive pricing, dimension sheets, and dispatch timelines directly from our team.' },
+  { step: '03', title: 'Supply', text: 'We coordinate manufacture or sourcing and dispatch to your location across India.' },
+  { step: '04', title: 'Support', text: 'Ongoing support for repeat orders, service, and custom product development.' }
+];
 ---
 
 <Layout 
@@ -16,76 +60,121 @@ import { CONTACT } from '../lib/contact';
 
   <main id="main">
   <!-- ===== PAGE HERO ===== -->
-  <section class="page-hero">
+  <section class="about-hero">
     <div class="container">
       <p class="breadcrumb"><a href={path('/')}>Home</a> / About Us</p>
-      <h1 class="display-800">About Vinayak Plastics</h1>
-      <p>Business House Engaged In Supply of All Type of Material Handling &amp; Packaging Products.</p>
+      <h1 class="about-hero__title">Industrial materials, handled <span class="text-orange">right.</span></h1>
+      <p class="about-hero__sub">Vinayak Plastics supplies material handling and packaging products that keep warehouses, dairy plants, and municipalities running — durable, dependable, and backed by direct service.</p>
+      <div class="about-hero__actions">
+        <a href={path('/products')} class="btn btn-primary">Explore Our Products</a>
+        <a href={path('/contact')} class="btn btn-outline-light">Get a Quote</a>
+      </div>
     </div>
   </section>
 
-  <!-- ===== INTRO ===== -->
-  <section class="about-intro">
+  <!-- ===== WHO WE ARE ===== -->
+  <section class="about-who">
     <div class="container">
-      <div class="about-image reveal">
-        <Image
-          src={plasticPallets}
-          alt="Industrial plastic pallets stacked in warehouse"
-          width={600}
-          height={400}
-          widths={[400, 600]}
-          sizes="(max-width: 1024px) 80vw, 40vw"
-          loading="lazy"
-        />
-      </div>
-      <div class="reveal">
-        <h2 class="display-700">Your Partner in<br><span class="text-orange">Material Handling</span></h2>
-        <p>Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in providing plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems to warehouses, dairy distributors, municipal corporations, and commercial buyers across India.</p>
-        <p>Our product range is manufactured using HDPE and PP grades — materials chosen for impact resistance, UV stability, and long service life in demanding industrial environments. We work with buyers to deliver products that meet specific size, color, and load-bearing requirements.</p>
-        <p>Every enquiry is handled directly — no distributor layers, no automated systems. You speak with the team that understands the product.</p>
+      <div class="about-who__grid">
+        <div class="about-who__media reveal">
+          <Image
+            src={warehouseInterior}
+            alt="Spacious warehouse with organized storage and material handling equipment"
+            width={1125}
+            height={750}
+            widths={[480, 700]}
+            sizes="(max-width: 1024px) 100vw, 48vw"
+            loading="lazy"
+          />
+        </div>
+        <div class="about-who__body reveal">
+          <p class="sec-index">Who We Are</p>
+          <h2 class="about-who__title">A business house built on <span class="text-orange">reliable supply</span></h2>
+          <p class="about-who__text">Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems serving warehouses, dairy distributors, municipal corporations, and commercial buyers across India.</p>
+          <p class="about-who__text">Everything we supply is manufactured using HDPE and PP grades — materials chosen for impact resistance, UV stability, and long service life in demanding industrial environments. We work with buyers to deliver products that meet specific size, color, and load-bearing requirements.</p>
+          <a href={path('/products')} class="btn btn-ghost">See Our Full Product Range</a>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ===== STATS ===== -->
-  <section class="section-warm">
+  <section class="about-stats-band">
     <div class="container">
-      <div class="about-stats reveal">
-        <div class="about-stat">
-          <div class="num">6+</div>
-          <div class="label">Product Categories</div>
-        </div>
-        <div class="about-stat">
-          <div class="num">HDPE</div>
-          <div class="label">&amp; PP Grade Manufacturing</div>
-        </div>
-        <div class="about-stat">
-          <div class="num">B2B</div>
-          <div class="label">Warehouse &amp; Municipal Supply</div>
-        </div>
-        <div class="about-stat">
-          <div class="num">Pan-India</div>
-          <div class="label">Dispatch Network</div>
-        </div>
+      <div class="about-stats-grid">
+        {stats.map((s) => (
+          <div class="about-stat reveal">
+            <div class="about-stat__num">{s.num}</div>
+            <div class="about-stat__label">{s.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   </section>
 
-  <!-- ===== VISION & MISSION ===== -->
-  <section class="section">
+  <!-- ===== VALUES ===== -->
+  <section class="about-values">
     <div class="container-sm">
       <div class="section-header reveal">
-        <h2 class="display-700">What Drives Us</h2>
+        <p class="sec-index">What We Stand For</p>
+        <h2 class="display-700">The Vinayak difference</h2>
+        <p>Four principles guide how we work — from the first enquiry to every repeat order.</p>
       </div>
-      <div class="vm-grid reveal">
-        <div class="vm-card">
-          <h3>Our Range</h3>
-          <p>From plastic crates for dairy and bakery storage to industrial pallets for warehouse racking, waste bins for municipal use, and hand pallet trucks for loading operations — we cover the full spectrum of material handling needs under one roof.</p>
-        </div>
-        <div class="vm-card">
-          <h3>Our Approach</h3>
-          <p>We believe in straightforward, no‑layers communication. Every enquiry is followed up by a person who knows the product specifications, dispatch timelines, and pricing — not a chatbot or an automated form. This is how industrial buyers prefer to work.</p>
-        </div>
+      <div class="about-values__grid">
+        {values.map((v) => (
+          <article class="about-value reveal">
+            <div class="about-value__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3 class="about-value__label">{v.label}</h3>
+            <p class="about-value__text">{v.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRODUCT RANGE ===== -->
+  <section class="about-range">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Our Range</p>
+        <h2 class="display-700">Everything for material handling, <span class="text-orange">under one roof</span></h2>
+        <p>From plastic crates for dairy and bakery storage to industrial pallets for warehouse racking — we cover the full spectrum of material handling needs.</p>
+      </div>
+      <div class="about-range__grid">
+        {products.map((p, i) => (
+          <a href={path(`/products/${['plastic-crates','plastic-pallets','waste-bins','hand-pallet-trucks'][i]}`)} class="about-range__card reveal">
+            <div class="about-range__img">
+              <Image src={p.img} alt={p.alt} width={600} height={450} widths={[360, 520]} sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" />
+            </div>
+            <div class="about-range__body">
+              <h3>{p.name}</h3>
+              <span>View Range <span aria-hidden="true">→</span></span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROCESS ===== -->
+  <section class="about-process">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">How We Work</p>
+        <h2 class="display-700">A simple, direct process</h2>
+        <p>From enquiry to dispatch — no layers, no delays, no automated runaround.</p>
+      </div>
+      <div class="about-process__grid">
+        {process.map((p, i) => (
+          <div class="about-step reveal">
+            <div class="about-step__num">{p.step}</div>
+            <h3 class="about-step__title">{p.title}</h3>
+            <p class="about-step__text">{p.text}</p>
+            {i < process.length - 1 && <div class="about-step__arrow" aria-hidden="true">→</div>}
+          </div>
+        ))}
       </div>
     </div>
   </section>
