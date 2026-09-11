@@ -151,7 +151,7 @@ const organizationSchema = `{
       if (prefersReducedMotion.matches) {
         document.querySelectorAll('.reveal').forEach(function(el) {
           el.classList.add('visible');
-          el.style.transition = 'none';
+          (el as HTMLElement).style.transition = 'none';
         });
       }
     })();

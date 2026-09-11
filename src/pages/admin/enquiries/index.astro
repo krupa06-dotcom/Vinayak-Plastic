@@ -1,0 +1,168 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Enquiries" current="enquiries">
+  <div class="a-card">
+    <div class="a-toolbar" style="flex-wrap:wrap;">
+      <input type="search" id="enq-search" class="a-input" placeholder="Search name, email, company…" />
+      <select id="enq-status-filter" class="a-select">
+        <option value="">All Status</option>
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="quotation_sent">Quotation Sent</option>
+        <option value="converted">Converted</option>
+        <option value="closed">Closed</option>
+      </select>
+      <span style="flex:1"></span>
+      <span id="enq-count" style="font-size:0.84rem;color:var(--a-muted);"></span>
+    </div>
+    <div class="a-card-body" id="enq-list">
+      <div class="a-inline-loading"><div class="a-spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Detail modal (hidden) -->
+  <div id="enq-modal" class="a-modal-backdrop" style="display:none;"></div>
+
+  <script>
+    import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty, toast } from '../../../scripts/admin/core';
+
+    const searchEl = document.getElementById('enq-search') as HTMLInputElement;
+    const statusEl = document.getElementById('enq-status-filter') as HTMLSelectElement;
+    const listEl = document.getElementById('enq-list')!;
+    const countEl = document.getElementById('enq-count')!;
+    const modalEl = document.getElementById('enq-modal')!;
+    let debounceTimer: number;
+
+    function getFilters() {
+      return { search: searchEl.value.trim().toLowerCase(), status: statusEl.value };
+    }
+
+    function truncate(s: string | null, len = 40): string {
+      if (!s) return '—';
+      return s.length > len ? s.slice(0, len) + '…' : s;
+    }
+
+    async function load() {
+      const { search, status } = getFilters();
+      listEl.innerHTML = '<div class="a-inline-loading"><div class="a-spinner"></div></div>';
+      countEl.textContent = '';
+
+      let query = supabase
+        .from('enquiries')
+        .select('id, name, company, phone, email, quantity, message, status, created_at, product_id, product:products(name, slug)', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (status) query = query.eq('status', status);
+
+      const { data, error } = await query;
+
+      if (error) { showError(listEl, error.message); return; }
+
+      let rows = data || [];
+      if (search) {
+        rows = rows.filter((r: any) => {
+          const hay = `${r.name} ${r.company || ''} ${r.email || ''} ${r.phone}`.toLowerCase();
+          return hay.includes(search);
+        });
+      }
+
+      countEl.textContent = `${rows.length} enquiry${rows.length === 1 ? '' : 'ies'}`;
+
+      if (!rows.length) {
+        showEmpty(listEl, 'No enquiries found', 'Adjust filters or wait for customer submissions.');
+        return;
+      }
+
+      listEl.innerHTML = `
+        <div class="a-table-wrap">
+          <table class="a-table">
+            <thead><tr>
+              <th>Name</th><th>Company</th><th>Product</th><th>Message</th><th>Status</th><th>Date</th><th style="width:100px">Actions</th>
+            </tr></thead>
+            <tbody>${rows.map((r: any) => `
+              <tr>
+                <td>
+                  <strong>${esc(r.name)}</strong><br>
+                  <span style="font-size:0.75rem;color:var(--a-muted);">${esc(r.email || r.phone)}</span>
+                </td>
+                <td>${esc(r.company || '—')}</td>
+                <td>${esc(r.product?.name || '—')}</td>
+                <td title="${esc(r.message || '')}">${esc(truncate(r.message, 35))}</td>
+                <td>${statusBadge(r.status)}</td>
+                <td style="white-space:nowrap;font-size:0.82rem;">${fmtDateTime(r.created_at)}</td>
+                <td class="a-actions">
+                  <button type="button" class="a-btn a-btn-sm" data-view-id="${r.id}">View</button>
+                </td>
+              </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+
+      listEl.querySelectorAll<HTMLButtonElement>('[data-view-id]').forEach(btn => {
+        btn.addEventListener('click', () => openDetail(btn.dataset.viewId!, rows));
+      });
+    }
+
+    function openDetail(id: string, allRows: any[]) {
+      const row = allRows.find(r => r.id === id);
+      if (!row) return;
+
+      modalEl.style.display = '';
+      modalEl.innerHTML = `
+        <div class="a-modal" style="max-width:560px;">
+          <div class="a-modal-head">
+            <h3>Enquiry details</h3>
+            <button type="button" class="a-modal-close" data-close>&times;</button>
+          </div>
+          <div class="a-modal-body">
+            <div class="a-detail-grid">
+              <div class="a-detail-item"><h4>Name</h4><p><strong>${esc(row.name)}</strong></p></div>
+              <div class="a-detail-item"><h4>Company</h4><p>${esc(row.company || '—')}</p></div>
+              <div class="a-detail-item"><h4>Phone</h4><p><a href="tel:${esc(row.phone)}">${esc(row.phone)}</a></p></div>
+              <div class="a-detail-item"><h4>Email</h4><p><a href="mailto:${esc(row.email || '')}">${esc(row.email || '—')}</a></p></div>
+              <div class="a-detail-item"><h4>Product</h4><p>${esc(row.product?.name || '—')}</p></div>
+              <div class="a-detail-item"><h4>Quantity</h4><p>${esc(row.quantity || '—')}</p></div>
+              <div class="a-detail-item" style="grid-column:1/-1;"><h4>Message</h4><p style="white-space:pre-wrap;">${esc(row.message || '—')}</p></div>
+              <div class="a-detail-item"><h4>Received</h4><p>${fmtDateTime(row.created_at)}</p></div>
+            </div>
+            <div style="margin-top:18px;">
+              <label class="a-field">
+                <span style="font-size:0.8rem;font-weight:600;">Update status</span>
+                <select id="enq-status-change" class="a-select" style="width:auto;margin-top:4px;">
+                  <option value="new" ${row.status === 'new' ? 'selected' : ''}>New</option>
+                  <option value="contacted" ${row.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                  <option value="quotation_sent" ${row.status === 'quotation_sent' ? 'selected' : ''}>Quotation Sent</option>
+                  <option value="converted" ${row.status === 'converted' ? 'selected' : ''}>Converted</option>
+                  <option value="closed" ${row.status === 'closed' ? 'selected' : ''}>Closed</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="a-modal-foot">
+            <button type="button" class="a-btn" data-close>Close</button>
+            <button type="button" class="a-btn a-btn-primary" id="enq-status-save">Save status</button>
+          </div>
+        </div>`;
+
+      const close = () => { modalEl.style.display = 'none'; modalEl.innerHTML = ''; };
+      modalEl.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
+      modalEl.addEventListener('click', (e) => { if (e.target === modalEl) close(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); }, { once: true });
+
+      document.getElementById('enq-status-save')?.addEventListener('click', async () => {
+        const newStatus = (document.getElementById('enq-status-change') as HTMLSelectElement).value;
+        const { error } = await supabase.from('enquiries').update({ status: newStatus }).eq('id', id);
+        if (error) { toast(error.message, 'error'); return; }
+        toast('Status updated.', 'success');
+        close();
+        await load();
+      });
+    }
+
+    searchEl?.addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = window.setTimeout(load, 280); });
+    statusEl?.addEventListener('change', load);
+
+    void (async () => { if (await gate()) await load(); })();
+  </script>
+</AdminLayout>

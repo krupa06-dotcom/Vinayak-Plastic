@@ -1,0 +1,76 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { path } from '../../../lib/site';
+---
+
+<AdminLayout title="Categories" current="categories">
+  <div class="a-card">
+    <div class="a-card-head">
+      <h2>All Categories</h2>
+      <a href={path('/admin/categories/edit/')} class="a-btn a-btn-primary">+ New Category</a>
+    </div>
+    <div class="a-card-body" id="cat-list">
+      <div class="a-inline-loading"><div class="a-spinner"></div></div>
+    </div>
+  </div>
+
+  <script>
+    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast } from '../../../scripts/admin/core';
+
+    const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
+    const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
+
+    async function load() {
+      const listEl = document.getElementById('cat-list');
+      if (!listEl) return;
+
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug, is_active, display_order')
+        .order('display_order', { ascending: true });
+
+      if (error) { showError(listEl, error.message); return; }
+
+      if (!data?.length) {
+        showEmpty(listEl, 'No categories yet', 'Create your first category to organise your products.',
+          `<a href="${href('admin/categories/edit/')}" class="a-btn a-btn-primary">+ New Category</a>`);
+        return;
+      }
+
+      listEl.innerHTML = `
+        <div class="a-table-wrap">
+          <table class="a-table">
+            <thead><tr>
+              <th>Order</th><th>Name</th><th>Slug</th><th>Status</th><th style="width:120px">Actions</th>
+            </tr></thead>
+            <tbody>${data.map(c => `
+              <tr>
+                <td style="text-align:center;">${c.display_order}</td>
+                <td><strong>${esc(c.name)}</strong></td>
+                <td style="color:var(--a-muted)">${esc(c.slug)}</td>
+                <td>${activeBadge(c.is_active)}</td>
+                <td class="a-actions">
+                  <a href="${href(`admin/categories/edit/?id=${c.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                  <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${c.id}">Delete</button>
+                </td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>`;
+
+      listEl.querySelectorAll<HTMLButtonElement>('[data-delete-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.deleteId!;
+          const ok = await confirmDialog('Delete category?', 'All subcategories and products in this category will be orphaned (not deleted). Proceed with care.');
+          if (!ok) return;
+          const { error } = await supabase.from('categories').delete().eq('id', id);
+          if (error) { toast(error.message, 'error'); return; }
+          toast('Category deleted.', 'success');
+          await load();
+        });
+      });
+    }
+
+    void (async () => { if (await gate()) await load(); })();
+  </script>
+</AdminLayout>

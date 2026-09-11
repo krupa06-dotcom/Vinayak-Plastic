@@ -1,0 +1,147 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Settings" current="settings">
+  <div id="set-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
+
+  <form id="set-form" novalidate style="display:none;">
+    <div class="a-card" style="max-width:640px;">
+      <div class="a-card-head">
+        <h2>Contact Information</h2>
+      </div>
+      <div class="a-card-body">
+        <div class="a-tip a-tip-info" style="margin-bottom:18px;">
+          These details appear in the website footer, contact page, and inquiry emails.
+        </div>
+        <div class="a-form-grid">
+          <div class="a-field">
+            <label for="sc-phone">Phone number</label>
+            <input id="sc-phone" class="a-input" placeholder="+91 99795 54635" />
+          </div>
+          <div class="a-field">
+            <label for="sc-email">Email address</label>
+            <input id="sc-email" class="a-input" type="email" placeholder="info@vinayakplastics.com" />
+          </div>
+          <div class="a-field a-field-full">
+            <label for="sc-address">Address</label>
+            <textarea id="sc-address" class="a-textarea a-textarea-sm" rows="2" placeholder="Full address shown on contact page"></textarea>
+          </div>
+          <div class="a-field">
+            <label for="sc-whatsapp">WhatsApp number</label>
+            <input id="sc-whatsapp" class="a-input" placeholder="+91 99795 54635" />
+            <span class="a-hint">Used on the contact page CTA button.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="a-card" style="max-width:640px;">
+      <div class="a-card-head">
+        <h2>Social Links</h2>
+      </div>
+      <div class="a-card-body">
+        <div class="a-form-grid">
+          <div class="a-field">
+            <label for="ss-fb">Facebook URL</label>
+            <input id="ss-fb" class="a-input" type="url" placeholder="https://facebook.com/..." />
+          </div>
+          <div class="a-field">
+            <label for="ss-li">LinkedIn URL</label>
+            <input id="ss-li" class="a-input" type="url" placeholder="https://linkedin.com/..." />
+          </div>
+          <div class="a-field">
+            <label for="ss-ig">Instagram URL</label>
+            <input id="ss-ig" class="a-input" type="url" placeholder="https://instagram.com/..." />
+          </div>
+          <div class="a-field">
+            <label for="ss-yt">YouTube URL</label>
+            <input id="ss-yt" class="a-input" type="url" placeholder="https://youtube.com/..." />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="set-error" class="a-tip a-tip-error" style="margin-top:16px;max-width:640px;display:none;" role="alert"></div>
+
+    <div style="margin-top:18px;">
+      <button type="submit" class="a-btn a-btn-primary" id="set-submit">Save settings</button>
+    </div>
+  </form>
+
+  <script>
+    import { gate, supabase, toast } from '../../../scripts/admin/core';
+
+    const formEl = document.getElementById('set-form') as HTMLFormElement;
+    const loadingEl = document.getElementById('set-loading')!;
+    const errorEl = document.getElementById('set-error');
+    const submitBtn = document.getElementById('set-submit') as HTMLButtonElement;
+
+    const phoneEl = document.getElementById('sc-phone') as HTMLInputElement;
+    const emailEl = document.getElementById('sc-email') as HTMLInputElement;
+    const addressEl = document.getElementById('sc-address') as HTMLTextAreaElement;
+    const whatsappEl = document.getElementById('sc-whatsapp') as HTMLInputElement;
+    const fbEl = document.getElementById('ss-fb') as HTMLInputElement;
+    const liEl = document.getElementById('ss-li') as HTMLInputElement;
+    const igEl = document.getElementById('ss-ig') as HTMLInputElement;
+    const ytEl = document.getElementById('ss-yt') as HTMLInputElement;
+
+    function showError(msg: string) {
+      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
+    }
+
+    void (async () => {
+      if (!(await gate())) return;
+
+      const { data: rows } = await supabase.from('site_settings').select('key, value');
+      const settings: Record<string, any> = {};
+      (rows || []).forEach((r: any) => { settings[r.key] = r.value; });
+
+      const c = settings.contact || {};
+      phoneEl.value = c.phone ?? '';
+      emailEl.value = c.email ?? '';
+      addressEl.value = c.address ?? '';
+      whatsappEl.value = c.whatsapp ?? '';
+
+      const s = settings.social || {};
+      fbEl.value = s.facebook ?? '';
+      liEl.value = s.linkedin ?? '';
+      igEl.value = s.instagram ?? '';
+      ytEl.value = s.youtube ?? '';
+
+      loadingEl.remove();
+      formEl.style.display = '';
+    })();
+
+    formEl?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorEl) errorEl.style.display = 'none';
+      submitBtn?.setAttribute('disabled', '');
+      submitBtn.textContent = 'Saving…';
+
+      const contactValue = {
+        phone: phoneEl.value.trim() || null,
+        email: emailEl.value.trim() || null,
+        address: addressEl.value.trim() || null,
+        whatsapp: whatsappEl.value.trim() || null
+      };
+
+      const socialValue = {
+        facebook: fbEl.value.trim() || null,
+        linkedin: liEl.value.trim() || null,
+        instagram: igEl.value.trim() || null,
+        youtube: ytEl.value.trim() || null
+      };
+
+      const { error: err1 } = await supabase.from('site_settings').upsert({ key: 'contact', value: contactValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      const { error: err2 } = await supabase.from('site_settings').upsert({ key: 'social', value: socialValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+      submitBtn?.removeAttribute('disabled');
+      submitBtn.textContent = 'Save settings';
+
+      const err = err1 || err2;
+      if (err) { showError(err.message); return; }
+      toast('Settings saved.', 'success');
+    });
+  </script>
+</AdminLayout>

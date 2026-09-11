@@ -3,6 +3,16 @@ import { Image } from 'astro:assets';
 import vpLogo from '../assets/images/vp-logo.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
+import { getSiteSetting } from '../lib/db';
+
+const contactSetting = await getSiteSetting('contact') as any;
+const display = {
+  phone: contactSetting?.phone || CONTACT.phoneDisplay,
+  email: contactSetting?.email || CONTACT.email,
+  address: contactSetting?.address || CONTACT.address
+};
+const phoneHref = `tel:+91${(contactSetting?.phone || CONTACT.phone).replace(/\D/g, '')}`;
+const whatsappHref = `https://wa.me/91${(contactSetting?.whatsapp || CONTACT.phone).replace(/\D/g, '')}`;
 ---
 
 <footer class="site-footer" id="contact">
@@ -26,10 +36,10 @@ import { CONTACT } from '../lib/contact';
       
       <div class="footer-col">
         <h3>Contact</h3>
-        <p>Phone: {CONTACT.phoneDisplay}</p>
-        <p>WhatsApp: {CONTACT.phoneDisplay}</p>
-        <p>Email: {CONTACT.email}</p>
-        <p>Address: {CONTACT.address}</p>
+        <p>Phone: <a href={phoneHref}>{display.phone}</a></p>
+        <p>WhatsApp: <a href={whatsappHref} target="_blank" rel="noopener">{display.phone}</a></p>
+        <p>Email: <a href={`mailto:${display.email}`}>{display.email}</a></p>
+        <p>Address: {display.address}</p>
       </div>
     </div>
   </div>

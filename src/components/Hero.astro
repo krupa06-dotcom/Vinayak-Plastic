@@ -1,17 +1,21 @@
 ---
 import { Image } from 'astro:assets';
+import { path } from '../lib/site';
+import { getSiteSetting } from '../lib/db';
 import slide1 from '../assets/images/stack-crates.jpeg';
 import slide2 from '../assets/images/plastic-pallets.jpeg';
 import slide3 from '../assets/images/truck-pallets.jpeg';
 import slide4 from '../assets/images/dustbins.jpeg';
 
+const heroSetting = await getSiteSetting('homepage') as any;
+
 const slides = [
   {
     img: slide1,
     alt: 'Stacked plastic crates in an industrial warehouse',
-    tag: 'Storage Solutions',
-    title: 'Engineered Plastic Solutions for Industry',
-    sub: 'Manufacturing durable crates, pallets, waste bins and material handling equipment for warehouses, logistics and municipal operations across India.'
+    tag: heroSetting?.hero_tag || 'Storage Solutions',
+    title: heroSetting?.hero_title || 'Engineered Plastic Solutions for Industry',
+    sub: heroSetting?.hero_description || 'Manufacturing durable crates, pallets, waste bins and material handling equipment for warehouses, logistics and municipal operations across India.'
   },
   {
     img: slide2,
@@ -73,8 +77,8 @@ const slides = [
           <h2 class="hero__title">{s.title}</h2>
           <p class="hero__sub">{s.sub}</p>
           <div class="hero__actions">
-            <a href="/Vinayak-Plastic/products/" class="btn btn-primary">Explore Products</a>
-            <a href="/Vinayak-Plastic/contact/" class="btn btn-secondary">Get a Quote</a>
+            <a href={path('/products/')} class="btn btn-primary">Explore Products</a>
+            <a href={path('/contact/')} class="btn btn-secondary">Get a Quote</a>
           </div>
         </div>
       ))}

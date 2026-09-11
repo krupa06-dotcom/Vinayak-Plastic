@@ -9,13 +9,47 @@ import plasticWastebins from '../../assets/images/plastic-wastebins.webp';
 import handPalletTruck from '../../assets/images/hand-pallet-truck.webp';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
+import { getCategoriesWithSubCategories } from '../../lib/db';
+import { hasSupabase } from '../../lib/supabase';
 
-const allProducts = [
+// Fallback product data (used when Supabase is not configured)
+const fallbackProducts = [
   { title: 'Plastic Crates', slug: 'plastic-crates', img: plasticCrates, alt: 'Plastic crates stacked in warehouse', desc: 'Stackable & nestable crates for dairy, bakery, warehouse and material handling.', keywords: 'crates dairy bakery warehouse storage HDPE PP stackable nestable' },
   { title: 'Plastic Pallets', slug: 'plastic-pallets', img: plasticPallets, alt: 'Industrial pallets stacked', desc: 'Heavy-duty pallets for warehouse racking, logistics, and export — single & double-face.', keywords: 'pallets racking logistics export HDPE forklift shipping' },
   { title: 'Waste Bins / Dustbins', slug: 'waste-bins', img: plasticWastebins, alt: 'Industrial waste bins', desc: 'Industrial dustbins for municipal, commercial, and factory use — wheeled & lidded options.', keywords: 'waste bins dustbins municipal commercial factory wheeled lidded segregation recycling' },
   { title: 'Hand Pallet Trucks', slug: 'hand-pallet-trucks', img: handPalletTruck, alt: 'Hand pallet truck in warehouse', desc: 'Manual pallet jacks for loading/unloading — 2.5T and 3T capacities with nylon/PU wheels.', keywords: 'pallet truck jack manual 2.5T 3T nylon PU wheels hydraulic loading' }
 ];
+
+// Try to fetch categories from Supabase
+let categories: Array<{ name: string; slug: string; description: string | null; image_url: string | null }> = [];
+
+try {
+  if (hasSupabase()) {
+    const dbCategories = await getCategoriesWithSubCategories();
+    if (dbCategories.length > 0) {
+      categories = dbCategories.map(cat => ({
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description,
+        image_url: cat.image_url
+      }));
+    }
+  }
+} catch (error) {
+  console.warn('Supabase not configured, using fallback data');
+}
+
+// Use fallback products if no categories from database
+const allProducts = categories.length > 0 
+  ? categories.map(cat => ({
+      title: cat.name,
+      slug: cat.slug,
+      img: cat.image_url || plasticCrates, // Default image
+      alt: cat.description || cat.name,
+      desc: cat.description || '',
+      keywords: cat.name.toLowerCase()
+    }))
+  : fallbackProducts;
 ---
 
 <Layout 

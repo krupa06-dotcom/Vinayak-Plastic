@@ -9,9 +9,23 @@ import plasticWastebinsImg from '../../assets/images/plastic-wastebins.webp';
 import handPalletTruckImg from '../../assets/images/hand-pallet-truck.webp';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
+import { getProductBySlug, getAllProductSlugs, getProductImageUrl } from '../../lib/db';
+import { hasSupabase } from '../../lib/supabase';
+import type { ProductWithDetails } from '../../lib/db';
 
-// Product data - in Phase 1 this is static, will be moved to database in Phase 3
-const products = {
+// Static fallback data (used when Supabase is not configured)
+const fallbackProducts: Record<string, {
+  title: string;
+  subtitle: string;
+  description: string;
+  image: ImageMetadata;
+  imageAlt: string;
+  features: string[];
+  specifications: Array<{ model: string; size: string; weight: string; capacity: string; material: string }>;
+  applications: Array<{ name: string; description: string }>;
+  ctaTitle: string;
+  ctaDescription: string;
+}> = {
   'plastic-crates': {
     title: 'Plastic Crates',
     subtitle: 'Durable, Lightweight & Stackable',
@@ -128,24 +142,105 @@ const products = {
 };
 
 export async function getStaticPaths() {
-  return [
-    { params: { slug: 'plastic-crates' } },
-    { params: { slug: 'plastic-pallets' } },
-    { params: { slug: 'waste-bins' } },
-    { params: { slug: 'hand-pallet-trucks' } }
+  // Try to get slugs from Supabase
+  let dbSlugs: string[] = [];
+  
+  try {
+    if (hasSupabase()) {
+      dbSlugs = await getAllProductSlugs();
+    }
+  } catch (error) {
+    console.warn('Could not fetch slugs from Supabase for build');
+  }
+  
+  // Use database slugs if available, otherwise use hardcoded fallback
+  const slugsToUse = dbSlugs.length > 0 ? dbSlugs : [
+    'plastic-crates',
+    'plastic-pallets',
+    'waste-bins',
+    'hand-pallet-trucks'
   ];
+  
+  return slugsToUse.map(slug => ({
+    params: { slug }
+  }));
+}
+
+// Try to fetch from Supabase, fall back to static data
+let product: ProductWithDetails | null = null;
+let useFallback = false;
+
+try {
+  // Check if Supabase is configured
+  if (hasSupabase()) {
+    product = await getProductBySlug(Astro.params.slug || '');
+  }
+} catch (error) {
+  console.warn('Supabase not configured, using fallback data:', error);
+}
+
+// If no product from Supabase, use fallback
+if (!product) {
+  useFallback = true;
 }
 
 const { slug } = Astro.params;
-const product = products[slug as keyof typeof products];
+const fallbackProduct = useFallback ? fallbackProducts[slug as keyof typeof fallbackProducts] : null as any;
 
-if (!product) {
+if (!product && !fallbackProduct) {
   return Astro.redirect('/products');
 }
 
-const breadcrumbTitle = product.title;
-const pageTitle = `${product.title} | Vinayak Plastics`;
-const pageDescription = `${product.description.slice(0, 150)}...`;
+// Create unified product data
+const productData: {
+  title: string;
+  subtitle: string;
+  description: string;
+  image: ImageMetadata;
+  imageAlt: string;
+  features: string[];
+  specifications: Array<Record<string, string>>;
+  applications: Array<{ name: string; description: string }>;
+  ctaTitle: string;
+  ctaDescription: string;
+  dbImage: string | null;
+} = useFallback && fallbackProduct ? {
+  title: fallbackProduct.title,
+  subtitle: fallbackProduct.subtitle,
+  description: fallbackProduct.description,
+  image: fallbackProduct.image,
+  imageAlt: fallbackProduct.imageAlt,
+  features: fallbackProduct.features,
+  specifications: fallbackProduct.specifications,
+  applications: fallbackProduct.applications,
+  ctaTitle: fallbackProduct.ctaTitle,
+  ctaDescription: fallbackProduct.ctaDescription,
+  dbImage: null
+} : {
+  title: product!.name,
+  subtitle: product!.short_description || product!.name,
+  description: product!.description || '',
+  image: plasticCratesImg,
+  imageAlt: product!.name,
+  features: product!.features || [],
+  specifications: (product!.product_specifications || []).reduce((acc, spec) => {
+    const existing = acc.find(s => s.model === spec.specification_name);
+    if (existing) {
+      existing[spec.specification_name.toLowerCase()] = spec.specification_value;
+    } else {
+      acc.push({ model: spec.specification_name, [spec.specification_name.toLowerCase()]: spec.specification_value });
+    }
+    return acc;
+  }, [] as Array<Record<string, string>>),
+  applications: (product!.applications as Array<{ name: string; description: string }>) || [],
+  ctaTitle: 'Need Custom Sizes or Bulk Pricing?',
+  ctaDescription: 'We supply to dairy distributors, warehouses, and municipal buyers across India. Call or WhatsApp for a quote.',
+  dbImage: product!.product_images?.[0]?.image_url ? getProductImageUrl(product!.product_images[0].image_url) : null
+};
+
+const breadcrumbTitle = productData.title;
+const pageTitle = `${productData.title} | Vinayak Plastics`;
+const pageDescription = `${productData.description.slice(0, 150)}...`;
 
 const BASE_SITE = 'https://krupa06-dotcom.github.io';
 // The schema "image" is only consumed by search-engine crawlers (never fetched
@@ -155,8 +250,8 @@ const BASE_SITE = 'https://krupa06-dotcom.github.io';
 const productSchema = `{
   "@context": "https://schema.org",
   "@type": "Product",
-  "name": "${product.title}",
-  "description": ${JSON.stringify(product.description)},
+  "name": "${productData.title}",
+  "description": ${JSON.stringify(productData.description)},
   "image": "${BASE_SITE}/Vinayak-Plastic/images/vp-logo.png",
   "brand": { "@type": "Brand", "name": "Vinayak Plastics" },
   "category": "Material Handling Equipment",
@@ -176,8 +271,8 @@ const productSchema = `{
   <section class="page-hero">
     <div class="container">
       <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / {breadcrumbTitle}</p>
-      <h1 class="display-800">{product.title}</h1>
-      <p>{product.subtitle}</p>
+      <h1 class="display-800">{productData.title}</h1>
+      <p>{productData.subtitle}</p>
     </div>
   </section>
 
@@ -186,21 +281,32 @@ const productSchema = `{
     <div class="container">
       <div class="pd-intro">
         <div class="pd-image reveal">
-          <Image
-            src={product.image}
-            alt={product.imageAlt}
-            width={product.image.width}
-            height={product.image.height}
-            widths={[400, 768, 1000]}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            loading="lazy"
-          />
+          {productData.dbImage ? (
+            <img
+              src={productData.dbImage}
+              alt={productData.imageAlt}
+              width={800}
+              height={600}
+              loading="lazy"
+              style="width:100%;height:auto;border-radius:8px;"
+            />
+          ) : (
+            <Image
+              src={productData.image}
+              alt={productData.imageAlt}
+              width={productData.image.width}
+              height={productData.image.height}
+              widths={[400, 768, 1000]}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              loading="lazy"
+            />
+          )}
         </div>
         <div class="pd-summary reveal">
-          <h2>{product.subtitle}</h2>
-          <p>{product.description}</p>
+          <h2>{productData.subtitle}</h2>
+          <p>{productData.description}</p>
           <ul class="pd-features">
-            {product.features.map(feature => (
+            {productData.features.map(feature => (
               <li>{feature}</li>
             ))}
           </ul>
@@ -215,7 +321,7 @@ const productSchema = `{
     <div class="container">
       <div class="section-header reveal">
         <h2 class="display-700">Standard Specifications</h2>
-        <p>Common {product.title.toLowerCase()} dimensions produced by our unit. Custom sizes available on request.</p>
+        <p>Common {productData.title.toLowerCase()} dimensions produced by our unit. Custom sizes available on request.</p>
       </div>
       <div class="specs-table-wrap reveal">
         <table class="specs-table">
@@ -229,7 +335,7 @@ const productSchema = `{
             </tr>
           </thead>
           <tbody>
-            {product.specifications.map(spec => (
+            {productData.specifications.map(spec => (
               <tr>
                 <td>{spec.model}</td>
                 <td>{spec.size}</td>
@@ -254,7 +360,7 @@ const productSchema = `{
         <h2 class="display-700">Common Applications</h2>
       </div>
       <div class="app-grid reveal">
-        {product.applications.map(app => (
+        {productData.applications.map(app => (
           <div class="app-card">
             <h3>{app.name}</h3>
             <p>{app.description}</p>
@@ -265,10 +371,10 @@ const productSchema = `{
   </section>
 
   <!-- ===== CTA ===== -->
-  <section class="cta-banner" aria-label={`Buy ${product.title.toLowerCase()}`}>
+  <section class="cta-banner" aria-label={`Buy ${productData.title.toLowerCase()}`}>
     <div class="container reveal">
-      <h2 class="display-700">{product.ctaTitle || `Need Custom ${product.title}?`}</h2>
-      <p>{product.ctaDescription || `We supply ${product.title.toLowerCase()} to businesses across India. Call or WhatsApp for a quote.`}</p>
+      <h2 class="display-700">{productData.ctaTitle || `Need Custom ${productData.title}?`}</h2>
+      <p>{productData.ctaDescription || `We supply ${productData.title.toLowerCase()} to businesses across India. Call or WhatsApp for a quote.`}</p>
       <div class="cta-buttons">
         <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
         <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>

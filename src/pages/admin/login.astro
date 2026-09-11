@@ -1,0 +1,137 @@
+---
+import '../../styles/admin.css';
+
+const supabaseUrl = import.meta.env.SUPABASE_URL;
+const supabasePublishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY;
+const base = import.meta.env.BASE_URL;
+
+const configured = Boolean(
+  supabaseUrl &&
+  supabasePublishableKey &&
+  !supabaseUrl.includes('your-project-ref') &&
+  !supabasePublishableKey.includes('sb_publishable_xxxxx')
+);
+---
+
+<!DOCTYPE html>
+<html lang="en" class="admin">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Sign in | Vinayak Plastics Admin</title>
+  <link rel="icon" href={`${base}favicon.svg`} />
+  <script is:inline define:vars={{ supabaseUrl, supabasePublishableKey, base, configured }}>
+    window.__VP_SUPABASE__ = { url: supabaseUrl, key: supabasePublishableKey, base: base, configured: configured };
+  </script>
+</head>
+<body class="admin-login-body" data-admin-page="login">
+
+  <div class="a-login-card">
+    <div class="a-login-logo">
+      <img src={`${base}images/vp-logo.png`} alt="Vinayak Plastics logo" />
+      <h1>Vinayak Plastics</h1>
+      <p>Admin Panel</p>
+    </div>
+
+    {configured ? (
+      <form id="login-form" novalidate>
+        <div class="a-form-row">
+          <div class="a-field">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              class="a-input"
+              required
+              placeholder="admin@vinayakplastics.com"
+              autocomplete="username"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="a-form-row">
+          <div class="a-field">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              class="a-input"
+              required
+              placeholder="Password"
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+        <div class="a-form-row" style="margin-bottom:18px;">
+          <div id="login-error" class="a-tip a-tip-error" style="display:none;margin-bottom:14px;" role="alert"></div>
+          <button type="submit" class="a-btn a-btn-primary a-btn-block" id="login-submit">Sign in</button>
+        </div>
+        <p style="font-size:0.8rem;color:var(--a-muted);text-align:center;margin:0;">
+          Only <strong>@vinayakplastics.com</strong> accounts are authorised.
+        </p>
+      </form>
+    ) : (
+      <div class="a-tip a-tip-error" style="margin-top:18px;">
+        Supabase is not configured. Add your environment variables to continue.
+      </div>
+    )}
+  </div>
+
+  <script>
+    import { supabase, configured, loginHref } from '../../scripts/admin/core';
+
+    const form = document.getElementById('login-form') as HTMLFormElement | null;
+    const errorBox = document.getElementById('login-error');
+    const submitBtn = document.getElementById('login-submit');
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+
+    function showError(msg: string) {
+      if (errorBox) {
+        errorBox.textContent = msg;
+        errorBox.style.display = '';
+      }
+    }
+    function hideError() {
+      if (errorBox) errorBox.style.display = 'none';
+    }
+
+    async function initLogin() {
+      if (!configured) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) window.location.replace(loginHref());
+    }
+    void initLogin();
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const email = emailInput?.value.trim();
+      const password = passwordInput?.value ?? '';
+
+      if (!email || !password) {
+        showError('Please enter your email and password.');
+        return;
+      }
+
+      submitBtn?.setAttribute('disabled', '');
+      submitBtn!.textContent = 'Signing in…';
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showError(error.message === 'Invalid login credentials'
+          ? 'Invalid email or password. Please try again.'
+          : error.message);
+        submitBtn?.removeAttribute('disabled');
+        submitBtn!.textContent = 'Sign in';
+        return;
+      }
+
+      window.location.replace(loginHref());
+    });
+  </script>
+</body>
+</html>

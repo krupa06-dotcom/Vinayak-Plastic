@@ -15,9 +15,6 @@ export default defineConfig({
     // Enable Sharp for image processing (better performance than Squoosh)
     service: {
       entrypoint: 'astro/assets/services/sharp'
-    },
-    // Optimize images; WebP is broadly supported and sufficient for this
-    // photo/content mix (small sources, dramatic size reduction vs PNG).
-    formats: ['webp']
+    }
   }
 });

@@ -1,0 +1,76 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { path } from '../../../lib/site';
+---
+
+<AdminLayout title="Sub-categories" current="subcategories">
+  <div class="a-card">
+    <div class="a-card-head">
+      <h2>All Sub-categories</h2>
+      <a href={path('/admin/subcategories/edit/')} class="a-btn a-btn-primary">+ New Sub-category</a>
+    </div>
+    <div class="a-card-body" id="sub-list">
+      <div class="a-inline-loading"><div class="a-spinner"></div></div>
+    </div>
+  </div>
+
+  <script>
+    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast } from '../../../scripts/admin/core';
+
+    const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
+    const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
+
+    async function load() {
+      const listEl = document.getElementById('sub-list');
+      if (!listEl) return;
+
+      const { data, error } = await supabase
+        .from('sub_categories')
+        .select('id, name, slug, is_active, display_order, category:categories(name)')
+        .order('display_order', { ascending: true });
+
+      if (error) { showError(listEl, error.message); return; }
+
+      if (!data?.length) {
+        showEmpty(listEl, 'No sub-categories yet', 'Add a sub-category to group related products under a parent.',
+          `<a href="${href('admin/subcategories/edit/')}" class="a-btn a-btn-primary">+ New Sub-category</a>`);
+        return;
+      }
+
+      listEl.innerHTML = `
+        <div class="a-table-wrap">
+          <table class="a-table">
+            <thead><tr>
+              <th>Order</th><th>Sub-category</th><th>Category</th><th>Status</th><th style="width:120px">Actions</th>
+            </tr></thead>
+            <tbody>${data.map((s: any) => `
+              <tr>
+                <td style="text-align:center;">${s.display_order}</td>
+                <td><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></td>
+                <td>${esc(s.category?.name ?? '—')}</td>
+                <td>${activeBadge(s.is_active)}</td>
+                <td class="a-actions">
+                  <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                  <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${s.id}">Delete</button>
+                </td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>`;
+
+      listEl.querySelectorAll<HTMLButtonElement>('[data-delete-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.deleteId!;
+          const ok = await confirmDialog('Delete sub-category?', 'Products in this sub-category will not be deleted but will no longer be grouped. Proceed with care.');
+          if (!ok) return;
+          const { error } = await supabase.from('sub_categories').delete().eq('id', id);
+          if (error) { toast(error.message, 'error'); return; }
+          toast('Sub-category deleted.', 'success');
+          await load();
+        });
+      });
+    }
+
+    void (async () => { if (await gate()) await load(); })();
+  </script>
+</AdminLayout>

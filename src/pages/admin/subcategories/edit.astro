@@ -1,0 +1,155 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { path } from '../../../lib/site';
+---
+
+<AdminLayout title="Edit Sub-category" current="subcategories">
+  <div class="a-card" style="max-width:640px;">
+    <div class="a-card-head">
+      <h2 id="page-title">New Sub-category</h2>
+      <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm">Back to sub-categories</a>
+    </div>
+    <div class="a-card-body">
+      <div id="edit-loading" class="a-inline-loading"><div class="a-spinner"></div></div>
+
+      <form id="sub-form" novalidate style="display:none;">
+        <input type="hidden" id="sub-id" />
+
+        <div class="a-form-grid">
+          <div class="a-field a-field-full">
+            <label for="sub-category">Parent category</label>
+            <select id="sub-category" class="a-select" required>
+              <option value="">— Select category —</option>
+            </select>
+          </div>
+          <div class="a-field">
+            <label for="sub-name">Sub-category name</label>
+            <input id="sub-name" class="a-input" required placeholder="e.g. Corrugated Boxes" />
+          </div>
+          <div class="a-field">
+            <label for="sub-slug">Slug</label>
+            <input id="sub-slug" class="a-input" required placeholder="auto-generated from name" />
+            <span class="a-hint">Leave blank to auto-generate.</span>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="sub-description">Description</label>
+            <textarea id="sub-description" class="a-textarea" rows="2" placeholder="Brief description (optional)"></textarea>
+          </div>
+          <div class="a-field">
+            <label for="sub-order">Display order</label>
+            <input id="sub-order" class="a-input" type="number" min="0" value="0" />
+          </div>
+          <div class="a-field">
+            <label>&nbsp;</label>
+            <label class="a-check">
+              <input type="checkbox" id="sub-active" checked />
+              Active (visible on website)
+            </label>
+          </div>
+        </div>
+
+        <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
+        <div style="margin-top:18px;">
+          <button type="submit" class="a-btn a-btn-primary" id="sub-submit">Save sub-category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    import { gate, supabase, slugify, toast } from '../../../scripts/admin/core';
+
+    const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
+    const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('id');
+
+    const formEl = document.getElementById('sub-form') as HTMLFormElement;
+    const loadingEl = document.getElementById('edit-loading');
+    const titleEl = document.getElementById('page-title');
+    const catEl = document.getElementById('sub-category') as HTMLSelectElement;
+    const nameEl = document.getElementById('sub-name') as HTMLInputElement;
+    const slugEl = document.getElementById('sub-slug') as HTMLInputElement;
+    const descEl = document.getElementById('sub-description') as HTMLTextAreaElement;
+    const orderEl = document.getElementById('sub-order') as HTMLInputElement;
+    const activeEl = document.getElementById('sub-active') as HTMLInputElement;
+    const errorEl = document.getElementById('form-error');
+
+    function showError(msg: string) {
+      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
+    }
+
+    nameEl?.addEventListener('input', () => {
+      if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
+    });
+    slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
+
+    void (async () => {
+      if (!(await gate())) return;
+
+      // Load categories into dropdown
+      const { data: cats } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('display_order');
+
+      if (cats?.length) {
+        catEl.innerHTML = `<option value="">— Select category —</option>` +
+          cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      }
+
+      if (editId) {
+        titleEl!.textContent = 'Edit Sub-category';
+        const { data, error } = await supabase.from('sub_categories').select('*').eq('id', editId).single();
+        if (error || !data) { showError(error?.message || 'Sub-category not found'); loadingEl?.remove(); formEl.style.display = ''; return; }
+        (document.getElementById('sub-id') as HTMLInputElement).value = data.id;
+        catEl.value = data.category_id;
+        nameEl.value = data.name;
+        slugEl.value = data.slug;
+        slugEl.setAttribute('data-manual', '1');
+        descEl.value = data.description ?? '';
+        orderEl.value = String(data.display_order);
+        activeEl.checked = data.is_active;
+      }
+
+      loadingEl?.remove();
+      formEl.style.display = '';
+    })();
+
+    formEl?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorEl) errorEl.style.display = 'none';
+
+      const name = nameEl.value.trim();
+      const categoryId = catEl.value;
+      if (!categoryId) { showError('Please select a parent category.'); return; }
+      if (!name) { showError('Name is required.'); return; }
+
+      const payload: Record<string, unknown> = {
+        id: editId || undefined,
+        category_id: categoryId,
+        name,
+        slug: slugEl.value.trim() || slugify(name),
+        description: descEl.value.trim() || null,
+        display_order: Number(orderEl.value) || 0,
+        is_active: activeEl.checked,
+        updated_at: new Date().toISOString()
+      };
+      if (!payload.id) delete payload.id;
+
+      const btn = document.getElementById('sub-submit') as HTMLButtonElement;
+      btn?.setAttribute('disabled', '');
+      btn.textContent = 'Saving…';
+
+      const { error } = await supabase.from('sub_categories').upsert(payload as never, { onConflict: 'id' });
+      btn?.removeAttribute('disabled');
+      btn!.textContent = 'Save sub-category';
+
+      if (error) { showError(error.message); return; }
+      toast(editId ? 'Sub-category updated.' : 'Sub-category created.', 'success');
+      window.location.href = href('admin/subcategories/');
+    });
+  </script>
+</AdminLayout>

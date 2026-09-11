@@ -2,8 +2,19 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import EnquiryForm from '../components/EnquiryForm.astro';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
+import { getSiteSetting } from '../lib/db';
+
+const contactSetting = await getSiteSetting('contact') as any;
+const phone = contactSetting?.phone || CONTACT.phoneDisplay;
+const email = contactSetting?.email || CONTACT.email;
+const address = contactSetting?.address || CONTACT.address;
+const whatsapp = contactSetting?.whatsapp || CONTACT.phone;
+const phoneHref = `tel:+91${(contactSetting?.phone || CONTACT.phone).replace(/\D/g, '')}`;
+const whatsappHref = `https://wa.me/91${(contactSetting?.whatsapp || CONTACT.phone).replace(/\D/g, '')}`;
+const emailHref = `mailto:${contactSetting?.email || CONTACT.email}`;
 ---
 
 <Layout 
@@ -38,7 +49,7 @@ import { CONTACT } from '../lib/contact';
             </div>
             <div>
               <h3>Phone</h3>
-              <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a>
+              <a href={phoneHref}>{phone}</a>
             </div>
           </div>
 
@@ -50,7 +61,7 @@ import { CONTACT } from '../lib/contact';
             </div>
             <div>
               <h3>WhatsApp</h3>
-              <a href={CONTACT.whatsappHref} target="_blank" rel="noopener">{CONTACT.phoneDisplay}</a>
+              <a href={whatsappHref} target="_blank" rel="noopener">{whatsapp}</a>
             </div>
           </div>
 
@@ -63,7 +74,7 @@ import { CONTACT } from '../lib/contact';
             </div>
             <div>
               <h3>Email</h3>
-              <a href={CONTACT.emailHref}>{CONTACT.email}</a>
+              <a href={emailHref}>{email}</a>
             </div>
           </div>
 
@@ -76,7 +87,7 @@ import { CONTACT } from '../lib/contact';
             </div>
             <div>
               <h3>Address</h3>
-              <p>{CONTACT.address}</p>
+              <p>{address}</p>
             </div>
           </div>
 
@@ -85,32 +96,7 @@ import { CONTACT } from '../lib/contact';
         <div class="contact-form-card reveal">
           <h2>Send a Message</h2>
           <p style="color:var(--steel);font-size:0.9rem;margin-bottom:20px">Fill in the form below and we'll get back to you with product information and pricing.</p>
-          <form action="#" method="post">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="name">Your Name</label>
-                <input type="text" id="name" name="name" placeholder="Your full name" required>
-              </div>
-              <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" placeholder="Your phone number" required>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="email">Email Address</label>
-              <input type="email" id="email" name="email" placeholder="Your email address" required>
-            </div>
-            <div class="form-group">
-              <label for="product">Product Interest</label>
-              <input type="text" id="product" name="product" placeholder="e.g. Plastic Crates, Pallets, Dustbins...">
-            </div>
-            <div class="form-group">
-              <label for="message">Message</label>
-              <textarea id="message" name="message" placeholder="Tell us about your requirements — quantity, dimensions, delivery location..." required></textarea>
-            </div>
-            <p style="font-size:0.78rem;color:var(--steel);margin-bottom:16px">This is a demo form. Use phone/WhatsApp for actual enquiries.</p>
-            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Send Enquiry</button>
-          </form>
+          <EnquiryForm />
         </div>
 
       </div>
@@ -123,8 +109,8 @@ import { CONTACT } from '../lib/contact';
       <h2 class="display-700">Prefer to Talk Directly?</h2>
       <p>We're available on phone and WhatsApp for quick responses on pricing and product availability.</p>
       <div class="cta-buttons">
-        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
-        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+        <a href={phoneHref} class="btn btn-primary">Call {phone}</a>
+        <a href={whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
     </div>
   </section>

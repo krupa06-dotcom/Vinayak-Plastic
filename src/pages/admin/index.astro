@@ -1,0 +1,117 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Dashboard" current="dashboard">
+  <div id="dashboard-stats" class="a-stats"></div>
+
+  <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
+    <div>
+      <div class="a-card">
+        <div class="a-card-head">
+          <h2>Recent Enquiries</h2>
+          <a href={import.meta.env.BASE_URL + 'admin/enquiries/'} class="a-btn a-btn-sm">View all</a>
+        </div>
+        <div class="a-card-body" id="dashboard-enquiries">
+          <div class="a-inline-loading"><div class="a-spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="a-card">
+        <div class="a-card-head">
+          <h2>Quick Actions</h2>
+        </div>
+        <div class="a-card-body">
+          <div class="a-quick">
+            <a href={import.meta.env.BASE_URL + 'admin/categories/'}>
+              <span>Categories</span><span>&rarr;</span>
+            </a>
+            <a href={import.meta.env.BASE_URL + 'admin/subcategories/'}>
+              <span>Sub-categories</span><span>&rarr;</span>
+            </a>
+            <a href={import.meta.env.BASE_URL + 'admin/products/'}>
+              <span>Products</span><span>&rarr;</span>
+            </a>
+            <a href={import.meta.env.BASE_URL + 'admin/media/'}>
+              <span>Media Library</span><span>&rarr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty } from '../../scripts/admin/core';
+
+    void (async () => {
+      if (!(await gate())) return;
+
+      const statsEl = document.getElementById('dashboard-stats');
+      const enquiriesEl = document.getElementById('dashboard-enquiries');
+
+      const [catRes, subRes, prodRes, activeRes, newEnqRes] = await Promise.all([
+        supabase.from('categories').select('id', { count: 'exact', head: true }),
+        supabase.from('sub_categories').select('id', { count: 'exact', head: true }),
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new')
+      ]);
+
+      const stats = [
+        { num: catRes.count ?? 0, label: 'Categories', icon: '📁' },
+        { num: subRes.count ?? 0, label: 'Sub-categories', icon: '📂' },
+        { num: prodRes.count ?? 0, label: 'Products', icon: '📦' },
+        { num: activeRes.count ?? 0, label: 'Active Products', icon: '✅' },
+        { num: newEnqRes.count ?? 0, label: 'New Enquiries', icon: '📩' }
+      ];
+
+      if (statsEl) {
+        statsEl.innerHTML = stats.map(s => `
+          <div class="a-stat">
+            <div class="a-stat-icon" style="font-size:1.1rem;float:right;">${s.icon}</div>
+            <div class="a-stat-num">${s.num}</div>
+            <div class="a-stat-label">${esc(s.label)}</div>
+          </div>
+        `).join('');
+      }
+
+      if (enquiriesEl) {
+        const { data, error } = await supabase
+          .from('enquiries')
+          .select('id, name, company, status, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          showError(enquiriesEl!, error.message);
+          return;
+        }
+
+        if (!data?.length) {
+          showEmpty(enquiriesEl, 'No enquiries yet', 'Enquiries from the public website will appear here.');
+          return;
+        }
+
+        enquiriesEl.innerHTML = `
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead><tr>
+                <th>Name</th><th>Company</th><th>Status</th><th>Date</th>
+              </tr></thead>
+              <tbody>${data.map(r => `
+                <tr>
+                  <td><strong>${esc(r.name)}</strong></td>
+                  <td>${esc(r.company || '—')}</td>
+                  <td>${statusBadge(r.status)}</td>
+                  <td style="white-space:nowrap">${fmtDateTime(r.created_at)}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      }
+    })();
+  </script>
+</AdminLayout>

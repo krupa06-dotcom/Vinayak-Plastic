@@ -1,0 +1,442 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { path } from '../../../lib/site';
+---
+
+<AdminLayout title="Edit Product" current="products">
+  <a href={path('/admin/products/')} class="a-btn a-btn-sm" style="margin-bottom:14px;display:inline-flex;">&larr; Back to products</a>
+
+  <div id="edit-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
+
+  <form id="prod-form" novalidate style="display:none;">
+
+    <div class="a-card">
+      <div class="a-card-head"><h2>Product details</h2></div>
+      <div class="a-card-body">
+        <div class="a-form-grid">
+          <div class="a-field a-field-full">
+            <label for="p-name">Product name <span style="color:var(--a-danger)">*</span></label>
+            <input id="p-name" class="a-input" required placeholder="e.g. Multi-layer Shrink Wrap" />
+          </div>
+          <div class="a-field">
+            <label for="p-slug">Slug</label>
+            <input id="p-slug" class="a-input" required placeholder="auto-generated" />
+            <span class="a-hint">Leave blank to auto-generate from name.</span>
+          </div>
+          <div class="a-field">
+            <label for="p-sku">SKU / Product code</label>
+            <input id="p-sku" class="a-input" placeholder="e.g. VP-SW-012" />
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-subcategory">Sub-category <span style="color:var(--a-danger)">*</span></label>
+            <select id="p-subcategory" class="a-select" required>
+              <option value="">— Select sub-category —</option>
+            </select>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-short">Short description</label>
+            <textarea id="p-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-desc">Full description</label>
+            <textarea id="p-desc" class="a-textarea" rows="5" placeholder="Detailed product description"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-features">Features (one per line)</label>
+            <textarea id="p-features" class="a-textarea" rows="4" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
+          </div>
+          <div class="a-field">
+            <label for="p-order">Display order</label>
+            <input id="p-order" class="a-input" type="number" min="0" value="0" />
+          </div>
+          <div class="a-field">
+            <label>&nbsp;</label>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              <label class="a-check"><input type="checkbox" id="p-active" checked /> Active</label>
+              <label class="a-check"><input type="checkbox" id="p-featured" /> Featured on homepage</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="a-card">
+      <div class="a-card-head">
+        <h2>Applications</h2>
+        <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add</button>
+      </div>
+      <div class="a-card-body">
+        <div id="apps-container"></div>
+      </div>
+    </div>
+
+    <div class="a-card">
+      <div class="a-card-head">
+        <h2>Specifications</h2>
+        <button type="button" class="a-btn a-btn-sm" id="add-spec">+ Add</button>
+      </div>
+      <div class="a-card-body">
+        <div id="specs-container"></div>
+      </div>
+    </div>
+
+    <div class="a-card">
+      <div class="a-card-head">
+        <h2>Industries</h2>
+      </div>
+      <div class="a-card-body">
+        <div id="industries-container" style="display:flex;flex-wrap:wrap;gap:14px 24px;"></div>
+      </div>
+    </div>
+
+    <div class="a-card">
+      <div class="a-card-head">
+        <h2>Product images</h2>
+        <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
+      </div>
+      <div class="a-card-body">
+        <div id="images-container"></div>
+        <p class="a-hint" style="margin-top:8px;">First image is shown as the main product image on the website.</p>
+      </div>
+    </div>
+
+    <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
+
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="submit" class="a-btn a-btn-primary" id="prod-submit">Save product</button>
+      <a href={path('/admin/products/')} class="a-btn">Cancel</a>
+    </div>
+  </form>
+
+  <script>
+    import { gate, supabase, esc, slugify, toast, publicUrl, uploadFile, deleteFile } from '../../../scripts/admin/core';
+
+    const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
+    const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const r = new FileReader(); r.onload = () => resolve(r.result as string); r.onerror = reject; r.readAsDataURL(file);
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('id');
+
+    // DOM refs
+    const formEl = document.getElementById('prod-form') as HTMLFormElement;
+    const loadingEl = document.getElementById('edit-loading')!;
+    const nameEl = document.getElementById('p-name') as HTMLInputElement;
+    const slugEl = document.getElementById('p-slug') as HTMLInputElement;
+    const skuEl = document.getElementById('p-sku') as HTMLInputElement;
+    const subcatEl = document.getElementById('p-subcategory') as HTMLSelectElement;
+    const shortEl = document.getElementById('p-short') as HTMLTextAreaElement;
+    const descEl = document.getElementById('p-desc') as HTMLTextAreaElement;
+    const featuresEl = document.getElementById('p-features') as HTMLTextAreaElement;
+    const orderEl = document.getElementById('p-order') as HTMLInputElement;
+    const activeEl = document.getElementById('p-active') as HTMLInputElement;
+    const featuredEl = document.getElementById('p-featured') as HTMLInputElement;
+    const appsEl = document.getElementById('apps-container')!;
+    const specsEl = document.getElementById('specs-container')!;
+    const imagesEl = document.getElementById('images-container')!;
+    const industriesEl = document.getElementById('industries-container')!;
+    const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('prod-submit') as HTMLButtonElement;
+
+    function showError(msg: string) {
+      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth' }); }
+    }
+
+    // Slug auto-gen
+    nameEl?.addEventListener('input', () => {
+      if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
+    });
+    slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
+
+    // ---- Images state ----
+    interface ImageEntry { id: string | null; url: string; file?: File; alt: string; order: number; deleted: boolean; preview?: string }
+    let imagesState: ImageEntry[] = [];
+
+    function renderImages() {
+      const active = imagesState.filter(i => !i.deleted);
+      if (!active.length) {
+        imagesEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No images added yet.</p>';
+        return;
+      }
+      imagesEl.innerHTML = active.map((img, idx) => {
+        const preview = img.preview || (img.url ? publicUrl(img.url) : '');
+        return `
+          <div class="a-img-row" data-idx="${idx}">
+            ${preview ? `<img src="${esc(preview)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>'}
+            <div>
+              <input type="text" class="a-input img-alt" data-idx="${idx}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
+            </div>
+            <span style="font-size:0.78rem;color:var(--a-muted);text-align:center;">Order ${img.order}</span>
+            <div class="a-row-tools">
+              <button type="button" data-reorder="${idx}" title="Move up">&uarr;</button>
+              <button type="button" data-remove="${idx}" title="Remove" style="color:var(--a-danger);">&times;</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      imagesEl.querySelectorAll('.img-alt').forEach((el) => {
+        el.addEventListener('change', (e) => {
+          const i = Number((e.target as HTMLElement).getAttribute('data-idx'));
+          imagesState.filter(x => !x.deleted)[i].alt = (e.target as HTMLInputElement).value;
+        });
+      });
+      imagesEl.querySelectorAll<HTMLButtonElement>('[data-reorder]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.dataset.reorder);
+          const arr = imagesState.filter(x => !x.deleted);
+          if (i > 0) { const tmp = arr[i]; arr[i] = arr[i-1]; arr[i-1] = tmp; arr.forEach((x,j) => x.order = j); renderImages(); }
+        });
+      });
+      imagesEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.dataset.remove);
+          const entry = imagesState.filter(x => !x.deleted)[i];
+          entry.deleted = true;
+          renderImages();
+        });
+      });
+    }
+
+    document.getElementById('add-image')?.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.onchange = async () => {
+        const files = Array.from(input.files || []);
+        for (const file of files) {
+          const preview = await toBase64(file);
+          imagesState.push({ id: null, url: '', file, alt: '', order: imagesState.filter(x => !x.deleted).length, deleted: false, preview });
+        }
+        renderImages();
+      };
+      input.click();
+    });
+
+    // ---- Specs state ----
+    interface SpecRow { name: string; value: string }
+    let specsState: SpecRow[] = [];
+
+    function renderSpecs() {
+      if (!specsState.length) { specsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No specifications added.</p>'; return; }
+      specsEl.innerHTML = specsState.map((s, i) => `
+        <div class="a-spec-row">
+          <input class="a-input spec-name" data-idx="${i}" value="${esc(s.name)}" placeholder="e.g. Thickness" />
+          <input class="a-input spec-val" data-idx="${i}" value="${esc(s.value)}" placeholder="e.g. 25-50 microns" />
+          <span style="font-size:0.75rem;color:var(--a-muted);text-align:center;">${i + 1}</span>
+          <div class="a-row-tools">
+            <button type="button" data-spec-del="${i}" title="Remove">&times;</button>
+          </div>
+        </div>`).join('');
+
+      specsEl.querySelectorAll('.spec-name').forEach(el => el.addEventListener('change', (e) => { specsState[Number((e.target as HTMLElement).dataset.idx)].name = (e.target as HTMLInputElement).value; }));
+      specsEl.querySelectorAll('.spec-val').forEach(el => el.addEventListener('change', (e) => { specsState[Number((e.target as HTMLElement).dataset.idx)].value = (e.target as HTMLInputElement).value; }));
+      specsEl.querySelectorAll<HTMLButtonElement>('[data-spec-del]').forEach(btn => btn.addEventListener('click', () => { specsState.splice(Number(btn.dataset.specDel), 1); renderSpecs(); }));
+    }
+
+    document.getElementById('add-spec')?.addEventListener('click', () => { specsState.push({ name: '', value: '' }); renderSpecs(); specsEl.querySelector<HTMLElement>('.spec-name:last-of-type')?.focus(); });
+
+    // ---- Applications state ----
+    interface AppRow { name: string; description: string }
+    let appsState: AppRow[] = [];
+
+    function renderApps() {
+      if (!appsState.length) { appsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No applications added.</p>'; return; }
+      appsEl.innerHTML = appsState.map((a, i) => `
+        <div class="a-app-row">
+          <input class="a-input app-name" data-idx="${i}" value="${esc(a.name)}" placeholder="Application name" />
+          <input class="a-input app-desc" data-idx="${i}" value="${esc(a.description)}" placeholder="Brief description" />
+          <div class="a-row-tools">
+            <button type="button" data-app-del="${i}" title="Remove">&times;</button>
+          </div>
+        </div>`).join('');
+
+      appsEl.querySelectorAll('.app-name').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].name = (e.target as HTMLInputElement).value; }));
+      appsEl.querySelectorAll('.app-desc').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].description = (e.target as HTMLInputElement).value; }));
+      appsEl.querySelectorAll<HTMLButtonElement>('[data-app-del]').forEach(btn => btn.addEventListener('click', () => { appsState.splice(Number(btn.dataset.appDel), 1); renderApps(); }));
+    }
+
+    document.getElementById('add-app')?.addEventListener('click', () => { appsState.push({ name: '', description: '' }); renderApps(); });
+
+    // ---- Industries checkboxes ----
+    let industriesData: { id: string; name: string }[] = [];
+    let selectedIndustries: string[] = [];
+
+    function renderIndustries() {
+      if (!industriesData.length) { industriesEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;">No industries available.</p>'; return; }
+      industriesEl.innerHTML = industriesData.map(ind => `
+        <label class="a-check" style="min-width:160px;">
+          <input type="checkbox" value="${ind.id}" class="ind-cb" ${selectedIndustries.includes(ind.id) ? 'checked' : ''} />
+          ${esc(ind.name)}
+        </label>`).join('');
+
+      industriesEl.querySelectorAll<HTMLInputElement>('.ind-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) { selectedIndustries.push(cb.value); }
+          else { selectedIndustries = selectedIndustries.filter(x => x !== cb.value); }
+        });
+      });
+    }
+
+    // ---- Init ----
+    void (async () => {
+      if (!(await gate())) return;
+
+      const [{ data: cats }, { data: allIndustries }] = await Promise.all([
+        supabase.from('categories').select('id, name, display_order').eq('is_active', true).order('display_order'),
+        supabase.from('industries').select('id, name').eq('is_active', true).order('name')
+      ]);
+
+      industriesData = (allIndustries || []) as any;
+
+      // Populate sub-category dropdown with optgroups
+      if (cats?.length) {
+        const { data: subs } = await supabase.from('sub_categories').select('id, name, category_id, display_order').eq('is_active', true).order('display_order');
+        const grouped: Record<string, any[]> = {};
+        (subs || []).forEach((s: any) => { (grouped[s.category_id] = grouped[s.category_id] || []).push(s); });
+        subcatEl.innerHTML = '<option value="">— Select sub-category —</option>' +
+          cats.map((c: any) => {
+            const options = (grouped[c.id] || []).map((s: any) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+            return options ? `<optgroup label="${esc(c.name)}">${options}</optgroup>` : '';
+          }).join('');
+      }
+
+      renderIndustries();
+      renderSpecs();
+      renderApps();
+      renderImages();
+
+      if (editId) {
+        const { data: p, error } = await supabase
+          .from('products')
+          .select('*, product_images(*), product_specifications(*)')
+          .eq('id', editId)
+          .single();
+        if (error || !p) { showError(error?.message || 'Product not found'); loadingEl.remove(); formEl.style.display = ''; return; }
+
+        nameEl.value = p.name;
+        slugEl.value = p.slug;
+        slugEl.setAttribute('data-manual', '1');
+        skuEl.value = (p as any).product_code ?? '';
+        subcatEl.value = p.sub_category_id;
+        shortEl.value = p.short_description ?? '';
+        descEl.value = (p as any).description ?? '';
+        featuresEl.value = (Array.isArray(p.features) ? p.features : []).join('\n');
+        orderEl.value = String(p.display_order);
+        activeEl.checked = p.is_active;
+        featuredEl.checked = p.is_featured;
+
+        // Images
+        imagesState = (p.product_images || []).map((img: any) => ({
+          id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false
+        })).sort((a: any, b: any) => a.order - b.order);
+        renderImages();
+
+        // Specs
+        specsState = (p.product_specifications || []).map((s: any) => ({ name: s.specification_name, value: s.specification_value })).sort((a: any, b: any) => a.display_order - b.display_order);
+        renderSpecs();
+
+        // Applications
+        appsState = Array.isArray(p.applications) ? [...(p.applications as unknown as AppRow[])] : [];
+        renderApps();
+
+        // Industries
+        const { data: pInd } = await supabase.from('product_industries').select('industry_id').eq('product_id', editId);
+        selectedIndustries = (pInd || []).map((r: any) => r.industry_id);
+        renderIndustries();
+      }
+
+      loadingEl.remove();
+      formEl.style.display = '';
+    })();
+
+    // ---- Save ----
+    formEl?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorEl) errorEl.style.display = 'none';
+
+      const name = nameEl.value.trim();
+      const subCategoryId = subcatEl.value;
+      if (!name) { showError('Product name is required.'); return; }
+      if (!subCategoryId) { showError('Please select a sub-category.'); return; }
+
+      submitBtn?.setAttribute('disabled', '');
+      submitBtn.textContent = 'Saving…';
+
+      const slug = slugEl.value.trim() || slugify(name);
+      const productId = editId || crypto.randomUUID();
+
+      const payload: Record<string, unknown> = {
+        id: productId,
+        name,
+        slug,
+        product_code: skuEl.value.trim() || null,
+        sub_category_id: subCategoryId,
+        short_description: shortEl.value.trim() || null,
+        description: descEl.value.trim() || null,
+        features: featuresEl.value.split('\n').map(l => l.trim()).filter(Boolean),
+        applications: appsState.filter(a => a.name.trim()),
+        display_order: Number(orderEl.value) || 0,
+        is_active: activeEl.checked,
+        is_featured: featuredEl.checked,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: prodErr } = await supabase.from('products').upsert(payload as never, { onConflict: 'id' });
+
+      if (prodErr) {
+        showError(prodErr.message);
+        submitBtn?.removeAttribute('disabled');
+        submitBtn.textContent = 'Save product';
+        return;
+      }
+
+      // --- Images ---
+      const uploadErrors: string[] = [];
+      for (let i = 0; i < imagesState.length; i++) {
+        const entry = imagesState[i];
+        if (entry.deleted && entry.id) {
+          const { error: delImgErr } = await supabase.from('product_images').delete().eq('id', entry.id);
+          if (delImgErr) uploadErrors.push(`Delete image error: ${delImgErr.message}`);
+          else if (entry.url) await deleteFile(entry.url);
+          continue;
+        }
+        if (entry.file) {
+          const result = await uploadFile(entry.file, `products/${productId}/${Date.now()}-${i}`);
+          if ('error' in result) { uploadErrors.push(`Upload failed (${entry.file.name}): ${result.error}`); continue; }
+          const { error: insImgErr } = await supabase.from('product_images').insert({ product_id: productId, image_url: result.path, alt_text: entry.alt || null, display_order: i });
+          if (insImgErr) uploadErrors.push(`Save image error: ${insImgErr.message}`);
+          continue;
+        }
+        if (entry.id) {
+          const { error: updErr } = await supabase.from('product_images').update({ display_order: i, alt_text: entry.alt || null }).eq('id', entry.id);
+          if (updErr) uploadErrors.push(`Update image order error: ${updErr.message}`);
+        }
+      }
+
+      // --- Specs ---
+      const specPayload = specsState.filter(s => s.name.trim()).map((s, i) => ({
+        product_id: productId, specification_name: s.name.trim(), specification_value: s.value.trim(), display_order: i
+      }));
+      if (editId) await supabase.from('product_specifications').delete().eq('product_id', productId);
+      if (specPayload.length) await supabase.from('product_specifications').insert(specPayload);
+
+      // --- Industries ---
+      const indPayload = selectedIndustries.map(indId => ({ product_id: productId, industry_id: indId }));
+      if (editId) await supabase.from('product_industries').delete().eq('product_id', productId);
+      if (indPayload.length) await supabase.from('product_industries').insert(indPayload);
+
+      submitBtn?.removeAttribute('disabled');
+      submitBtn.textContent = 'Save product';
+
+      if (uploadErrors.length) {
+        toast(`Saved, but some image operations failed: ${uploadErrors[0]}`, 'error');
+      } else {
+        toast(editId ? 'Product updated.' : 'Product created.', 'success');
+      }
+      window.location.href = href('admin/products/');
+    });
+  </script>
+</AdminLayout>
