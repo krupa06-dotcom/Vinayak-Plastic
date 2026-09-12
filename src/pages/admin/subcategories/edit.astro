@@ -4,10 +4,11 @@ import { path } from '../../../lib/site';
 ---
 
 <AdminLayout title="Edit Sub-category" current="subcategories">
-  <div class="a-card" style="max-width:640px;">
+  <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm" style="margin-bottom:14px;display:inline-flex;">&larr; Back to sub-categories</a>
+
+  <div class="a-card" style="max-width:760px;">
     <div class="a-card-head">
       <h2 id="page-title">New Sub-category</h2>
-      <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm">Back to sub-categories</a>
     </div>
     <div class="a-card-body">
       <div id="edit-loading" class="a-inline-loading"><div class="a-spinner"></div></div>
@@ -17,14 +18,14 @@ import { path } from '../../../lib/site';
 
         <div class="a-form-grid">
           <div class="a-field a-field-full">
-            <label for="sub-category">Parent category</label>
+            <label for="sub-category">Parent category <span style="color:var(--a-danger)">*</span></label>
             <select id="sub-category" class="a-select" required>
               <option value="">— Select category —</option>
             </select>
           </div>
           <div class="a-field">
-            <label for="sub-name">Sub-category name</label>
-            <input id="sub-name" class="a-input" required placeholder="e.g. Corrugated Boxes" />
+            <label for="sub-name">Sub-category name <span style="color:var(--a-danger)">*</span></label>
+            <input id="sub-name" class="a-input" required placeholder="e.g. Standard Crates" />
           </div>
           <div class="a-field">
             <label for="sub-slug">Slug</label>
@@ -34,6 +35,12 @@ import { path } from '../../../lib/site';
           <div class="a-field a-field-full">
             <label for="sub-description">Description</label>
             <textarea id="sub-description" class="a-textarea" rows="2" placeholder="Brief description (optional)"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="sub-image">Image</label>
+            <input id="sub-image" class="a-input" placeholder="Storage path (media/…) or full URL" />
+            <span class="a-hint">Upload once in the Media Library, then paste its filename here. Shown on the product listing.</span>
+            <div id="sub-image-preview" style="margin-top:10px;"></div>
           </div>
           <div class="a-field">
             <label for="sub-order">Display order</label>
@@ -57,13 +64,14 @@ import { path } from '../../../lib/site';
   </div>
 
   <script>
-    import { gate, supabase, slugify, toast } from '../../../scripts/admin/core';
+    import { gate, supabase, slugify, toast, esc, publicUrl } from '../../../scripts/admin/core';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
 
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('id');
+    const preCategory = params.get('category');
 
     const formEl = document.getElementById('sub-form') as HTMLFormElement;
     const loadingEl = document.getElementById('edit-loading');
@@ -72,6 +80,8 @@ import { path } from '../../../lib/site';
     const nameEl = document.getElementById('sub-name') as HTMLInputElement;
     const slugEl = document.getElementById('sub-slug') as HTMLInputElement;
     const descEl = document.getElementById('sub-description') as HTMLTextAreaElement;
+    const imageEl = document.getElementById('sub-image') as HTMLInputElement;
+    const previewEl = document.getElementById('sub-image-preview')!;
     const orderEl = document.getElementById('sub-order') as HTMLInputElement;
     const activeEl = document.getElementById('sub-active') as HTMLInputElement;
     const errorEl = document.getElementById('form-error');
@@ -80,15 +90,24 @@ import { path } from '../../../lib/site';
       if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
     }
 
+    function renderImagePreview(value: string) {
+      const v = value.trim();
+      if (!v) { previewEl.innerHTML = ''; return; }
+      const url = /^https?:\/\//i.test(v) ? v : publicUrl(v);
+      previewEl.innerHTML = url
+        ? `<img src="${url}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--a-border);" loading="lazy" />`
+        : '';
+    }
+
     nameEl?.addEventListener('input', () => {
       if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
+    imageEl?.addEventListener('input', () => renderImagePreview(imageEl.value));
 
     void (async () => {
       if (!(await gate())) return;
 
-      // Load categories into dropdown
       const { data: cats } = await supabase
         .from('categories')
         .select('id, name')
@@ -97,7 +116,7 @@ import { path } from '../../../lib/site';
 
       if (cats?.length) {
         catEl.innerHTML = `<option value="">— Select category —</option>` +
-          cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+          cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
       }
 
       if (editId) {
@@ -110,8 +129,12 @@ import { path } from '../../../lib/site';
         slugEl.value = data.slug;
         slugEl.setAttribute('data-manual', '1');
         descEl.value = data.description ?? '';
+        imageEl.value = data.image_url ?? '';
+        renderImagePreview(data.image_url ?? '');
         orderEl.value = String(data.display_order);
         activeEl.checked = data.is_active;
+      } else if (preCategory) {
+        catEl.value = preCategory;
       }
 
       loadingEl?.remove();
@@ -133,6 +156,7 @@ import { path } from '../../../lib/site';
         name,
         slug: slugEl.value.trim() || slugify(name),
         description: descEl.value.trim() || null,
+        image_url: imageEl.value.trim() || null,
         display_order: Number(orderEl.value) || 0,
         is_active: activeEl.checked,
         updated_at: new Date().toISOString()

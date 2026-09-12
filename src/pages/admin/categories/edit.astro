@@ -4,10 +4,11 @@ import { path } from '../../../lib/site';
 ---
 
 <AdminLayout title="Edit Category" current="categories">
-  <div class="a-card" style="max-width:640px;">
+  <a href={path('/admin/categories/')} class="a-btn a-btn-sm" style="margin-bottom:14px;display:inline-flex;">&larr; Back to categories</a>
+
+  <div class="a-card" style="max-width:760px;">
     <div class="a-card-head">
       <h2 id="page-title">New Category</h2>
-      <a href={path('/admin/categories/')} class="a-btn a-btn-sm">Back to categories</a>
     </div>
     <div class="a-card-body">
       <div id="edit-loading" class="a-inline-loading"><div class="a-spinner"></div></div>
@@ -17,8 +18,8 @@ import { path } from '../../../lib/site';
 
         <div class="a-form-grid">
           <div class="a-field">
-            <label for="cat-name">Category name</label>
-            <input id="cat-name" class="a-input" required placeholder="e.g. Packaging" />
+            <label for="cat-name">Category name <span style="color:var(--a-danger)">*</span></label>
+            <input id="cat-name" class="a-input" required placeholder="e.g. Plastic Crates" />
           </div>
           <div class="a-field">
             <label for="cat-slug">Slug</label>
@@ -28,6 +29,12 @@ import { path } from '../../../lib/site';
           <div class="a-field a-field-full">
             <label for="cat-description">Description</label>
             <textarea id="cat-description" class="a-textarea" rows="2" placeholder="Brief category description (optional)"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="cat-image">Image</label>
+            <input id="cat-image" class="a-input" placeholder="Storage path (media/…) or full URL" />
+            <span class="a-hint">Upload once in the Media Library, then paste its filename here. Shown on the product listing tile.</span>
+            <div id="cat-image-preview" style="margin-top:10px;"></div>
           </div>
           <div class="a-field">
             <label for="cat-order">Display order</label>
@@ -51,7 +58,7 @@ import { path } from '../../../lib/site';
   </div>
 
   <script>
-    import { gate, supabase, slugify, toast } from '../../../scripts/admin/core';
+    import { gate, supabase, slugify, toast, publicUrl, esc } from '../../../scripts/admin/core';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
@@ -65,6 +72,8 @@ import { path } from '../../../lib/site';
     const nameEl = document.getElementById('cat-name') as HTMLInputElement;
     const slugEl = document.getElementById('cat-slug') as HTMLInputElement;
     const descEl = document.getElementById('cat-description') as HTMLTextAreaElement;
+    const imageEl = document.getElementById('cat-image') as HTMLInputElement;
+    const previewEl = document.getElementById('cat-image-preview')!;
     const orderEl = document.getElementById('cat-order') as HTMLInputElement;
     const activeEl = document.getElementById('cat-active') as HTMLInputElement;
     const errorEl = document.getElementById('form-error');
@@ -73,10 +82,20 @@ import { path } from '../../../lib/site';
       if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
     }
 
+    function renderImagePreview(value: string) {
+      const v = value.trim();
+      if (!v) { previewEl.innerHTML = ''; return; }
+      const url = /^https?:\/\//i.test(v) ? v : publicUrl(v);
+      previewEl.innerHTML = url
+        ? `<img src="${esc(url)}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--a-border);" loading="lazy" />`
+        : '';
+    }
+
     nameEl?.addEventListener('input', () => {
       if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
+    imageEl?.addEventListener('input', () => renderImagePreview(imageEl.value));
 
     void (async () => {
       if (!(await gate())) return;
@@ -90,6 +109,8 @@ import { path } from '../../../lib/site';
         slugEl.value = data.slug;
         slugEl.setAttribute('data-manual', '1');
         descEl.value = data.description ?? '';
+        imageEl.value = data.image_url ?? '';
+        renderImagePreview(data.image_url ?? '');
         orderEl.value = String(data.display_order);
         activeEl.checked = data.is_active;
       }
@@ -110,6 +131,7 @@ import { path } from '../../../lib/site';
         name,
         slug: slugEl.value.trim() || slugify(name),
         description: descEl.value.trim() || null,
+        image_url: imageEl.value.trim() || null,
         display_order: Number(orderEl.value) || 0,
         is_active: activeEl.checked,
         updated_at: new Date().toISOString()

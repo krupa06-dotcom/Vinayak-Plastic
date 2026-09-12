@@ -218,6 +218,65 @@ export interface Database {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          id: string;
+          product_id: string;
+          name: string;
+          size: string | null;
+          shape: string | null;
+          color: string | null;
+          weight: string | null;
+          capacity: string | null;
+          material: string | null;
+          price: string | null;
+          is_active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          name: string;
+          size?: string | null;
+          shape?: string | null;
+          color?: string | null;
+          weight?: string | null;
+          capacity?: string | null;
+          material?: string | null;
+          price?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          name?: string;
+          size?: string | null;
+          shape?: string | null;
+          color?: string | null;
+          weight?: string | null;
+          capacity?: string | null;
+          material?: string | null;
+          price?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey",
+            columns: ["product_id"],
+            isOneToOne: false,
+            referencedRelation: "products",
+            referencedColumns: ["id"],
+          },
+        ];
+      };
       industries: {
         Row: {
           id: string;

@@ -3,20 +3,33 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { path } from '../../../lib/site';
 ---
 
-<AdminLayout title="Edit Product" current="products">
-  <a href={path('/admin/products/')} class="a-btn a-btn-sm" style="margin-bottom:14px;display:inline-flex;">&larr; Back to products</a>
+<AdminLayout title="Product" current="products">
+  <div class="a-page-head">
+    <h2 id="page-title">Product</h2>
+    <div style="display:flex;gap:10px;">
+      <a href={path('/admin/products/')} class="a-btn a-btn-sm">&larr; Back to products</a>
+      <button type="button" class="a-btn a-btn-primary" id="prod-save-top" style="display:none;">Save product</button>
+    </div>
+  </div>
 
   <div id="edit-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
   <form id="prod-form" novalidate style="display:none;">
+    <div class="a-card is-tabs">
+      <div class="a-tabs" role="tablist">
+        <button type="button" class="a-tab is-active" data-tab="tab-basics" role="tab">Basics</button>
+        <button type="button" class="a-tab" data-tab="tab-desc" role="tab">Description &amp; Features</button>
+        <button type="button" class="a-tab" data-tab="tab-variants" role="tab">Sizes &amp; Colours</button>
+        <button type="button" class="a-tab" data-tab="tab-images" role="tab">Images</button>
+      </div>
 
-    <div class="a-card">
-      <div class="a-card-head"><h2>Product details</h2></div>
-      <div class="a-card-body">
+      <!-- ======================= BASICS ======================= -->
+      <div class="a-tab-panel is-active" id="tab-basics">
         <div class="a-form-grid">
           <div class="a-field a-field-full">
             <label for="p-name">Product name <span style="color:var(--a-danger)">*</span></label>
-            <input id="p-name" class="a-input" required placeholder="e.g. Multi-layer Shrink Wrap" />
+            <input id="p-name" class="a-input" required placeholder="e.g. Plastic Crates" />
+            <span class="a-hint">This is the range name. Individual sizes go under "Sizes &amp; Colours".</span>
           </div>
           <div class="a-field">
             <label for="p-slug">Slug</label>
@@ -24,26 +37,14 @@ import { path } from '../../../lib/site';
             <span class="a-hint">Leave blank to auto-generate from name.</span>
           </div>
           <div class="a-field">
-            <label for="p-sku">SKU / Product code</label>
-            <input id="p-sku" class="a-input" placeholder="e.g. VP-SW-012" />
+            <label for="p-sku">SKU / Series code</label>
+            <input id="p-sku" class="a-input" placeholder="e.g. VP-CRATE" />
           </div>
           <div class="a-field a-field-full">
             <label for="p-subcategory">Sub-category <span style="color:var(--a-danger)">*</span></label>
             <select id="p-subcategory" class="a-select" required>
               <option value="">— Select sub-category —</option>
             </select>
-          </div>
-          <div class="a-field a-field-full">
-            <label for="p-short">Short description</label>
-            <textarea id="p-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
-          </div>
-          <div class="a-field a-field-full">
-            <label for="p-desc">Full description</label>
-            <textarea id="p-desc" class="a-textarea" rows="5" placeholder="Detailed product description"></textarea>
-          </div>
-          <div class="a-field a-field-full">
-            <label for="p-features">Features (one per line)</label>
-            <textarea id="p-features" class="a-textarea" rows="4" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
           </div>
           <div class="a-field">
             <label for="p-order">Display order</label>
@@ -58,53 +59,75 @@ import { path } from '../../../lib/site';
           </div>
         </div>
       </div>
+
+      <!-- ======================= DESCRIPTION ======================= -->
+      <div class="a-tab-panel" id="tab-desc">
+        <div class="a-form-grid">
+          <div class="a-field a-field-full">
+            <label for="p-short">Short description</label>
+            <textarea id="p-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-desc">Full description</label>
+            <textarea id="p-desc" class="a-textarea" rows="5" placeholder="Detailed product description"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="p-features">Features (one per line)</label>
+            <textarea id="p-features" class="a-textarea" rows="4" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label for="apps-container">Applications</label>
+              <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add application</button>
+            </div>
+            <div id="apps-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================= SIZES & COLOURS ======================= -->
+      <div class="a-tab-panel" id="tab-variants">
+        <div class="a-guide" style="margin-bottom:16px;">
+          <h4>Add the sizes, shapes and colours this product is made in</h4>
+          <p style="margin:0;">Each row is one model / size. On the website these are shown as a specification table, so customers can see every option at a glance.</p>
+        </div>
+        <div class="a-var-head">
+          <span style="font-weight:600;font-size:0.9rem;">Variants</span>
+          <button type="button" class="a-btn a-btn-sm a-btn-primary" id="add-variant">+ Add size</button>
+        </div>
+        <div id="variants-container"></div>
+        <p class="a-hint" style="margin-top:6px;">Add at least one size so customers can see what is available. Leave a field empty if not applicable.</p>
+      </div>
+
+      <!-- ======================= IMAGES ======================= -->
+      <div class="a-tab-panel" id="tab-images">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-weight:600;font-size:0.9rem;">Product images</span>
+            <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
+          </div>
+          <div id="images-container"></div>
+          <p class="a-hint" style="margin-top:8px;">First image is shown as the main product image on the website.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="a-card">
-      <div class="a-card-head">
-        <h2>Applications</h2>
-        <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add</button>
-      </div>
-      <div class="a-card-body">
-        <div id="apps-container"></div>
-      </div>
-    </div>
-
-    <div class="a-card">
-      <div class="a-card-head">
-        <h2>Specifications</h2>
-        <button type="button" class="a-btn a-btn-sm" id="add-spec">+ Add</button>
-      </div>
-      <div class="a-card-body">
-        <div id="specs-container"></div>
-      </div>
-    </div>
-
-    <div class="a-card">
-      <div class="a-card-head">
-        <h2>Industries</h2>
-      </div>
-      <div class="a-card-body">
+    <details class="a-details">
+      <summary>Advanced: industries (optional)</summary>
+      <div class="a-details-body">
+        <p style="font-size:0.82rem;color:var(--a-muted);margin:0 0 10px;">Tag products with the industries they are used in. This is optional and not shown on the public site yet.</p>
         <div id="industries-container" style="display:flex;flex-wrap:wrap;gap:14px 24px;"></div>
       </div>
-    </div>
-
-    <div class="a-card">
-      <div class="a-card-head">
-        <h2>Product images</h2>
-        <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
-      </div>
-      <div class="a-card-body">
-        <div id="images-container"></div>
-        <p class="a-hint" style="margin-top:8px;">First image is shown as the main product image on the website.</p>
-      </div>
-    </div>
+    </details>
 
     <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
-    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
-      <button type="submit" class="a-btn a-btn-primary" id="prod-submit">Save product</button>
-      <a href={path('/admin/products/')} class="a-btn">Cancel</a>
+    <div class="a-sticky-actions">
+      <span class="a-hint" id="save-helper">Details and sizes are saved together.</span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="a-btn a-btn-primary" id="prod-submit">Save product</button>
+        <a href={path('/admin/products/')} class="a-btn">Cancel</a>
+      </div>
     </div>
   </form>
 
@@ -117,12 +140,14 @@ import { path } from '../../../lib/site';
       const r = new FileReader(); r.onload = () => resolve(r.result as string); r.onerror = reject; r.readAsDataURL(file);
     });
 
+    const COMMON_COLORS = ['Blue', 'Green', 'Red', 'Yellow', 'White', 'Black', 'Grey', 'Orange'];
+
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('id');
 
-    // DOM refs
     const formEl = document.getElementById('prod-form') as HTMLFormElement;
     const loadingEl = document.getElementById('edit-loading')!;
+    const titleEl = document.getElementById('page-title')!;
     const nameEl = document.getElementById('p-name') as HTMLInputElement;
     const slugEl = document.getElementById('p-slug') as HTMLInputElement;
     const skuEl = document.getElementById('p-sku') as HTMLInputElement;
@@ -134,15 +159,31 @@ import { path } from '../../../lib/site';
     const activeEl = document.getElementById('p-active') as HTMLInputElement;
     const featuredEl = document.getElementById('p-featured') as HTMLInputElement;
     const appsEl = document.getElementById('apps-container')!;
-    const specsEl = document.getElementById('specs-container')!;
+    const variantsEl = document.getElementById('variants-container')!;
     const imagesEl = document.getElementById('images-container')!;
     const industriesEl = document.getElementById('industries-container')!;
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('prod-submit') as HTMLButtonElement;
+    const saveTopBtn = document.getElementById('prod-save-top') as HTMLButtonElement;
 
     function showError(msg: string) {
       if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth' }); }
     }
+
+    if (editId) titleEl.textContent = 'Edit Product';
+
+    // ---- Tabs ----
+    document.querySelectorAll<HTMLButtonElement>('.a-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.a-tab').forEach(t => t.classList.remove('is-active'));
+        document.querySelectorAll('.a-tab-panel').forEach(p => p.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        document.getElementById(tab.dataset.tab!)?.classList.add('is-active');
+      });
+    });
+
+    // ---- Header save button mirrors the sticky submit ----
+    saveTopBtn?.addEventListener('click', () => formEl.requestSubmit());
 
     // Slug auto-gen
     nameEl?.addEventListener('input', () => {
@@ -150,7 +191,7 @@ import { path } from '../../../lib/site';
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
 
-    // ---- Images state ----
+    // ================= IMAGES =================
     interface ImageEntry { id: string | null; url: string; file?: File; alt: string; order: number; deleted: boolean; preview?: string }
     let imagesState: ImageEntry[] = [];
 
@@ -215,30 +256,7 @@ import { path } from '../../../lib/site';
       input.click();
     });
 
-    // ---- Specs state ----
-    interface SpecRow { name: string; value: string }
-    let specsState: SpecRow[] = [];
-
-    function renderSpecs() {
-      if (!specsState.length) { specsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No specifications added.</p>'; return; }
-      specsEl.innerHTML = specsState.map((s, i) => `
-        <div class="a-spec-row">
-          <input class="a-input spec-name" data-idx="${i}" value="${esc(s.name)}" placeholder="e.g. Thickness" />
-          <input class="a-input spec-val" data-idx="${i}" value="${esc(s.value)}" placeholder="e.g. 25-50 microns" />
-          <span style="font-size:0.75rem;color:var(--a-muted);text-align:center;">${i + 1}</span>
-          <div class="a-row-tools">
-            <button type="button" data-spec-del="${i}" title="Remove">&times;</button>
-          </div>
-        </div>`).join('');
-
-      specsEl.querySelectorAll('.spec-name').forEach(el => el.addEventListener('change', (e) => { specsState[Number((e.target as HTMLElement).dataset.idx)].name = (e.target as HTMLInputElement).value; }));
-      specsEl.querySelectorAll('.spec-val').forEach(el => el.addEventListener('change', (e) => { specsState[Number((e.target as HTMLElement).dataset.idx)].value = (e.target as HTMLInputElement).value; }));
-      specsEl.querySelectorAll<HTMLButtonElement>('[data-spec-del]').forEach(btn => btn.addEventListener('click', () => { specsState.splice(Number(btn.dataset.specDel), 1); renderSpecs(); }));
-    }
-
-    document.getElementById('add-spec')?.addEventListener('click', () => { specsState.push({ name: '', value: '' }); renderSpecs(); specsEl.querySelector<HTMLElement>('.spec-name:last-of-type')?.focus(); });
-
-    // ---- Applications state ----
+    // ================= APPLICATIONS =================
     interface AppRow { name: string; description: string }
     let appsState: AppRow[] = [];
 
@@ -260,7 +278,117 @@ import { path } from '../../../lib/site';
 
     document.getElementById('add-app')?.addEventListener('click', () => { appsState.push({ name: '', description: '' }); renderApps(); });
 
-    // ---- Industries checkboxes ----
+    // ================= VARIANTS (sizes, shapes, colours) =================
+    interface VariantRow {
+      id: string | null;
+      name: string; size: string; shape: string; color: string;
+      weight: string; capacity: string; material: string; price: string;
+      is_active: boolean; order: number;
+    }
+    let variantsState: VariantRow[] = [];
+
+    function renderVariants() {
+      const active = variantsState; // keep all rows visible, order is manual
+      if (!active.length) {
+        variantsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No sizes added yet. Click "+ Add size" to start.</p>';
+        return;
+      }
+      variantsEl.innerHTML = active.map((v, idx) => `
+        <div class="a-var-card" data-idx="${idx}" data-variant-id="${v.id || ''}">
+          <div class="a-var-top">
+            <span class="a-var-label">Size #${idx + 1}</span>
+            <div class="a-var-actions">
+              <label class="a-check" style="font-size:0.78rem;"><input type="checkbox" data-active="${idx}" ${v.is_active ? 'checked' : ''} /> Active</label>
+              <button type="button" class="a-btn a-btn-sm" data-moveup="${idx}" title="Move up">&uarr;</button>
+              <button type="button" class="a-btn a-btn-sm a-btn-danger" data-remove="${idx}" title="Remove">&times;</button>
+            </div>
+          </div>
+          <div class="a-var-grid">
+            <div class="a-field a-field-full">
+              <label>Model / name <span style="color:var(--a-danger)">*</span></label>
+              <input class="a-input v-name" data-idx="${idx}" value="${esc(v.name)}" placeholder="e.g. VPC-400" />
+            </div>
+            <div class="a-field">
+              <label>Size (L × W × H)</label>
+              <input class="a-input v-size" data-idx="${idx}" value="${esc(v.size)}" placeholder="400 × 300 × 130 mm" />
+            </div>
+            <div class="a-field">
+              <label>Shape</label>
+              <input class="a-input v-shape" data-idx="${idx}" value="${esc(v.shape)}" placeholder="e.g. Rectangular / Nestable" />
+            </div>
+            <div class="a-field">
+              <label>Weight</label>
+              <input class="a-input v-weight" data-idx="${idx}" value="${esc(v.weight)}" placeholder="e.g. ~750 g" />
+            </div>
+            <div class="a-field">
+              <label>Capacity / Load</label>
+              <input class="a-input v-capacity" data-idx="${idx}" value="${esc(v.capacity)}" placeholder="e.g. 15 kg" />
+            </div>
+            <div class="a-field">
+              <label>Material</label>
+              <input class="a-input v-material" data-idx="${idx}" value="${esc(v.material)}" placeholder="e.g. PP / HDPE" />
+            </div>
+            <div class="a-field">
+              <label>Approx. price</label>
+              <input class="a-input v-price" data-idx="${idx}" value="${esc(v.price)}" placeholder="e.g. ₹250 / piece" />
+            </div>
+            <div class="a-field">
+              <label>Colour</label>
+              <input class="a-input v-color" data-idx="${idx}" value="${esc(v.color)}" placeholder="e.g. Blue" />
+              <div class="a-var-colors" style="margin-top:6px;">
+                ${COMMON_COLORS.map(c => `<button type="button" class="a-color-swatch ${v.color === c ? 'is-selected' : ''}" data-color="${c}" data-idx="${idx}" title="${c}"></button>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`).join('');
+
+      // Fields
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-name').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].name = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-size').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].size = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-shape').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].shape = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-weight').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].weight = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-capacity').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].capacity = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-material').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].material = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-price').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].price = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-color').forEach(el => el.addEventListener('input', (e) => {
+        const i = Number((e.target as HTMLElement).dataset.idx);
+        variantsState[i].color = (e.target as HTMLInputElement).value;
+        const card = variantsEl.querySelector(`.a-var-card[data-idx="${i}"]`);
+        card?.querySelectorAll('.a-color-swatch').forEach((sw: any) => sw.classList.toggle('is-selected', sw.dataset.color === variantsState[i].color));
+      }));
+
+      // Swatches
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-color]').forEach(sw => sw.addEventListener('click', () => {
+        const i = Number(sw.dataset.idx);
+        variantsState[i].color = sw.dataset.color!;
+        const input = variantsEl.querySelector<HTMLInputElement>(`.a-var-card[data-idx="${i}"] .v-color`);
+        if (input) input.value = sw.dataset.color!;
+        variantsEl.querySelectorAll<HTMLButtonElement>(`.a-var-card[data-idx="${i}"] [data-color]`).forEach(s2 => s2.classList.toggle('is-selected', s2.dataset.color === variantsState[i].color));
+      }));
+
+      // Active toggle
+      variantsEl.querySelectorAll<HTMLInputElement>('[data-active]').forEach(cb => cb.addEventListener('change', (e) => {
+        const i = Number((e.target as HTMLElement).dataset.active);
+        variantsState[i].is_active = (e.target as HTMLInputElement).checked;
+      }));
+
+      // Move up / remove
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-moveup]').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.moveup);
+        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); }
+      }));
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+        variantsState.splice(Number(btn.dataset.remove), 1);
+        renderVariants();
+      }));
+    }
+
+    document.getElementById('add-variant')?.addEventListener('click', () => {
+      variantsState.push({ id: null, name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length });
+      renderVariants();
+    });
+
+    // ================= INDUSTRIES (optional / advanced) =================
     let industriesData: { id: string; name: string }[] = [];
     let selectedIndustries: string[] = [];
 
@@ -280,20 +408,19 @@ import { path } from '../../../lib/site';
       });
     }
 
-    // ---- Init ----
+    // ================= INIT =================
     void (async () => {
       if (!(await gate())) return;
 
       const [{ data: cats }, { data: allIndustries }] = await Promise.all([
-        supabase.from('categories').select('id, name, display_order').eq('is_active', true).order('display_order'),
+        supabase.from('categories').select('id, name, display_order').order('display_order'),
         supabase.from('industries').select('id, name').eq('is_active', true).order('name')
       ]);
 
       industriesData = (allIndustries || []) as any;
 
-      // Populate sub-category dropdown with optgroups
       if (cats?.length) {
-        const { data: subs } = await supabase.from('sub_categories').select('id, name, category_id, display_order').eq('is_active', true).order('display_order');
+        const { data: subs } = await supabase.from('sub_categories').select('id, name, category_id, display_order').order('display_order');
         const grouped: Record<string, any[]> = {};
         (subs || []).forEach((s: any) => { (grouped[s.category_id] = grouped[s.category_id] || []).push(s); });
         subcatEl.innerHTML = '<option value="">— Select sub-category —</option>' +
@@ -301,17 +428,25 @@ import { path } from '../../../lib/site';
             const options = (grouped[c.id] || []).map((s: any) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
             return options ? `<optgroup label="${esc(c.name)}">${options}</optgroup>` : '';
           }).join('');
+
+        if (!(grouped && Object.keys(grouped).some(k => grouped[k].length))) {
+          // No sub-categories yet – tell the admin
+          const emptyTip = document.createElement('div');
+          emptyTip.className = 'a-tip a-tip-warn';
+          emptyTip.innerHTML = `No sub-categories exist yet. <a href="${href('admin/subcategories/edit/')}" style="color:var(--a-warn);font-weight:600;">Create one first</a> so you can assign products.`;
+          subcatEl.parentElement?.appendChild(emptyTip);
+        }
       }
 
       renderIndustries();
-      renderSpecs();
       renderApps();
+      renderVariants();
       renderImages();
 
       if (editId) {
         const { data: p, error } = await supabase
           .from('products')
-          .select('*, product_images(*), product_specifications(*)')
+          .select('*, product_images(*), product_variants(*)')
           .eq('id', editId)
           .single();
         if (error || !p) { showError(error?.message || 'Product not found'); loadingEl.remove(); formEl.style.display = ''; return; }
@@ -328,21 +463,21 @@ import { path } from '../../../lib/site';
         activeEl.checked = p.is_active;
         featuredEl.checked = p.is_featured;
 
-        // Images
         imagesState = (p.product_images || []).map((img: any) => ({
           id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false
         })).sort((a: any, b: any) => a.order - b.order);
         renderImages();
 
-        // Specs
-        specsState = (p.product_specifications || []).map((s: any) => ({ name: s.specification_name, value: s.specification_value })).sort((a: any, b: any) => a.display_order - b.display_order);
-        renderSpecs();
+        variantsState = (p.product_variants || []).map((v: any) => ({
+          id: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
+          weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+          is_active: v.is_active, order: v.display_order
+        })).sort((a: any, b: any) => a.order - b.order);
+        renderVariants();
 
-        // Applications
         appsState = Array.isArray(p.applications) ? [...(p.applications as unknown as AppRow[])] : [];
         renderApps();
 
-        // Industries
         const { data: pInd } = await supabase.from('product_industries').select('industry_id').eq('product_id', editId);
         selectedIndustries = (pInd || []).map((r: any) => r.industry_id);
         renderIndustries();
@@ -350,9 +485,10 @@ import { path } from '../../../lib/site';
 
       loadingEl.remove();
       formEl.style.display = '';
+      saveTopBtn!.style.display = '';
     })();
 
-    // ---- Save ----
+    // ================= SAVE =================
     formEl?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (errorEl) errorEl.style.display = 'none';
@@ -362,8 +498,16 @@ import { path } from '../../../lib/site';
       if (!name) { showError('Product name is required.'); return; }
       if (!subCategoryId) { showError('Please select a sub-category.'); return; }
 
+      // At least one variant row with a model name is expected
+      const validVariants = variantsState.filter(v => v.name.trim());
+      if (!editId && !validVariants.length) {
+        showError('Please add at least one size in the "Sizes & Colours" tab.');
+        return;
+      }
+
       submitBtn?.setAttribute('disabled', '');
       submitBtn.textContent = 'Saving…';
+      saveTopBtn?.setAttribute('disabled', '');
 
       const slug = slugEl.value.trim() || slugify(name);
       const productId = editId || crypto.randomUUID();
@@ -390,10 +534,38 @@ import { path } from '../../../lib/site';
         showError(prodErr.message);
         submitBtn?.removeAttribute('disabled');
         submitBtn.textContent = 'Save product';
+        saveTopBtn?.removeAttribute('disabled');
         return;
       }
 
-      // --- Images ---
+      // ---- Variants (sizes & colours) ----
+      const variantRows = variantsState
+        .filter(v => v.name.trim())
+        .map((v, i) => ({
+          id: v.id || crypto.randomUUID(),
+          product_id: productId,
+          name: v.name.trim(),
+          size: v.size.trim() || null,
+          shape: v.shape.trim() || null,
+          color: v.color.trim() || null,
+          weight: v.weight.trim() || null,
+          capacity: v.capacity.trim() || null,
+          material: v.material.trim() || null,
+          price: v.price.trim() || null,
+          is_active: v.is_active,
+          display_order: i,
+          updated_at: new Date().toISOString()
+        }));
+      if (editId) {
+        const { error: delVErr } = await supabase.from('product_variants').delete().eq('product_id', productId);
+        if (delVErr) { showError(`Failed to update sizes: ${delVErr.message}`); resetBtn(); return; }
+      }
+      if (variantRows.length) {
+        const { error: insVErr } = await supabase.from('product_variants').insert(variantRows as never);
+        if (insVErr) { showError(`Failed to save sizes: ${insVErr.message}`); resetBtn(); return; }
+      }
+
+      // ---- Images ----
       const uploadErrors: string[] = [];
       for (let i = 0; i < imagesState.length; i++) {
         const entry = imagesState[i];
@@ -416,20 +588,12 @@ import { path } from '../../../lib/site';
         }
       }
 
-      // --- Specs ---
-      const specPayload = specsState.filter(s => s.name.trim()).map((s, i) => ({
-        product_id: productId, specification_name: s.name.trim(), specification_value: s.value.trim(), display_order: i
-      }));
-      if (editId) await supabase.from('product_specifications').delete().eq('product_id', productId);
-      if (specPayload.length) await supabase.from('product_specifications').insert(specPayload);
-
-      // --- Industries ---
+      // ---- Industries (optional) ----
       const indPayload = selectedIndustries.map(indId => ({ product_id: productId, industry_id: indId }));
       if (editId) await supabase.from('product_industries').delete().eq('product_id', productId);
       if (indPayload.length) await supabase.from('product_industries').insert(indPayload);
 
-      submitBtn?.removeAttribute('disabled');
-      submitBtn.textContent = 'Save product';
+      resetBtn();
 
       if (uploadErrors.length) {
         toast(`Saved, but some image operations failed: ${uploadErrors[0]}`, 'error');
@@ -438,5 +602,11 @@ import { path } from '../../../lib/site';
       }
       window.location.href = href('admin/products/');
     });
+
+    function resetBtn() {
+      submitBtn?.removeAttribute('disabled');
+      submitBtn!.textContent = 'Save product';
+      saveTopBtn?.removeAttribute('disabled');
+    }
   </script>
 </AdminLayout>

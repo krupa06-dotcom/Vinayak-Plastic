@@ -4,13 +4,17 @@ import { path } from '../../../lib/site';
 ---
 
 <AdminLayout title="Categories" current="categories">
-  <div class="a-card">
-    <div class="a-card-head">
-      <h2>All Categories</h2>
-      <a href={path('/admin/categories/edit/')} class="a-btn a-btn-primary">+ New Category</a>
+  <div class="a-page-head">
+    <h2>Categories</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href={path('/admin/subcategories/edit/')} class="a-btn">+ Sub-category</a>
+      <a href={path('/admin/categories/edit/')} class="a-btn a-btn-primary">+ Category</a>
     </div>
-    <div class="a-card-body" id="cat-list">
-      <div class="a-inline-loading"><div class="a-spinner"></div></div>
+  </div>
+
+  <div class="a-card">
+    <div class="a-card-body" id="cat-list" style="padding:6px 0 0;">
+      <div class="a-inline-loading" style="padding:30px;"><div class="a-spinner"></div></div>
     </div>
   </div>
 
@@ -20,19 +24,29 @@ import { path } from '../../../lib/site';
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
 
+    interface SubRow { id: string; category_id: string; name: string; slug: string; is_active: boolean }
+    interface CatRow { id: string; name: string; slug: string; is_active: boolean }
+
     async function load() {
       const listEl = document.getElementById('cat-list');
       if (!listEl) return;
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name, slug, is_active, display_order')
-        .order('display_order', { ascending: true });
+      const [catsRes, subsRes, prodsRes] = await Promise.all([
+        supabase.from('categories').select('id, name, slug, is_active, display_order').order('display_order'),
+        supabase.from('sub_categories').select('id, category_id, name, slug, is_active'),
+        supabase.from('products').select('id, sub_category_id')
+      ]);
 
-      if (error) { showError(listEl, error.message); return; }
+      if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
+      if (subsRes.error) { showError(listEl, subsRes.error.message); return; }
+      if (prodsRes.error) { showError(listEl, prodsRes.error.message); return; }
 
-      if (!data?.length) {
-        showEmpty(listEl, 'No categories yet', 'Create your first category to organise your products.',
+      const cats = (catsRes.data || []) as CatRow[];
+      const subs = (subsRes.data || []) as SubRow[];
+      const prods = (prodsRes.data || []) as any[];
+
+      if (!cats.length) {
+        showEmpty(listEl, 'No categories yet', 'Create a category first — products are organised as Category → Sub-category.',
           `<a href="${href('admin/categories/edit/')}" class="a-btn a-btn-primary">+ New Category</a>`);
         return;
       }
@@ -41,27 +55,67 @@ import { path } from '../../../lib/site';
         <div class="a-table-wrap">
           <table class="a-table">
             <thead><tr>
-              <th>Order</th><th>Name</th><th>Slug</th><th>Status</th><th style="width:120px">Actions</th>
+              <th style="width:34px"></th><th>Category</th><th>Contents</th><th>Status</th><th style="width:210px">Actions</th>
             </tr></thead>
-            <tbody>${data.map(c => `
-              <tr>
-                <td style="text-align:center;">${c.display_order}</td>
-                <td><strong>${esc(c.name)}</strong></td>
-                <td style="color:var(--a-muted)">${esc(c.slug)}</td>
-                <td>${activeBadge(c.is_active)}</td>
-                <td class="a-actions">
-                  <a href="${href(`admin/categories/edit/?id=${c.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                  <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${c.id}">Delete</button>
-                </td>
-              </tr>
-            `).join('')}</tbody>
+            <tbody>
+              ${cats.map(c => {
+                const catSubs = subs.filter(s => s.category_id === c.id);
+                const subIds = catSubs.map(s => s.id);
+                const prodCount = prods.filter(p => subIds.includes(p.sub_category_id)).length;
+                return `
+                  <tr class="a-tree-parent" data-cat="${c.id}">
+                    <td><button type="button" class="a-tree-toggle" data-toggle="${c.id}" aria-label="Toggle">▶</button></td>
+                    <td>
+                      <strong>${esc(c.name)}</strong><br>
+                      <span style="font-size:0.75rem;color:var(--a-faint)">${esc(c.slug)}</span>
+                    </td>
+                    <td>
+                      <span class="a-chip">${catSubs.length} sub-categor${catSubs.length === 1 ? 'y' : 'ies'}</span>
+                      <span class="a-chip ${prodCount ? 'a-chip-ok' : ''}">${prodCount} product${prodCount === 1 ? '' : 's'}</span>
+                    </td>
+                    <td>${activeBadge(c.is_active)}</td>
+                    <td class="a-actions">
+                      <a href="${href(`admin/categories/edit/?id=${c.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                      <a href="${href(`admin/subcategories/edit/?category=${c.id}`)}" class="a-btn a-btn-sm">+ Sub</a>
+                      <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${c.id}">Delete</button>
+                    </td>
+                  </tr>
+                  ${catSubs.map(s => `
+                    <tr class="a-tree-child" data-parent="${c.id}" style="display:none;">
+                      <td></td>
+                      <td style="padding-left:34px;">
+                        <span style="color:var(--a-faint)">↳</span> ${esc(s.name)}<br>
+                        <span style="font-size:0.75rem;color:var(--a-faint);padding-left:14px">${esc(s.slug)}</span>
+                      </td>
+                      <td><span class="a-chip">${prods.filter(p => p.sub_category_id === s.id).length} products</span></td>
+                      <td>${activeBadge(s.is_active)}</td>
+                      <td class="a-actions">
+                        <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                        <a href="${href(`admin/products/?sub=${s.id}`)}" class="a-btn a-btn-sm">Products</a>
+                      </td>
+                    </tr>`).join('')}
+                `;
+              }).join('')}
+            </tbody>
           </table>
         </div>`;
+
+      listEl.querySelectorAll<HTMLButtonElement>('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.toggle!;
+          const children = listEl.querySelectorAll<HTMLTableRowElement>(`tr[data-parent="${id}"]`);
+          const open = btn.textContent?.trim() === '▶';
+          children.forEach(ch => { ch.style.display = open ? '' : 'none'; });
+          btn.textContent = open ? '▼' : '▶';
+        });
+      });
 
       listEl.querySelectorAll<HTMLButtonElement>('[data-delete-id]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.dataset.deleteId!;
-          const ok = await confirmDialog('Delete category?', 'All subcategories and products in this category will be orphaned (not deleted). Proceed with care.');
+          const cat = cats.find(c => c.id === id);
+          const ok = await confirmDialog(`Delete "${cat?.name ?? 'category'}"?`,
+            'This permanently deletes the category and its sub-categories and all products under them. This cannot be undone.');
           if (!ok) return;
           const { error } = await supabase.from('categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }

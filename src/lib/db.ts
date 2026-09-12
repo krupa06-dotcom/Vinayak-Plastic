@@ -56,6 +56,21 @@ export interface ProductSpecification {
   display_order: number;
 }
 
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  name: string;
+  size: string | null;
+  shape: string | null;
+  color: string | null;
+  weight: string | null;
+  capacity: string | null;
+  material: string | null;
+  price: string | null;
+  is_active: boolean;
+  display_order: number;
+}
+
 export interface Industry {
   id: string;
   name: string;
@@ -91,6 +106,7 @@ export interface ProductWithImages extends Product {
 export interface ProductWithDetails extends Product {
   product_images: ProductImage[];
   product_specifications: ProductSpecification[];
+  product_variants: ProductVariant[];
   sub_category: SubCategory & {
     category: Category;
   };
@@ -273,7 +289,27 @@ export async function getProductBySlug(slug: string): Promise<ProductWithDetails
     return null;
   }
 
-  return data as unknown as ProductWithDetails;
+  // Variants live in their own table; fetch separately so a product page still
+  // renders even if the product_variants migration has not been applied yet.
+  const variants = await getProductVariants(data.id);
+
+  return { ...data, product_variants: variants } as unknown as ProductWithDetails;
+}
+
+export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+  if (!hasSupabase()) return [];
+  const { data, error } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('product_id', productId)
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching product variants:', error);
+    return [];
+  }
+
+  return (data || []) as unknown as ProductVariant[];
 }
 
 export async function getFeaturedProducts(): Promise<ProductWithImages[]> {

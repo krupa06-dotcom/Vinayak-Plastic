@@ -4,13 +4,14 @@ import { path } from '../../../lib/site';
 ---
 
 <AdminLayout title="Sub-categories" current="subcategories">
+  <div class="a-page-head">
+    <h2>Sub-categories</h2>
+    <a href={path('/admin/subcategories/edit/')} class="a-btn a-btn-primary">+ Sub-category</a>
+  </div>
+
   <div class="a-card">
-    <div class="a-card-head">
-      <h2>All Sub-categories</h2>
-      <a href={path('/admin/subcategories/edit/')} class="a-btn a-btn-primary">+ New Sub-category</a>
-    </div>
-    <div class="a-card-body" id="sub-list">
-      <div class="a-inline-loading"><div class="a-spinner"></div></div>
+    <div class="a-card-body" id="sub-list" style="padding:6px 0 0;">
+      <div class="a-inline-loading" style="padding:30px;"><div class="a-spinner"></div></div>
     </div>
   </div>
 
@@ -24,15 +25,22 @@ import { path } from '../../../lib/site';
       const listEl = document.getElementById('sub-list');
       if (!listEl) return;
 
-      const { data, error } = await supabase
-        .from('sub_categories')
-        .select('id, name, slug, is_active, display_order, category:categories(name)')
-        .order('display_order', { ascending: true });
+      const [subsRes, catsRes, prodsRes] = await Promise.all([
+        supabase.from('sub_categories').select('id, category_id, name, slug, is_active, display_order').order('display_order'),
+        supabase.from('categories').select('id, name, is_active').order('display_order'),
+        supabase.from('products').select('id, sub_category_id')
+      ]);
 
-      if (error) { showError(listEl, error.message); return; }
+      if (subsRes.error) { showError(listEl, subsRes.error.message); return; }
+      if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
+      if (prodsRes.error) { showError(listEl, prodsRes.error.message); return; }
 
-      if (!data?.length) {
-        showEmpty(listEl, 'No sub-categories yet', 'Add a sub-category to group related products under a parent.',
+      const subs = (subsRes.data || []) as any[];
+      const cats = (catsRes.data || []) as any[];
+      const prods = (prodsRes.data || []) as any[];
+
+      if (!subs.length) {
+        showEmpty(listEl, 'No sub-categories yet', 'Sub-categories group related products under a parent category.',
           `<a href="${href('admin/subcategories/edit/')}" class="a-btn a-btn-primary">+ New Sub-category</a>`);
         return;
       }
@@ -41,27 +49,43 @@ import { path } from '../../../lib/site';
         <div class="a-table-wrap">
           <table class="a-table">
             <thead><tr>
-              <th>Order</th><th>Sub-category</th><th>Category</th><th>Status</th><th style="width:120px">Actions</th>
+              <th>Sub-category</th><th>Parent category</th><th style="width:110px">Products</th><th style="width:110px">Status</th><th style="width:120px">Actions</th>
             </tr></thead>
-            <tbody>${data.map((s: any) => `
-              <tr>
-                <td style="text-align:center;">${s.display_order}</td>
-                <td><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></td>
-                <td>${esc(s.category?.name ?? '—')}</td>
-                <td>${activeBadge(s.is_active)}</td>
-                <td class="a-actions">
-                  <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                  <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${s.id}">Delete</button>
-                </td>
-              </tr>
-            `).join('')}</tbody>
+            <tbody>
+              ${cats.map(c => {
+                const catSubs = subs.filter(s => s.category_id === c.id);
+                if (!catSubs.length) return `
+                  <tr>
+                    <td colspan="5" style="background:#f8fafc;color:var(--a-faint);font-size:0.8rem;">
+                      <strong style="color:var(--a-navy)">${esc(c.name)}</strong> — no sub-categories yet
+                      <a href="${href(`admin/subcategories/edit/?category=${c.id}`)}" style="color:var(--a-orange);margin-left:8px;">+ Add first</a>
+                    </td>
+                  </tr>`;
+                return catSubs.map((s: any, i: number) => `
+                  <tr>
+                    ${i === 0 ? `<td rowspan="${catSubs.length}" style="background:#f8fafc;border-right:1px solid var(--a-border);">
+                        <strong style="color:var(--a-navy)">${esc(c.name)}</strong>
+                        <div style="font-size:0.72rem;color:var(--a-faint);margin-top:2px;">${esc(c.slug)}</div>
+                      </td>` : ''}
+                    <td><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></td>
+                    <td><span class="a-chip">${prods.filter(p => p.sub_category_id === s.id).length} products</span></td>
+                    <td>${activeBadge(s.is_active)}</td>
+                    <td class="a-actions">
+                      <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                      <a href="${href(`admin/products/?sub=${s.id}`)}" class="a-btn a-btn-sm">Products</a>
+                      <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${s.id}">Delete</button>
+                    </td>
+                  </tr>`).join('');
+              }).join('')}
+            </tbody>
           </table>
         </div>`;
 
       listEl.querySelectorAll<HTMLButtonElement>('[data-delete-id]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.dataset.deleteId!;
-          const ok = await confirmDialog('Delete sub-category?', 'Products in this sub-category will not be deleted but will no longer be grouped. Proceed with care.');
+          const ok = await confirmDialog('Delete sub-category?',
+            'This permanently deletes the sub-category and all products inside it. This cannot be undone.');
           if (!ok) return;
           const { error } = await supabase.from('sub_categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }

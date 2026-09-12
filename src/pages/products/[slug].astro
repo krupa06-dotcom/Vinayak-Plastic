@@ -200,6 +200,7 @@ const productData: {
   imageAlt: string;
   features: string[];
   specifications: Array<Record<string, string>>;
+  variants: Array<Record<string, string | null>> | null;
   applications: Array<{ name: string; description: string }>;
   ctaTitle: string;
   ctaDescription: string;
@@ -212,6 +213,7 @@ const productData: {
   imageAlt: fallbackProduct.imageAlt,
   features: fallbackProduct.features,
   specifications: fallbackProduct.specifications,
+  variants: null,
   applications: fallbackProduct.applications,
   ctaTitle: fallbackProduct.ctaTitle,
   ctaDescription: fallbackProduct.ctaDescription,
@@ -232,10 +234,35 @@ const productData: {
     }
     return acc;
   }, [] as Array<Record<string, string>>),
+  variants: (product!.product_variants || [])
+    .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .map((v: any) => ({
+      model: v.name,
+      size: v.size,
+      shape: v.shape,
+      color: v.color,
+      weight: v.weight,
+      capacity: v.capacity,
+      material: v.material
+    })),
   applications: (product!.applications as Array<{ name: string; description: string }>) || [],
   ctaTitle: 'Need Custom Sizes or Bulk Pricing?',
   ctaDescription: 'We supply to dairy distributors, warehouses, and municipal buyers across India. Call or WhatsApp for a quote.',
   dbImage: product!.product_images?.[0]?.image_url ? getProductImageUrl(product!.product_images[0].image_url) : null
+};
+
+const productVariants = productData.variants;
+const hasVariants = !!(productVariants && productVariants.length);
+const variantCols = (['model', 'size', 'shape', 'color', 'weight', 'capacity', 'material'] as const)
+  .filter(k => hasVariants && productVariants!.some(v => v[k] !== null && v[k] !== ''));
+const variantLabels: Record<string, string> = {
+  model: 'Model',
+  size: 'Size (L × W × H)',
+  shape: 'Shape',
+  color: 'Colour',
+  weight: 'Weight',
+  capacity: 'Capacity / Load',
+  material: 'Material'
 };
 
 const breadcrumbTitle = productData.title;
@@ -320,32 +347,53 @@ const productSchema = `{
   <section class="section-warm">
     <div class="container">
       <div class="section-header reveal">
-        <h2 class="display-700">Standard Specifications</h2>
+        <h2 class="display-700">{hasVariants ? 'Sizes & Specifications' : 'Standard Specifications'}</h2>
         <p>Common {productData.title.toLowerCase()} dimensions produced by our unit. Custom sizes available on request.</p>
       </div>
       <div class="specs-table-wrap reveal">
-        <table class="specs-table">
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>External Size (L × W × H) mm</th>
-              <th>Weight</th>
-              <th>Load Capacity</th>
-              <th>Material</th>
-            </tr>
-          </thead>
-          <tbody>
-            {productData.specifications.map(spec => (
+        {hasVariants ? (
+          <table class="specs-table">
+            <thead>
               <tr>
-                <td>{spec.model}</td>
-                <td>{spec.size}</td>
-                <td>{spec.weight}</td>
-                <td>{spec.capacity}</td>
-                <td>{spec.material}</td>
+                {variantCols.map(k => (
+                  <th>{variantLabels[k]}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {productVariants!.map(v => (
+                <tr>
+                  {variantCols.map(k => (
+                    <td>{v[k] || '—'}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <table class="specs-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>External Size (L × W × H) mm</th>
+                <th>Weight</th>
+                <th>Load Capacity</th>
+                <th>Material</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productData.specifications.map(spec => (
+                <tr>
+                  <td>{spec.model}</td>
+                  <td>{spec.size}</td>
+                  <td>{spec.weight}</td>
+                  <td>{spec.capacity}</td>
+                  <td>{spec.material}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
       <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
         <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>

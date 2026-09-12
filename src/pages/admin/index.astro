@@ -1,42 +1,59 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { path } from '../../lib/site';
 ---
 
 <AdminLayout title="Dashboard" current="dashboard">
+  <div class="a-page-head">
+    <h2>Overview</h2>
+    <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary">+ Add Product</a>
+  </div>
+
   <div id="dashboard-stats" class="a-stats"></div>
 
-  <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
+  <div style="display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:20px;" class="a-dash-grid">
     <div>
       <div class="a-card">
         <div class="a-card-head">
-          <h2>Recent Enquiries</h2>
-          <a href={import.meta.env.BASE_URL + 'admin/enquiries/'} class="a-btn a-btn-sm">View all</a>
+          <h2>Catalogue Health</h2>
+          <a href={path('/admin/categories/')} class="a-btn a-btn-sm">Manage catalogue</a>
         </div>
-        <div class="a-card-body" id="dashboard-enquiries">
+        <div class="a-card-body">
+          <ul class="a-health" id="dashboard-health">
+            <li><span class="a-inline-loading" style="padding:0;"><div class="a-spinner"></div></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-head">
+          <h2>Needs Attention</h2>
+        </div>
+        <div class="a-card-body" id="dashboard-attention">
           <div class="a-inline-loading"><div class="a-spinner"></div></div>
         </div>
       </div>
     </div>
 
-    <div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
       <div class="a-card">
         <div class="a-card-head">
-          <h2>Quick Actions</h2>
+          <h2>Recent Enquiries</h2>
+          <a href={path('/admin/enquiries/')} class="a-btn a-btn-sm">View all</a>
         </div>
+        <div class="a-card-body" id="dashboard-enquiries">
+          <div class="a-inline-loading"><div class="a-spinner"></div></div>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-head"><h2>Shortcuts</h2></div>
         <div class="a-card-body">
           <div class="a-quick">
-            <a href={import.meta.env.BASE_URL + 'admin/categories/'}>
-              <span>Categories</span><span>&rarr;</span>
-            </a>
-            <a href={import.meta.env.BASE_URL + 'admin/subcategories/'}>
-              <span>Sub-categories</span><span>&rarr;</span>
-            </a>
-            <a href={import.meta.env.BASE_URL + 'admin/products/'}>
-              <span>Products</span><span>&rarr;</span>
-            </a>
-            <a href={import.meta.env.BASE_URL + 'admin/media/'}>
-              <span>Media Library</span><span>&rarr;</span>
-            </a>
+            <a href={path('/admin/products/')}><span>View products</span><span>&rarr;</span></a>
+            <a href={path('/admin/categories/edit/')}><span>New category</span><span>&rarr;</span></a>
+            <a href={path('/admin/subcategories/edit/')}><span>New sub-category</span><span>&rarr;</span></a>
+            <a href={path('/admin/media/')}><span>Upload images</span><span>&rarr;</span></a>
           </div>
         </div>
       </div>
@@ -50,32 +67,82 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (!(await gate())) return;
 
       const statsEl = document.getElementById('dashboard-stats');
+      const healthEl = document.getElementById('dashboard-health');
+      const attentionEl = document.getElementById('dashboard-attention');
       const enquiriesEl = document.getElementById('dashboard-enquiries');
 
-      const [catRes, subRes, prodRes, activeRes, newEnqRes] = await Promise.all([
-        supabase.from('categories').select('id', { count: 'exact', head: true }),
-        supabase.from('sub_categories').select('id', { count: 'exact', head: true }),
-        supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new')
+      const [
+        newEnqRes,
+        { data: products }, { data: subCats }, { data: cats },
+        { data: variants }, { data: projImgs }
+      ] = await Promise.all([
+        supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+        supabase.from('products').select('id, sub_category_id, name, is_active, is_featured'),
+        supabase.from('sub_categories').select('id, category_id'),
+        supabase.from('categories').select('id, name, display_order').order('display_order'),
+        supabase.from('product_variants').select('product_id'),
+        supabase.from('product_images').select('product_id')
       ]);
 
+      const prods = (products || []) as any[];
+      const subs = (subCats || []) as any[];
+      const catsData = (cats || []) as any[];
+      const variantsProdIds = new Set((variants || []).map((v: any) => v.product_id));
+      const imgsProdIds = new Set((projImgs || []).map((i: any) => i.product_id));
+
+      const activeCount = prods.filter(p => p.is_active).length;
+      const noVariants = prods.filter(p => !variantsProdIds.has(p.id));
+      const noImages = prods.filter(p => !imgsProdIds.has(p.id));
+
       const stats = [
-        { num: catRes.count ?? 0, label: 'Categories', icon: '📁' },
-        { num: subRes.count ?? 0, label: 'Sub-categories', icon: '📂' },
-        { num: prodRes.count ?? 0, label: 'Products', icon: '📦' },
-        { num: activeRes.count ?? 0, label: 'Active Products', icon: '✅' },
-        { num: newEnqRes.count ?? 0, label: 'New Enquiries', icon: '📩' }
+        { num: prods.length, label: 'Products', icon: '📦', tone: '' },
+        { num: activeCount, label: 'Active products', icon: '🟢', tone: '' },
+        { num: subs.length, label: 'Sub-categories', icon: '📂', tone: '' },
+        { num: catsData.length, label: 'Categories', icon: '📁', tone: '' },
+        { num: newEnqRes.count ?? 0, label: 'New enquiries', icon: '📩', tone: newEnqRes.count ? 'warn' : '' },
+        { num: noVariants.length, label: 'Missing sizes/shapes', icon: '📐', tone: noVariants.length ? 'warn' : '' }
       ];
 
       if (statsEl) {
         statsEl.innerHTML = stats.map(s => `
           <div class="a-stat">
-            <div class="a-stat-icon" style="font-size:1.1rem;float:right;">${s.icon}</div>
+            <div class="a-stat-icon">${s.icon}</div>
             <div class="a-stat-num">${s.num}</div>
             <div class="a-stat-label">${esc(s.label)}</div>
           </div>
         `).join('');
+      }
+
+      if (healthEl) {
+        const rows = catsData.map(c => {
+          const subIds = subs.filter(s => s.category_id === c.id).map(s => s.id);
+          const prodCount = prods.filter(p => subIds.includes(p.sub_category_id)).length;
+          return { name: c.name, subs: subIds.length, prods: prodCount };
+        });
+        if (!rows.length) {
+          healthEl.innerHTML = '<li style="color:var(--a-faint);justify-content:flex-start;">No categories yet.</li>';
+        } else {
+          healthEl.innerHTML = rows.map(r => `
+            <li>
+              <span><strong>${esc(r.name)}</strong> &middot; <span style="color:var(--a-muted);font-size:0.8rem;">${esc(r.subs)} sub-categor${r.subs === 1 ? 'y' : 'ies'}</span></span>
+              <span class="a-chip ${r.prods ? 'a-chip-ok' : ''}">${r.prods} product${r.prods === 1 ? '' : 's'}</span>
+            </li>`).join('');
+        }
+      }
+
+      if (attentionEl) {
+        const bothMissing = noVariants.length + noImages.length;
+        if (!bothMissing) {
+          showEmpty(attentionEl, 'Everything looks complete', 'Every product has photos and size/shape details.');
+        } else {
+          const list = (n: any[], label: string) => n.length
+            ? `<li><strong>${n.length} ${label}</strong><div style="font-size:0.8rem;color:var(--a-muted);">${n.slice(0, 4).map(p => esc(p.name)).join(', ')}${n.length > 4 ? ` +${n.length - 4} more` : ''}</div></li>`
+            : '';
+          attentionEl.innerHTML = `<ul class="a-health" style="margin:0;padding:0;list-style:none;">
+            ${list(noVariants, 'products missing sizes & shapes')}
+            ${list(noImages, 'products missing photos')}
+          </ul>`;
+        }
       }
 
       if (enquiriesEl) {
@@ -96,21 +163,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         }
 
         enquiriesEl.innerHTML = `
-          <div class="a-table-wrap">
-            <table class="a-table">
-              <thead><tr>
-                <th>Name</th><th>Company</th><th>Status</th><th>Date</th>
-              </tr></thead>
-              <tbody>${data.map(r => `
-                <tr>
-                  <td><strong>${esc(r.name)}</strong></td>
-                  <td>${esc(r.company || '—')}</td>
-                  <td>${statusBadge(r.status)}</td>
-                  <td style="white-space:nowrap">${fmtDateTime(r.created_at)}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>`;
+          <ul class="a-health" style="margin:0;padding:0;list-style:none;">
+            ${data.map(r => `
+              <li>
+                <span><strong>${esc(r.name)}</strong>${r.company ? ` · <span style="color:var(--a-muted);font-size:0.82rem;">${esc(r.company)}</span>` : ''}<br>
+                <span style="font-size:0.76rem;color:var(--a-faint);">${fmtDateTime(r.created_at)}</span></span>
+                ${statusBadge(r.status)}
+              </li>`).join('')}
+          </ul>`;
       }
     })();
   </script>
