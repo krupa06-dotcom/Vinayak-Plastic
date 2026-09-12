@@ -6,7 +6,7 @@ import { path } from '../../../lib/site';
 <AdminLayout title="Products" current="products">
   <div class="a-page-head">
     <h2>Products</h2>
-    <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary">+ Add Product</a>
+    <a href={path('/admin/products/edit/')} class="a-btn a-btn-orange a-btn-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Product</a>
   </div>
 
   <div class="a-card">
@@ -154,7 +154,7 @@ import { path } from '../../../lib/site';
               const vCount = variantCounts[p.id] ?? 0;
               return `
               <tr>
-                <td>${imgUrl ? `<img src="${esc(imgUrl)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#ccc;">📦</div>'}</td>
+                <td>${imgUrl ? `<img src="${esc(imgUrl)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;color:#cbd5e1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg></div>'}</td>
                 <td>
                   <a href="${href(`admin/products/edit/?id=${p.id}`)}" style="font-weight:600;color:var(--a-navy);">${esc(p.name)}</a><br>
                   <span style="font-size:0.75rem;color:var(--a-faint)">${esc(p.product_code || p.slug)}</span>

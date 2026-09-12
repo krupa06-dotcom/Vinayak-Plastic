@@ -6,7 +6,7 @@ import { path } from '../../lib/site';
 <AdminLayout title="Dashboard" current="dashboard">
   <div class="a-page-head">
     <h2>Overview</h2>
-    <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary">+ Add Product</a>
+    <a href={path('/admin/products/edit/')} class="a-btn a-btn-orange a-btn-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Product</a>
   </div>
 
   <div id="dashboard-stats" class="a-stats"></div>
@@ -94,21 +94,33 @@ import { path } from '../../lib/site';
       const noVariants = prods.filter(p => !variantsProdIds.has(p.id));
       const noImages = prods.filter(p => !imgsProdIds.has(p.id));
 
+      const svg = (paths: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+      const STAT_ICONS: Record<string, string> = {
+        products: svg('<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>'),
+        active: svg('<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>'),
+        subs: svg('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
+        cats: svg('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/>'),
+        enquiries: svg('<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'),
+        missing: svg('<path d="M10.3 3.85L1.8 18a2 2 0 001.72 3h16.94a2 2 0 001.72-3L13.7 3.85a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>')
+      };
+
       const stats = [
-        { num: prods.length, label: 'Products', icon: '📦', tone: '' },
-        { num: activeCount, label: 'Active products', icon: '🟢', tone: '' },
-        { num: subs.length, label: 'Sub-categories', icon: '📂', tone: '' },
-        { num: catsData.length, label: 'Categories', icon: '📁', tone: '' },
-        { num: newEnqRes.count ?? 0, label: 'New enquiries', icon: '📩', tone: newEnqRes.count ? 'warn' : '' },
-        { num: noVariants.length, label: 'Missing sizes/shapes', icon: '📐', tone: noVariants.length ? 'warn' : '' }
+        { num: prods.length, label: 'Products', icon: 'products' },
+        { num: activeCount, label: 'Active products', icon: 'active' },
+        { num: noVariants.length, label: 'Missing sizes/shapes', icon: 'missing' },
+        { num: subs.length, label: 'Sub-categories', icon: 'subs' },
+        { num: catsData.length, label: 'Categories', icon: 'cats' },
+        { num: newEnqRes.count ?? 0, label: 'New enquiries', icon: 'enquiries' }
       ];
 
       if (statsEl) {
         statsEl.innerHTML = stats.map(s => `
           <div class="a-stat">
-            <div class="a-stat-icon">${s.icon}</div>
-            <div class="a-stat-num">${s.num}</div>
-            <div class="a-stat-label">${esc(s.label)}</div>
+            <div class="a-stat-icon">${STAT_ICONS[s.icon]}</div>
+            <div>
+              <div class="a-stat-num">${s.num}</div>
+              <div class="a-stat-label">${esc(s.label)}</div>
+            </div>
           </div>
         `).join('');
       }

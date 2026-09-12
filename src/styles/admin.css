@@ -130,6 +130,20 @@ html.admin body {
   padding: 14px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+.admin-sidebar-foot .admin-nav-link,
+#admin-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  color: #c7d2e5;
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.admin-sidebar-foot .admin-nav-link:hover,
+#admin-logout:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 .admin-sidebar-foot .admin-nav-link svg,
 #admin-logout svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
 
@@ -234,13 +248,16 @@ html.admin body {
 .a-btn:hover { border-color: var(--a-border-strong); background: #f8fafc; }
 .a-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .a-btn-primary { background: var(--a-navy); border-color: var(--a-navy); color: #fff; }
-.a-btn-primary:hover { background: var(--a-navy-deep); border-color: var(--a-navy-deep); }
+.a-btn-primary:hover { background: var(--a-navy-deep); border-color: var(--a-navy-deep); color: #fff; }
 .a-btn-orange { background: var(--a-orange); border-color: var(--a-orange); color: #fff; }
-.a-btn-orange:hover { background: var(--a-orange-deep); border-color: var(--a-orange-deep); }
+.a-btn-orange:hover { background: var(--a-orange-deep); border-color: var(--a-orange-deep); color: #fff; }
 .a-btn-danger { background: var(--a-danger-bg); border-color: #e5b6af; color: var(--a-danger); }
 .a-btn-danger:hover { background: #f6d3cd; }
 .a-btn-sm { padding: 5px 10px; font-size: 0.78rem; }
 .a-btn-block { width: 100%; justify-content: center; }
+.a-btn-plus { padding: 10px 18px; font-weight: 600; box-shadow: 0 2px 6px rgba(232, 99, 12, 0.25); }
+.a-btn-plus svg { width: 16px; height: 16px; }
+.a-btn a { color: inherit; }
 
 /* ============ Cards / panels ============ */
 .a-card {
@@ -454,16 +471,30 @@ html.admin body {
 .a-modal-close { background: none; border: none; font-size: 1.3rem; color: var(--a-faint); line-height: 1; }
 
 /* Stats on dashboard */
-.a-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 22px; }
+.a-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 22px; }
 .a-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   background: var(--a-surface);
   border: 1px solid var(--a-border);
   border-radius: 10px;
   padding: 16px 18px;
 }
-.a-stat .a-stat-num { font-size: 1.7rem; font-weight: 700; color: var(--a-navy); line-height: 1.1; }
-.a-stat .a-stat-label { font-size: 0.78rem; color: var(--a-muted); margin-top: 4px; }
-.a-stat .a-stat-icon { float: right; color: var(--a-orange); }
+.a-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: #fdeee2;
+  color: var(--a-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.a-stat-icon svg { width: 21px; height: 21px; }
+.a-stat .a-stat-num { font-size: 1.55rem; font-weight: 700; color: var(--a-navy); line-height: 1.1; }
+.a-stat .a-stat-label { font-size: 0.76rem; color: var(--a-muted); margin-top: 3px; white-space: nowrap; }
 
 /* Toolbar (filters/search) */
 .a-toolbar {
