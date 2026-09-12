@@ -120,7 +120,8 @@ const isCurrent = (key: string) => key === current;
   </div>
 
   <script>
-    import '../scripts/admin/core';
+    import { ensureAdmin } from '../scripts/admin/core';
+    void ensureAdmin();
   </script>
 </body>
 </html>
