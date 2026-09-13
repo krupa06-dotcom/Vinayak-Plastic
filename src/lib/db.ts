@@ -1,4 +1,5 @@
 import { supabase, hasSupabase } from './supabase';
+import { path } from './site';
 
 // ============================================================
 // Types
@@ -151,6 +152,13 @@ export async function getProductBySlug(slug: string): Promise<ProductWithDetails
   // renders even if the product_variants migration has not been applied yet.
   const variants = await getProductVariants(data.id);
 
+  // Ensure the gallery is in display_order so [0] is reliably the main image.
+  if (Array.isArray((data as { product_images?: unknown }).product_images)) {
+    (data as { product_images: ProductImage[] }).product_images.sort(
+      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+    );
+  }
+
   return { ...data, product_variants: variants } as unknown as ProductWithDetails;
 }
 
@@ -203,6 +211,160 @@ export async function getSiteSetting(key: string): Promise<unknown> {
   }
 
   return data?.value ?? null;
+}
+
+// ============================================================
+// Catalogue Queries (Products page)
+// ============================================================
+
+export interface CatalogueSubCategory extends SubCategory {
+  product_count: number;
+  category_name: string;
+  category_slug: string;
+}
+
+export interface CatalogueCategory extends Category {
+  product_count: number;
+  sub_categories: CatalogueSubCategory[];
+}
+
+export interface CatalogueProduct {
+  id: string;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  image_url: string | null;
+}
+
+export interface CatalogueData {
+  categories: CatalogueCategory[];
+  subCategories: CatalogueSubCategory[];
+  /** Products grouped by category slug (for /products?category=<slug>). */
+  productsByCategorySlug: Record<string, CatalogueProduct[]>;
+  /** Products grouped by sub-category slug (for /products?subcategory=<slug>). */
+  productsBySubCategorySlug: Record<string, CatalogueProduct[]>;
+}
+
+const EMPTY_CATALOGUE: CatalogueData = {
+  categories: [],
+  subCategories: [],
+  productsByCategorySlug: {},
+  productsBySubCategorySlug: {}
+};
+
+export function getCatalogueData(): Promise<CatalogueData> {
+  if (!hasSupabase()) return Promise.resolve(EMPTY_CATALOGUE);
+
+  const [categoriesQuery, subCategoriesQuery, productsQuery] = [
+    supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('sub_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('products')
+      .select('id, name, slug, short_description, sub_category_id, product_images ( image_url )')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+  ];
+
+  return Promise.all([categoriesQuery, subCategoriesQuery, productsQuery]).then(
+    ([categoriesRes, subCategoriesRes, productsRes]) => {
+      const firstError =
+        categoriesRes.error || subCategoriesRes.error || productsRes.error;
+      if (firstError) {
+        console.error('Error fetching catalogue data:', firstError);
+        return EMPTY_CATALOGUE;
+      }
+
+      const categories = (categoriesRes.data || []) as Category[];
+      const subCategories = (subCategoriesRes.data || []) as SubCategory[];
+      const products = productsRes.data || [];
+
+      const categoryById = new Map(categories.map(c => [c.id, c]));
+      const subById = new Map(subCategories.map(s => [s.id, s]));
+
+      const subCounts = new Map<string, number>();
+      const catCounts = new Map<string, number>();
+      const bySubSlug: Record<string, CatalogueProduct[]> = {};
+      const byCatSlug: Record<string, CatalogueProduct[]> = {};
+
+      for (const p of products) {
+        const sub = subById.get(p.sub_category_id);
+        // images must be in display_order so [0] is the main image
+        const images = (p.product_images as ProductImage[] | undefined) ?? [];
+        const image = images
+          .slice()
+          .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0]?.image_url ?? null;
+        const catalogueProduct: CatalogueProduct = {
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          short_description: p.short_description,
+          image_url: image
+        };
+
+        subCounts.set(p.sub_category_id, (subCounts.get(p.sub_category_id) || 0) + 1);
+        if (sub) {
+          (bySubSlug[sub.slug] ||= []).push(catalogueProduct);
+          const cat = categoryById.get(sub.category_id);
+          catCounts.set(sub.category_id, (catCounts.get(sub.category_id) || 0) + 1);
+          if (cat) (byCatSlug[cat.slug] ||= []).push(catalogueProduct);
+        }
+      }
+
+      const catalogueCategories: CatalogueCategory[] = categories.map(cat => ({
+        ...cat,
+        product_count: catCounts.get(cat.id) || 0,
+        sub_categories: subCategories
+          .filter(s => s.category_id === cat.id)
+          .map(s => ({
+            ...s,
+            product_count: subCounts.get(s.id) || 0,
+            category_name: cat.name,
+            category_slug: cat.slug
+          }))
+      }));
+
+      const allSubCategories: CatalogueSubCategory[] = subCategories.map(s => {
+        const cat = categoryById.get(s.category_id);
+        return {
+          ...s,
+          product_count: subCounts.get(s.id) || 0,
+          category_name: cat?.name ?? '',
+          category_slug: cat?.slug ?? ''
+        };
+      });
+
+      return {
+        categories: catalogueCategories,
+        subCategories: allSubCategories,
+        productsByCategorySlug: byCatSlug,
+        productsBySubCategorySlug: bySubSlug
+      };
+    },
+    (error) => {
+      console.error('Error building catalogue data:', error);
+      return EMPTY_CATALOGUE;
+    }
+  );
+}
+
+/**
+ * Resolve an image reference stored in the database into a usable URL.
+ * Absolute URLs pass through; root-relative paths get the base prefix;
+ * anything else is treated as a Supabase Storage object path.
+ */
+export function resolveImageUrl(image: string | null): string | null {
+  if (!image) return null;
+  if (/^https?:\/\//i.test(image)) return image;
+  if (image.startsWith('/')) return path(image);
+  return getProductImageUrl(image);
 }
 
 // ============================================================

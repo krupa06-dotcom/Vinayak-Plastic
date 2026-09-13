@@ -2,62 +2,83 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { Image } from 'astro:assets';
-import plasticCrates from '../../assets/images/plastic-crates.webp';
-import plasticPallets from '../../assets/images/plastic-pallets.webp';
-import plasticWastebins from '../../assets/images/plastic-wastebins.webp';
-import handPalletTruck from '../../assets/images/hand-pallet-truck.webp';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
-import { getCategoriesWithSubCategories } from '../../lib/db';
-import { hasSupabase } from '../../lib/supabase';
+import { getCatalogueData, resolveImageUrl, type CatalogueProduct } from '../../lib/db';
 
-// Fallback product data (used when Supabase is not configured)
-const fallbackProducts = [
-  { title: 'Plastic Crates', slug: 'plastic-crates', img: plasticCrates, alt: 'Plastic crates stacked in warehouse', desc: 'Stackable & nestable crates for dairy, bakery, warehouse and material handling.', keywords: 'crates dairy bakery warehouse storage HDPE PP stackable nestable' },
-  { title: 'Plastic Pallets', slug: 'plastic-pallets', img: plasticPallets, alt: 'Industrial pallets stacked', desc: 'Heavy-duty pallets for warehouse racking, logistics, and export — single & double-face.', keywords: 'pallets racking logistics export HDPE forklift shipping' },
-  { title: 'Waste Bins / Dustbins', slug: 'waste-bins', img: plasticWastebins, alt: 'Industrial waste bins', desc: 'Industrial dustbins for municipal, commercial, and factory use — wheeled & lidded options.', keywords: 'waste bins dustbins municipal commercial factory wheeled lidded segregation recycling' },
-  { title: 'Hand Pallet Trucks', slug: 'hand-pallet-trucks', img: handPalletTruck, alt: 'Hand pallet truck in warehouse', desc: 'Manual pallet jacks for loading/unloading — 2.5T and 3T capacities with nylon/PU wheels.', keywords: 'pallet truck jack manual 2.5T 3T nylon PU wheels hydraulic loading' }
+const catalogue = await getCatalogueData();
+const { categories, subCategories, productsByCategorySlug, productsBySubCategorySlug } = catalogue;
+
+// Build card data
+const categoryCards = categories.map(cat => ({
+  name: cat.name,
+  slug: cat.slug,
+  description: cat.description,
+  image: resolveImageUrl(cat.image_url),
+  productCount: cat.product_count,
+  href: path(`/products?category=${cat.slug}`)
+}));
+
+const subCategoryCards = subCategories.map(sub => ({
+  name: sub.name,
+  slug: sub.slug,
+  categoryName: sub.category_name,
+  description: sub.description,
+  image: resolveImageUrl(sub.image_url),
+  productCount: sub.product_count,
+  href: path(`/products?subcategory=${sub.slug}`)
+}));
+
+// Build lightweight search index: categories + subcategories
+const searchIndex = [
+  ...categoryCards.map(c => ({
+    type: 'category' as const,
+    name: c.name,
+    slug: c.slug,
+    desc: c.description || '',
+    image: c.image,
+    keywords: `${c.name} ${c.description || ''}`.toLowerCase(),
+    href: c.href
+  })),
+  ...subCategoryCards.map(c => ({
+    type: 'subcategory' as const,
+    name: c.name,
+    slug: c.slug,
+    parentName: c.categoryName,
+    desc: c.description || '',
+    image: c.image,
+    keywords: `${c.name} ${c.categoryName} ${c.description || ''}`.toLowerCase(),
+    href: c.href
+  }))
 ];
 
-// Try to fetch categories from Supabase
-let categories: Array<{ name: string; slug: string; description: string | null; image_url: string | null }> = [];
+// Build filter index: products by category slug / subcategory slug
+const productsForFilter = (list: CatalogueProduct[]) =>
+  list.map(p => ({
+    name: p.name,
+    slug: p.slug,
+    desc: p.short_description || '',
+    image: resolveImageUrl(p.image_url),
+    href: `${path('/products')}/${p.slug}`
+  }));
 
-try {
-  if (hasSupabase()) {
-    const dbCategories = await getCategoriesWithSubCategories();
-    if (dbCategories.length > 0) {
-      categories = dbCategories.map(cat => ({
-        name: cat.name,
-        slug: cat.slug,
-        description: cat.description,
-        image_url: cat.image_url
-      }));
-    }
-  }
-} catch (error) {
-  console.warn('Supabase not configured, using fallback data');
-}
-
-// Use fallback products if no categories from database
-const allProducts = categories.length > 0
-  ? categories.map(cat => {
-      const catImg = cat.image_url
-        ? (cat.image_url.startsWith('/') ? path(cat.image_url) : cat.image_url)
-        : null;
-      return {
-        title: cat.name,
-        slug: cat.slug,
-        img: catImg ? { src: catImg } : plasticCrates, // { src } shape matches Astro Image assets
-        alt: cat.description || cat.name,
-        desc: cat.description || '',
-        keywords: cat.name.toLowerCase()
-      };
+const filterIndex = {
+  category: Object.fromEntries(
+    Object.entries(productsByCategorySlug).map(([slug, prods]) => {
+      const cat = categories.find(c => c.slug === slug);
+      return [slug, { title: cat?.name || slug, items: productsForFilter(prods) }];
     })
-  : fallbackProducts;
+  ),
+  subcategory: Object.fromEntries(
+    Object.entries(productsBySubCategorySlug).map(([slug, prods]) => {
+      const sub = subCategories.find(s => s.slug === slug);
+      return [slug, { title: sub?.name || slug, parent: sub?.category_name || '', items: productsForFilter(prods) }];
+    })
+  )
+};
 ---
 
-<Layout 
+<Layout
   title="Products | Vinayak Plastics — Plastic Crates, Pallets & Waste Bins"
   description="Explore Vinayak Plastics product range — plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks. HDPE & PP industrial-grade material handling equipment."
 >
@@ -73,104 +94,134 @@ const allProducts = categories.length > 0
     </div>
   </section>
 
-  <!-- ===== SEARCH RESULTS ===== -->
+  <!-- ===== FILTERED PRODUCTS (shown by JS when ?category= or ?subcategory=) ===== -->
+  <section class="section" id="filter-results" style="display:none">
+    <div class="container">
+      <div class="section-header">
+        <span class="sec-index">Filtered Catalogue</span>
+        <h2 class="display-700" id="filter-title"></h2>
+        <p id="filter-subtitle"></p>
+      </div>
+      <div class="res-grid" id="filter-grid"></div>
+      <div id="filter-no-results" class="empty-state" style="display:none">
+        <h3>No products found</h3>
+        <p>No products are currently listed in this section. <a href={path('/products')}>View all products</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SEARCH RESULTS (shown by JS when ?q=) ===== -->
   <section class="section search-results" id="search-results" style="display:none">
     <div class="container">
       <div class="section-header">
         <h2 class="display-700">Search Results</h2>
         <p id="search-query-text"></p>
       </div>
-      <div class="cat-grid" id="search-grid"></div>
-      <div id="no-results" style="display:none;text-align:center;padding:3rem 0">
-        <p style="font-size:1.1rem;color:var(--steel)">No products found matching your search.</p>
-        <a href={path('/products')} class="btn btn-primary" style="margin-top:1rem">View All Products</a>
+      <div class="res-grid" id="search-grid"></div>
+      <div id="no-results" class="empty-state" style="display:none">
+        <h3>No results found</h3>
+        <p>No categories or product types match your search. <a href={path('/products')}>View all products</a></p>
       </div>
     </div>
   </section>
 
-  <!-- ===== CATEGORIES ===== -->
+  <!-- ===== SECTION 1: MAIN CATEGORIES ===== -->
   <section class="section" id="categories-section">
     <div class="container">
-      <div class="cat-grid">
-
-        <a href={path('/products/plastic-crates')} class="cat-card reveal">
-          <Image
-            src={plasticCrates}
-            alt="Plastic crates stacked in warehouse"
-            width={600}
-            height={500}
-            widths={[400, 600]}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            loading="lazy"
-          />
-          <div class="cat-overlay"></div>
-          <div class="cat-content">
-            <h2>Plastic Crates</h2>
-            <p>Stackable &amp; nestable crates for dairy, bakery, warehouse and material handling</p>
-            <div class="cat-arrow" aria-hidden="true">→</div>
-          </div>
-        </a>
-
-        <a href={path('/products/plastic-pallets')} class="cat-card reveal">
-          <Image
-            src={plasticPallets}
-            alt="Industrial pallets stacked"
-            width={600}
-            height={400}
-            widths={[400, 600]}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            loading="lazy"
-          />
-          <div class="cat-overlay"></div>
-          <div class="cat-content">
-            <h2>Plastic Pallets</h2>
-            <p>Heavy-duty pallets for warehouse racking, logistics, and export — single &amp; double-face</p>
-            <div class="cat-arrow" aria-hidden="true">→</div>
-          </div>
-        </a>
-
-        <a href={path('/products/waste-bins')} class="cat-card reveal">
-          <Image
-            src={plasticWastebins}
-            alt="Industrial waste bins"
-            width={604}
-            height={508}
-            widths={[400, 604]}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            loading="lazy"
-          />
-          <div class="cat-overlay"></div>
-          <div class="cat-content">
-            <h2>Waste Bins / Dustbins</h2>
-            <p>Industrial dustbins for municipal, commercial, and factory use — wheeled &amp; lidded options</p>
-            <div class="cat-arrow" aria-hidden="true">→</div>
-          </div>
-        </a>
-
-        <a href={path('/products/hand-pallet-trucks')} class="cat-card reveal">
-          <Image
-            src={handPalletTruck}
-            alt="Hand pallet truck in warehouse"
-            width={1536}
-            height={1024}
-            widths={[400, 768, 1536]}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            loading="lazy"
-          />
-          <div class="cat-overlay"></div>
-          <div class="cat-content">
-            <h2>Hand Pallet Trucks</h2>
-            <p>Manual pallet jacks for loading/unloading — 2.5T and 3T capacities with nylon/PU wheels</p>
-            <div class="cat-arrow" aria-hidden="true">→</div>
-          </div>
-        </a>
-
+      <div class="section-header reveal">
+        <span class="sec-index">01 · Main Categories</span>
+        <h2 class="display-700">Explore Our Product Range</h2>
+        <p>Industrial-grade material handling and packaging equipment, organised by primary product family.</p>
       </div>
+
+      {categoryCards.length > 0 ? (
+        <div class="mc-grid">
+          {categoryCards.map(card => (
+            <a href={card.href} class="mc-card reveal">
+              <div class="mc-card__img">
+                {card.image ? (
+                  <img
+                    src={card.image}
+                    alt={`${card.name} — Vinayak Plastics product range`}
+                    width="600"
+                    height="450"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="mc-card__placeholder">{card.name}</span>
+                )}
+              </div>
+              <div class="mc-card__body">
+                <h3>{card.name}</h3>
+                {card.description && <p>{card.description}</p>}
+                <div class="mc-card__meta">
+                  <span class="mc-card__count">{card.productCount} {card.productCount === 1 ? 'Product' : 'Products'}</span>
+                  <span class="mc-card__cta">View Products <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state reveal">
+          <h3>Product catalogue coming soon</h3>
+          <p>We are currently updating our product listings. Please check back shortly or <a href={path('/contact')}>contact us</a> directly for product information.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- ===== SECTION 2: SUB CATEGORIES ===== -->
+  <section class="section section-warm" id="subcategory-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="sec-index">02 · Sub Categories</span>
+        <h2 class="display-700">Browse by Product Type</h2>
+        <p>Specific product types within each family — reference these to get exact dimensions, specifications and availability.</p>
+      </div>
+
+      {subCategoryCards.length > 0 ? (
+        <div class="sc-grid">
+          {subCategoryCards.map(card => (
+            <a href={card.href} class="sc-card reveal">
+              <div class="sc-card__img">
+                {card.image ? (
+                  <img
+                    src={card.image}
+                    alt={`${card.name} — ${card.categoryName}`}
+                    width="480"
+                    height="300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="sc-card__placeholder">{card.name}</span>
+                )}
+              </div>
+              <div class="sc-card__body">
+                <span class="sc-card__parent">{card.categoryName}</span>
+                <h3>{card.name}</h3>
+                {card.description && <p>{card.description}</p>}
+                <div class="sc-card__meta">
+                  <span class="sc-card__count">{card.productCount} {card.productCount === 1 ? 'Product' : 'Products'}</span>
+                  <span class="sc-card__cta">Explore <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state reveal">
+          <h3>Product types coming soon</h3>
+          <p>We are adding detailed product breakdowns. Please check back or <a href={path('/contact')}>contact us</a> for the full range.</p>
+        </div>
+      )}
     </div>
   </section>
 
   <!-- ===== ADDITIONAL PRODUCTS ===== -->
-  <section class="section-warm">
+  <section class="section">
     <div class="container">
       <div class="section-header reveal">
         <h2 class="display-700">Also Available</h2>
@@ -187,7 +238,7 @@ const allProducts = categories.length > 0
           <h3>Ice Boxes</h3>
           <p>Insulated plastic ice boxes for food transport, fishing, and catering. Available in multiple capacities with durable latch closures.</p>
         </article>
-        
+
         <article class="product-card">
           <div class="product-icon">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -200,7 +251,7 @@ const allProducts = categories.length > 0
           <h3>Storage Bins</h3>
           <p>Plastic storage bins for warehouse organization, inventory management, and parts handling. Available in multiple sizes with color options.</p>
         </article>
-        
+
         <article class="product-card">
           <div class="product-icon">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -212,7 +263,7 @@ const allProducts = categories.length > 0
           <h3>Racking Systems</h3>
           <p>Industrial racking solutions for warehouse storage optimization. Boltless assembly, adjustable shelf heights, and heavy-duty load capacity.</p>
         </article>
-        
+
         <article class="product-card">
           <div class="product-icon">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -243,48 +294,125 @@ const allProducts = categories.length > 0
   <Footer />
 </Layout>
 
-<script is:inline define:vars={{ productsJson: JSON.stringify(allProducts) }}>
+<script is:inline define:vars={{ searchJson: JSON.stringify(searchIndex), filterJson: JSON.stringify(filterIndex), basePath: path('/products') }}>
 (function () {
   var params = new URLSearchParams(window.location.search);
-  var q = (params.get('q') || '').trim().toLowerCase();
-  if (!q) return;
 
-  var products = JSON.parse(productsJson);
-  var matches = products.filter(function (p) {
-    return (p.title + ' ' + p.desc + ' ' + p.keywords).toLowerCase().indexOf(q) !== -1;
-  });
-
+  var filterResults = document.getElementById('filter-results');
+  var filterGrid    = document.getElementById('filter-grid');
+  var filterTitle   = document.getElementById('filter-title');
+  var filterSub     = document.getElementById('filter-subtitle');
+  var filterNo      = document.getElementById('filter-no-results');
   var searchResults = document.getElementById('search-results');
-  var searchGrid = document.getElementById('search-grid');
-  var noResults = document.getElementById('no-results');
-  var queryText = document.getElementById('search-query-text');
-  var categoriesSection = document.getElementById('categories-section');
+  var searchGrid    = document.getElementById('search-grid');
+  var searchNo      = document.getElementById('no-results');
+  var searchQuery   = document.getElementById('search-query-text');
+  var catsSection   = document.getElementById('categories-section');
+  var subsSection   = document.getElementById('subcategory-section');
 
-  if (!searchResults || !searchGrid) return;
+  var searchIndex  = JSON.parse(searchJson);
+  var filterIndex  = JSON.parse(filterJson);
 
-  queryText.textContent = 'Showing results for "' + params.get('q') + '"';
-
-  if (matches.length > 0) {
-    matches.forEach(function (p) {
-      var card = document.createElement('a');
-      card.href = '/Vinayak-Plastic/products/' + p.slug;
-      card.className = 'cat-card';
-      card.innerHTML =
-        '<img src="' + p.img.src + '" alt="' + p.alt + '" width="600" height="500" loading="lazy" />' +
-        '<div class="cat-overlay"></div>' +
-        '<div class="cat-content">' +
-          '<h2>' + p.title + '</h2>' +
-          '<p>' + p.desc + '</p>' +
-          '<div class="cat-arrow" aria-hidden="true">→</div>' +
-        '</div>';
-      searchGrid.appendChild(card);
-    });
-  } else {
-    noResults.style.display = 'block';
+  // --- Helpers ---
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
-  searchResults.style.display = 'block';
-  categoriesSection.querySelector('.section-header').innerHTML =
-    '<h2 class="display-700">All Products</h2><p>Browse our complete range of industrial material handling equipment.</p>';
+  function renderResultCard(item) {
+    var a = document.createElement('a');
+    a.href = item.href;
+    a.className = 'sc-card';
+    var imgHtml = item.image
+      ? '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" width="480" height="300" loading="lazy" decoding="async" />'
+      : '<span class="sc-card__placeholder">' + escapeHtml(item.name) + '</span>';
+    var parentTag = item.parentName || item.parent || '';
+    a.innerHTML =
+      '<div class="sc-card__img">' + imgHtml + '</div>' +
+      '<div class="sc-card__body">' +
+        (parentTag ? '<span class="sc-card__parent">' + escapeHtml(parentTag) + '</span>' : '') +
+        '<h3>' + escapeHtml(item.name) + '</h3>' +
+        (item.desc ? '<p>' + escapeHtml(item.desc) + '</p>' : '') +
+        '<div class="sc-card__meta"><span class="sc-card__cta">View <span aria-hidden="true">→</span></span></div>' +
+      '</div>';
+    return a;
+  }
+
+  // --- Category / Subcategory filter (?category= or ?subcategory=) ---
+  var catParam  = params.get('category');
+  var subParam  = params.get('subcategory');
+
+  if (catParam || subParam) {
+    var key = catParam || subParam;
+    var store = catParam ? filterIndex.category : filterIndex.subcategory;
+    var entry = store[key];
+    var known = entry || searchIndex.some(function (i) { return i.slug === key; });
+
+    if (known) {
+      var label = entry ? entry.title : '';
+      if (!label) {
+        var hit = searchIndex.find(function (i) { return i.slug === key; });
+        if (hit) label = hit.name;
+      }
+      filterTitle.textContent = label;
+      filterSub.textContent = catParam
+        ? 'All products in this category.'
+        : 'All products in this sub-category.';
+
+      if (entry && entry.items && entry.items.length) {
+        entry.items.forEach(function (item) { filterGrid.appendChild(renderResultCard(item)); });
+      } else {
+        filterNo.style.display = 'block';
+      }
+
+      // Rewrite section headings to signal filter is active
+      if (catsSection) {
+        catsSection.querySelector('.section-header').innerHTML =
+          '<h2 class="display-700">Explore Our Product Range</h2>' +
+          '<p>Browse our core product families — <a href="' + basePath + '">view all</a>.</p>';
+      }
+      if (subsSection) {
+        subsSection.querySelector('.section-header').innerHTML =
+          '<h2 class="display-700">Browse by Product Type</h2>' +
+          '<p>Specific product types — <a href="' + basePath + '">view all</a>.</p>';
+      }
+
+      filterResults.style.display = 'block';
+      if (filterResults.scrollIntoView) filterResults.scrollIntoView();
+    }
+  }
+
+  // --- Search (?q=) ---
+  var q = (params.get('q') || '').trim().toLowerCase();
+  if (q && !catParam && !subParam) {
+    var matches = searchIndex.filter(function (item) {
+      return item.keywords.indexOf(q) !== -1;
+    });
+
+    searchQuery.textContent = 'Showing results for "' + escapeHtml(params.get('q')) + '"';
+
+    if (matches.length > 0) {
+      matches.forEach(function (item) { searchGrid.appendChild(renderResultCard(item)); });
+    } else {
+      searchNo.style.display = 'block';
+    }
+
+    // Adjust headings
+    if (catsSection) {
+      catsSection.querySelector('.section-header').innerHTML =
+        '<h2 class="display-700">All Products</h2>' +
+        '<p>Browse our complete range of industrial material handling equipment.</p>';
+    }
+    if (subsSection) {
+      subsSection.querySelector('.section-header').innerHTML =
+        '<h2 class="display-700">Product Types</h2>' +
+        '<p>Browse by specific product type.</p>';
+    }
+
+    searchResults.style.display = 'block';
+  }
 })();
 </script>

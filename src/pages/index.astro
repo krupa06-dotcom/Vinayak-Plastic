@@ -13,14 +13,42 @@ import dustbin from '../assets/images/dustbin.jpeg';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
+import { getCatalogueData, resolveImageUrl } from '../lib/db';
+
+const catalogue = await getCatalogueData();
+
+// Map a homepage card to its database record so admin image updates
+// (product_images / sub_categories.image_url) surface on the homepage.
+// Falls back to the bundled asset when there is no usable DB image.
+const productImageBySlug = new Map<string, string | null>();
+for (const list of [
+  ...Object.values(catalogue.productsBySubCategorySlug),
+  ...Object.values(catalogue.productsByCategorySlug)
+]) {
+  for (const p of list) {
+    if (!productImageBySlug.has(p.slug)) productImageBySlug.set(p.slug, p.image_url);
+  }
+}
+const subCatBySlug = new Map(catalogue.subCategories.map(s => [s.slug, s]));
+
+function dbImageFor(lookup?: { product?: string; subcategory?: string }): string | null {
+  if (!lookup) return null;
+  if (lookup.product) {
+    return resolveImageUrl(productImageBySlug.get(lookup.product) ?? null);
+  }
+  if (lookup.subcategory) {
+    return resolveImageUrl(subCatBySlug.get(lookup.subcategory)?.image_url ?? null);
+  }
+  return null;
+}
 
 const products = [
-  { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/products/plastic-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse' },
-  { name: 'Lid Crates', desc: 'Lidded crates for secure, dust-free transport and storage of goods in transit and warehouse.', slug: '/products/plastic-crates', src: lidCrates, alt: 'Lidded plastic crates for secure storage' },
-  { name: 'Plastic Pallets', desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.', slug: '/products/plastic-pallets', src: plasticPallets, alt: 'Industrial plastic pallets stacked' },
-  { name: 'Waste Bins', desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.', slug: '/products/waste-bins', src: plasticWastebins, alt: 'Industrial waste bins and dustbins' },
-  { name: 'Dustbins', desc: 'Robust, UV-stabilised dustbins for municipal, commercial and factory waste collection.', slug: '/products/waste-bins', src: dustbin, alt: 'Industrial plastic dustbin for waste management' },
-  { name: 'Hand Pallet Trucks', desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.', slug: '/products/hand-pallet-trucks', src: handPalletTruck, alt: 'Hand pallet truck in warehouse' }
+  { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/products/plastic-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse', lookup: { product: 'plastic-crates' } },
+  { name: 'Lid Crates', desc: 'Lidded crates for secure, dust-free transport and storage of goods in transit and warehouse.', slug: '/products/plastic-crates', src: lidCrates, alt: 'Lidded plastic crates for secure storage', lookup: { subcategory: 'lid-crates' } },
+  { name: 'Plastic Pallets', desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.', slug: '/products/plastic-pallets', src: plasticPallets, alt: 'Industrial plastic pallets stacked', lookup: { product: 'plastic-pallets' } },
+  { name: 'Waste Bins', desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.', slug: '/products/waste-bins', src: plasticWastebins, alt: 'Industrial waste bins and dustbins', lookup: { product: 'waste-bins' } },
+  { name: 'Dustbins', desc: 'Robust, UV-stabilised dustbins for municipal, commercial and factory waste collection.', slug: '/products/waste-bins', src: dustbin, alt: 'Industrial plastic dustbin for waste management', lookup: { subcategory: 'standard-bins' } },
+  { name: 'Hand Pallet Trucks', desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.', slug: '/products/hand-pallet-trucks', src: handPalletTruck, alt: 'Hand pallet truck in warehouse', lookup: { product: 'hand-pallet-trucks' } }
 ];
 
 const applications = [
@@ -107,11 +135,17 @@ const reasons = [
       </header>
 
       <div class="products-home__grid">
-        {products.map((p) => (
+        {products.map((p) => {
+          const dbImg = dbImageFor(p.lookup);
+          return (
           <article class="ph-card reveal">
             <a href={path(p.slug)} class="ph-card__link">
               <div class="ph-card__img">
-                <Image src={p.src} alt={p.alt} width={600} height={450} widths={[300, 420]} sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" />
+                {dbImg ? (
+                  <img src={dbImg} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
+                ) : (
+                  <Image src={p.src} alt={p.alt} width={600} height={450} widths={[300, 420]} sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" />
+                )}
               </div>
               <div class="ph-card__body">
                 <h3 class="ph-card__name">{p.name}</h3>
@@ -120,7 +154,8 @@ const reasons = [
               </div>
             </a>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   </section>
