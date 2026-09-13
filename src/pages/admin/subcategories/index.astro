@@ -16,7 +16,7 @@ import { path } from '../../../lib/site';
   </div>
 
   <script>
-    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast } from '../../../scripts/admin/core';
+    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl } from '../../../scripts/admin/core';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
@@ -26,7 +26,7 @@ import { path } from '../../../lib/site';
       if (!listEl) return;
 
       const [subsRes, catsRes, prodsRes] = await Promise.all([
-        supabase.from('sub_categories').select('id, category_id, name, slug, is_active, display_order').order('display_order'),
+        supabase.from('sub_categories').select('id, category_id, name, slug, is_active, display_order, image_url').order('display_order'),
         supabase.from('categories').select('id, name, is_active').order('display_order'),
         supabase.from('products').select('id, sub_category_id')
       ]);
@@ -67,7 +67,12 @@ import { path } from '../../../lib/site';
                         <strong style="color:var(--a-navy)">${esc(c.name)}</strong>
                         <div style="font-size:0.72rem;color:var(--a-faint);margin-top:2px;">${esc(c.slug)}</div>
                       </td>` : ''}
-                    <td><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        ${s.image_url ? `<img src="${esc(publicUrl(s.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
+                        <div><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></div>
+                      </div>
+                    </td>
                     <td><span class="a-chip">${prods.filter(p => p.sub_category_id === s.id).length} products</span></td>
                     <td>${activeBadge(s.is_active)}</td>
                     <td class="a-actions">

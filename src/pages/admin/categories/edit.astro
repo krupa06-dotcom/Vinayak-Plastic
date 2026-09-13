@@ -4,41 +4,41 @@ import { path } from '../../../lib/site';
 ---
 
 <AdminLayout title="Edit Category" current="categories">
-  <a href={path('/admin/categories/')} class="a-btn a-btn-sm" style="margin-bottom:14px;display:inline-flex;">&larr; Back to categories</a>
+  <div class="a-page-head">
+    <h2 id="page-title">New Category</h2>
+    <a href={path('/admin/categories/')} class="a-btn a-btn-sm">&larr; Back to categories</a>
+  </div>
 
-  <div class="a-card" style="max-width:760px;">
-    <div class="a-card-head">
-      <h2 id="page-title">New Category</h2>
-    </div>
-    <div class="a-card-body">
-      <div id="edit-loading" class="a-inline-loading"><div class="a-spinner"></div></div>
+  <div id="edit-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
-      <form id="cat-form" novalidate style="display:none;">
+  <form id="cat-form" novalidate style="display:none;" class="a-form-page">
+    <div class="a-card">
+      <div class="a-card-head"><h2>Category details</h2></div>
+      <div class="a-card-body">
         <input type="hidden" id="cat-id" />
-
         <div class="a-form-grid">
           <div class="a-field">
             <label for="cat-name">Category name <span style="color:var(--a-danger)">*</span></label>
-            <input id="cat-name" class="a-input" required placeholder="e.g. Plastic Crates" />
+            <input id="cat-name" class="a-input" required autocomplete="off" placeholder="e.g. Plastic Crates" />
+            <span class="a-hint">Shown on the website navigation and product tiles.</span>
           </div>
           <div class="a-field">
             <label for="cat-slug">Slug</label>
-            <input id="cat-slug" class="a-input" required placeholder="auto-generated from name" />
-            <span class="a-hint">URL-safe lowercase name. Leave blank to auto-generate.</span>
+            <input id="cat-slug" class="a-input" required autocomplete="off" placeholder="auto-generated from name" />
+            <span class="a-hint">URL-safe name. Leave blank to auto-generate.</span>
           </div>
           <div class="a-field a-field-full">
             <label for="cat-description">Description</label>
             <textarea id="cat-description" class="a-textarea" rows="2" placeholder="Brief category description (optional)"></textarea>
           </div>
           <div class="a-field a-field-full">
-            <label for="cat-image">Image</label>
-            <input id="cat-image" class="a-input" placeholder="Storage path (media/…) or full URL" />
-            <span class="a-hint">Upload once in the Media Library, then paste its filename here. Shown on the product listing tile.</span>
-            <div id="cat-image-preview" style="margin-top:10px;"></div>
+            <label for="cat-image-picker">Image</label>
+            <div id="cat-image-picker"></div>
           </div>
           <div class="a-field">
             <label for="cat-order">Display order</label>
             <input id="cat-order" class="a-input" type="number" min="0" value="0" />
+            <span class="a-hint">Lower numbers appear first.</span>
           </div>
           <div class="a-field">
             <label>&nbsp;</label>
@@ -48,17 +48,23 @@ import { path } from '../../../lib/site';
             </label>
           </div>
         </div>
-
-        <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
-        <div style="margin-top:18px;">
-          <button type="submit" class="a-btn a-btn-primary" id="cat-submit">Save category</button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
+
+    <div class="a-sticky-actions">
+      <span class="a-hint" id="save-helper">The image is uploaded from your device when you save.</span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="a-btn a-btn-primary" id="cat-submit">Save category</button>
+        <a href={path('/admin/categories/')} class="a-btn">Cancel</a>
+      </div>
+    </div>
+  </form>
 
   <script>
-    import { gate, supabase, slugify, toast, publicUrl, esc } from '../../../scripts/admin/core';
+    import { gate, supabase, slugify, toast, deleteFile } from '../../../scripts/admin/core';
+    import { createImagePicker } from '../../../scripts/admin/imagePicker';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
@@ -72,30 +78,23 @@ import { path } from '../../../lib/site';
     const nameEl = document.getElementById('cat-name') as HTMLInputElement;
     const slugEl = document.getElementById('cat-slug') as HTMLInputElement;
     const descEl = document.getElementById('cat-description') as HTMLTextAreaElement;
-    const imageEl = document.getElementById('cat-image') as HTMLInputElement;
-    const previewEl = document.getElementById('cat-image-preview')!;
     const orderEl = document.getElementById('cat-order') as HTMLInputElement;
     const activeEl = document.getElementById('cat-active') as HTMLInputElement;
     const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('cat-submit') as HTMLButtonElement;
+
+    const picker = createImagePicker(document.getElementById('cat-image-picker')!, {
+      hint: 'Choose a photo from your computer. The image is uploaded and shown on the product listing tile.'
+    });
 
     function showError(msg: string) {
-      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
-    }
-
-    function renderImagePreview(value: string) {
-      const v = value.trim();
-      if (!v) { previewEl.innerHTML = ''; return; }
-      const url = /^https?:\/\//i.test(v) ? v : publicUrl(v);
-      previewEl.innerHTML = url
-        ? `<img src="${esc(url)}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--a-border);" loading="lazy" />`
-        : '';
+      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }
 
     nameEl?.addEventListener('input', () => {
       if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
-    imageEl?.addEventListener('input', () => renderImagePreview(imageEl.value));
 
     void (async () => {
       if (!(await gate())) return;
@@ -103,16 +102,15 @@ import { path } from '../../../lib/site';
       if (editId) {
         titleEl!.textContent = 'Edit Category';
         const { data, error } = await supabase.from('categories').select('*').eq('id', editId).single();
-        if (error || !data) { showError(error?.message || 'Category not found'); loadingEl!.remove(); formEl.style.display = ''; return; }
+        if (error || !data) { showError(error?.message || 'Category not found'); loadingEl?.remove(); formEl.style.display = ''; return; }
         (document.getElementById('cat-id') as HTMLInputElement).value = data.id;
         nameEl.value = data.name;
         slugEl.value = data.slug;
         slugEl.setAttribute('data-manual', '1');
         descEl.value = data.description ?? '';
-        imageEl.value = data.image_url ?? '';
-        renderImagePreview(data.image_url ?? '');
         orderEl.value = String(data.display_order);
         activeEl.checked = data.is_active;
+        picker.setValue({ existing: data.image_url ?? null, file: null });
       }
 
       loadingEl?.remove();
@@ -126,27 +124,48 @@ import { path } from '../../../lib/site';
       const name = nameEl.value.trim();
       if (!name) { showError('Name is required.'); return; }
 
+      const slug = slugEl.value.trim() || slugify(name);
+      const pickerValue = picker.getValue();
+      let imageUrl: string | null = pickerValue.existing;
+      const previousImage = pickerValue.existing;
+
+      submitBtn?.setAttribute('disabled', '');
+      submitBtn.textContent = 'Saving…';
+
+      if (pickerValue.file) {
+        const result = await picker.upload(`media/categories/${slug}-${Date.now()}`);
+        if ('error' in result) {
+          submitBtn?.removeAttribute('disabled');
+          submitBtn.textContent = 'Save category';
+          showError(result.error);
+          return;
+        }
+        imageUrl = result.url;
+      }
+
       const payload: Record<string, unknown> = {
         id: editId || undefined,
         name,
-        slug: slugEl.value.trim() || slugify(name),
+        slug,
         description: descEl.value.trim() || null,
-        image_url: imageEl.value.trim() || null,
+        image_url: imageUrl,
         display_order: Number(orderEl.value) || 0,
         is_active: activeEl.checked,
         updated_at: new Date().toISOString()
       };
       if (!payload.id) delete payload.id;
 
-      const btn = document.getElementById('cat-submit') as HTMLButtonElement;
-      btn?.setAttribute('disabled', '');
-      btn.textContent = 'Saving…';
-
       const { error } = await supabase.from('categories').upsert(payload as never, { onConflict: 'id' });
-      btn?.removeAttribute('disabled');
-      btn!.textContent = 'Save category';
+      if (error) {
+        submitBtn?.removeAttribute('disabled');
+        submitBtn.textContent = 'Save category';
+        showError(error.message);
+        return;
+      }
 
-      if (error) { showError(error.message); return; }
+      // If the image was replaced, remove the old stored file (best-effort).
+      if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
+
       toast(editId ? 'Category updated.' : 'Category created.', 'success');
       window.location.href = href('admin/categories/');
     });

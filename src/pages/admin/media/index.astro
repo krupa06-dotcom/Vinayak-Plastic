@@ -3,13 +3,16 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Media Library" current="media">
+  <div class="a-page-head">
+    <h2>Media Library</h2>
+    <button type="button" class="a-btn a-btn-primary" id="media-upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Upload image</button>
+  </div>
+
   <div class="a-card">
-    <div class="a-card-head">
-      <h2>Product Images</h2>
-      <div style="display:flex;gap:8px;">
-        <input type="search" id="media-search" class="a-input" placeholder="Search filename…" style="width:200px;" />
-        <button type="button" class="a-btn a-btn-primary" id="media-upload">+ Upload image</button>
-      </div>
+    <div class="a-toolbar" style="flex-wrap:wrap;">
+      <input type="search" id="media-search" class="a-input" placeholder="Search filename…" />
+      <span style="flex:1"></span>
+      <span id="media-count" style="font-size:0.84rem;color:var(--a-muted);"></span>
     </div>
     <div class="a-card-body" id="media-list">
       <div class="a-inline-loading"><div class="a-spinner"></div></div>
@@ -24,10 +27,12 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
     const listEl = document.getElementById('media-list')!;
     const searchEl = document.getElementById('media-search') as HTMLInputElement;
+    const countEl = document.getElementById('media-count') as HTMLSpanElement;
     let debounceTimer: number;
 
     async function load() {
       listEl.innerHTML = '<div class="a-inline-loading"><div class="a-spinner"></div></div>';
+      countEl.textContent = '';
 
       const rawFiles = await (async () => {
         const { data, error } = await supabase.storage.from('product-images').list('', { limit: 5000, sortBy: { column: 'created_at', order: 'desc' } });
@@ -35,9 +40,11 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         return (data || []).map((f: any) => ({ name: f.name, id: f.id, created_at: f.created_at || '', size: f.metadata?.size }) as FileItem);
       })();
 
+      countEl.textContent = `${rawFiles.length} image${rawFiles.length === 1 ? '' : 's'}`;
+
       if (!rawFiles.length) {
         showEmpty(listEl, 'No images uploaded', 'Upload product images to the media library.',
-          `<button type="button" class="a-btn a-btn-primary" onclick="document.getElementById('media-upload')?.click()">+ Upload image</button>`);
+          `<button type="button" class="a-btn a-btn-primary" onclick="document.getElementById('media-upload')?.click()">Upload image</button>`);
         return;
       }
 

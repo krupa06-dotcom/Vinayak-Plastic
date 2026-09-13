@@ -3,10 +3,14 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Settings" current="settings">
+  <div class="a-page-head">
+    <h2>Settings</h2>
+  </div>
+
   <div id="set-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
-  <form id="set-form" novalidate style="display:none;">
-    <div class="a-card" style="max-width:640px;">
+  <form id="set-form" novalidate style="display:none;" class="a-form-page">
+    <div class="a-card">
       <div class="a-card-head">
         <h2>Contact Information</h2>
       </div>
@@ -36,7 +40,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       </div>
     </div>
 
-    <div class="a-card" style="max-width:640px;">
+    <div class="a-card">
       <div class="a-card-head">
         <h2>Social Links</h2>
       </div>
@@ -62,9 +66,10 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       </div>
     </div>
 
-    <div id="set-error" class="a-tip a-tip-error" style="margin-top:16px;max-width:640px;display:none;" role="alert"></div>
+    <div id="set-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
-    <div style="margin-top:18px;">
+    <div class="a-sticky-actions">
+      <span class="a-hint">These details appear in the footer and contact page.</span>
       <button type="submit" class="a-btn a-btn-primary" id="set-submit">Save settings</button>
     </div>
   </form>

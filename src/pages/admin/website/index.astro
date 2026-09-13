@@ -3,9 +3,13 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Website Content" current="website">
+  <div class="a-page-head">
+    <h2>Website Content</h2>
+  </div>
+
   <div id="web-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
-  <form id="web-form" novalidate style="display:none;">
+  <form id="web-form" novalidate style="display:none;" class="a-form-page">
     <div class="a-card">
       <div class="a-card-head">
         <h2>Homepage Hero</h2>
@@ -60,7 +64,8 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
     <div id="web-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
-    <div style="margin-top:18px;">
+    <div class="a-sticky-actions">
+      <span class="a-hint">Changes go live on the website as soon as you save.</span>
       <button type="submit" class="a-btn a-btn-primary" id="web-submit">Save changes</button>
     </div>
   </form>
