@@ -34,6 +34,10 @@ export function loginHref(): string {
   return href('admin/login/');
 }
 
+export function dashboardHref(): string {
+  return href('admin/');
+}
+
 // ============================================================
 // Auth helpers
 // ============================================================

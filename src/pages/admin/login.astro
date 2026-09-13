@@ -20,7 +20,7 @@ const configured = Boolean(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Sign in | Vinayak Plastics Admin</title>
-  <link rel="icon" href={`${base}favicon.svg`} />
+  <link rel="icon" href={`${base}/favicon.svg`} />
   <script is:inline define:vars={{ supabaseUrl, supabasePublishableKey, base, configured }}>
     window.__VP_SUPABASE__ = { url: supabaseUrl, key: supabasePublishableKey, base: base, configured: configured };
   </script>
@@ -29,7 +29,7 @@ const configured = Boolean(
 
   <div class="a-login-card">
     <div class="a-login-logo">
-      <img src={`${base}images/vp-logo.png`} alt="Vinayak Plastics logo" />
+      <img src={`${base}/images/vp-logo.png`} alt="Vinayak Plastics logo" />
       <h1>Vinayak Plastics</h1>
       <p>Admin Panel</p>
     </div>
@@ -79,7 +79,7 @@ const configured = Boolean(
   </div>
 
   <script>
-    import { supabase, configured, loginHref } from '../../scripts/admin/core';
+    import { supabase, configured, loginHref, dashboardHref } from '../../scripts/admin/core';
 
     const form = document.getElementById('login-form') as HTMLFormElement | null;
     const errorBox = document.getElementById('login-error');
@@ -100,7 +100,12 @@ const configured = Boolean(
     async function initLogin() {
       if (!configured) return;
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace(loginHref());
+      if (!session) return;
+      // An authorised admin continues to the dashboard; a leftover session
+      // for a non-admin account is cleared so the user can sign in fresh.
+      const isAdmin = /@vinayakplastics\.com$/i.test(session.user?.email || '');
+      if (!isAdmin) await supabase.auth.signOut();
+      window.location.replace(isAdmin ? dashboardHref() : loginHref());
     }
     void initLogin();
 
@@ -130,7 +135,17 @@ const configured = Boolean(
         return;
       }
 
-      window.location.replace(loginHref());
+      // Only @vinayakplastics.com accounts are authorised.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !/@vinayakplastics\.com$/i.test(user.email || '')) {
+        await supabase.auth.signOut();
+        showError('Only @vinayakplastics.com accounts are authorised.');
+        submitBtn?.removeAttribute('disabled');
+        submitBtn!.textContent = 'Sign in';
+        return;
+      }
+
+      window.location.replace(dashboardHref());
     });
   </script>
 </body>
