@@ -30,7 +30,7 @@ const isCurrent = (key: string) => key === current;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>{title} | Vinayak Plastics Admin</title>
-  <link rel="icon" href={`${base}favicon.svg`} />
+  <link rel="icon" href={`${base}/favicon.svg`} />
   <script is:inline define:vars={{ supabaseUrl, supabasePublishableKey, base, configured }}>
     window.__VP_SUPABASE__ = { url: supabaseUrl, key: supabasePublishableKey, base: base, configured: configured };
   </script>
@@ -41,7 +41,7 @@ const isCurrent = (key: string) => key === current;
 
     <aside class="admin-sidebar">
       <div class="admin-logo">
-        <img src={`${base}images/vp-logo.png`} alt="Vinayak Plastics logo" />
+        <img src={`${base}/images/vp-logo.png`} alt="Vinayak Plastics logo" />
         <div class="admin-logo-text">
           <strong>Vinayak Plastics</strong>
           <span>Admin Panel</span>
