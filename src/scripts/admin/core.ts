@@ -1,4 +1,4 @@
-import { createClient, type Session } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../lib/database.types';
 
 declare global {
@@ -18,14 +18,14 @@ export const configured = Boolean(globals && globals.url && globals.key && globa
 
 export const supabase = configured ? createClient<Database>(globals.url, globals.key) : (null as unknown as ReturnType<typeof createClient<Database>>);
 
-export const BASE: string = globals?.base ?? '/';
+const BASE: string = globals?.base ?? '/';
 
 // ============================================================
 // URL helpers
 // ============================================================
 
 /** Build a root-relative href aware of the site base path. */
-export function href(p: string): string {
+function href(p: string): string {
   const clean = p.startsWith('/') ? p.slice(1) : p;
   return `${BASE.replace(/\/$/, '')}/${clean}`.replace(/\/+/g, '/');
 }
@@ -51,13 +51,7 @@ function markRedirected() {
   document.body.classList.add('admin-redirecting');
 }
 
-export async function getSession(): Promise<Session | null> {
-  if (!configured) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session;
-}
-
-export function isAdminEmail(email: string): boolean {
+function isAdminEmail(email: string): boolean {
   return /@vinayakplastics\.com$/i.test(email);
 }
 
@@ -166,15 +160,6 @@ export function fmtDateTime(iso: string | null | undefined): string {
     : d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p.charAt(0).toUpperCase())
-    .join('') || '?';
-}
-
 // ============================================================
 // Toasts
 // ============================================================
@@ -207,20 +192,12 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 // State renderers
 // ============================================================
 
-export function showLoading(el: HTMLElement, text = 'Loading…'): void {
-  el.innerHTML = `<div class="a-loading"><div class="a-spinner"></div><p style="margin:0;">${esc(text)}</p></div>`;
-}
-
 export function showEmpty(el: HTMLElement, title: string, msg: string, actionHtml = ''): void {
   el.innerHTML = `<div class="a-empty"><h3>${esc(title)}</h3><p>${esc(msg)}</p>${actionHtml}</div>`;
 }
 
 export function showError(el: HTMLElement, msg: string): void {
   el.innerHTML = `<div class="a-error"><h3>Something went wrong</h3><p>${esc(msg)}</p></div>`;
-}
-
-export function tip(type: 'info' | 'warn' | 'error' | 'success', msg: string): string {
-  return `<div class="a-tip a-tip-${type}">${esc(msg)}</div>`;
 }
 
 // ============================================================
@@ -296,6 +273,9 @@ export function featuredBadge(): string {
 export function publicUrl(pathOrUrl: string | null | undefined): string {
   if (!pathOrUrl) return '';
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  // Root-relative paths are static assets shipped with the site, not
+  // Storage objects; make them base-aware instead of building a bucket URL.
+  if (pathOrUrl.startsWith('/')) return href(pathOrUrl);
   const { data } = supabase.storage.from('product-images').getPublicUrl(pathOrUrl);
   return data ? data.publicUrl : '';
 }
@@ -311,26 +291,10 @@ export async function uploadFile(file: File, storagePath: string): Promise<{ pat
 }
 
 export async function deleteFile(pathOrUrl: string): Promise<boolean> {
-  if (!pathOrUrl || /^https?:\/\//i.test(pathOrUrl)) return true;
+  // Static assets (root-relative) are not Storage objects — nothing to delete.
+  if (!pathOrUrl || /^https?:\/\//i.test(pathOrUrl) || pathOrUrl.startsWith('/')) return true;
   const { error } = await supabase.storage.from('product-images').remove([pathOrUrl]);
   return !error;
-}
-
-export async function listStorageFiles(): Promise<Array<{ name: string; id: string; created_at: string; size?: number }>> {
-  const { data, error } = await supabase.storage.from('product-images').list('', {
-    limit: 5000,
-    sortBy: { column: 'created_at', order: 'desc' }
-  });
-  if (error) {
-    console.error('listStorageFiles error:', error);
-    return [];
-  }
-  return (data || []).map((f) => ({
-    name: f.name,
-    id: f.id ?? '',
-    created_at: f.created_at || '',
-    size: f.metadata?.size
-  }));
 }
 
 /** Check whether a storage path / public URL is referenced anywhere in the content model. */
@@ -365,25 +329,4 @@ export async function imageInUse(pathOrUrl: string): Promise<string[]> {
     }
   }
   return refs;
-}
-
-// ============================================================
-// Shared mutation helpers
-// ============================================================
-
-/** Upsert a row for admin-controlled tables. Returns success + message. */
-export async function saveRow(
-  table: 'categories' | 'sub_categories' | 'products' | 'enquiries' | 'site_settings',
-  value: Record<string, unknown>
-): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from(table).upsert(value as never);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
-}
-
-/** Delete row(s) by id. */
-export async function deleteRow(table: string, ids: string[]): Promise<{ ok: boolean; error?: string }> {
-  const { error } = await supabase.from(table).delete().in('id', ids);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
 }

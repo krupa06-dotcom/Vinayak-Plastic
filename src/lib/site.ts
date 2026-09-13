@@ -11,10 +11,3 @@ export function path(p: string): string {
   if (p.startsWith(BASE_PATH)) return p;
   return `${BASE_PATH}${p}`;
 }
-
-/** Build an absolute URL for a root-relative page path (for canons/sitemap). */
-export function absoluteUrl(p: string, trailingSlash = true): string {
-  const withBase = path(p);
-  const slash = trailingSlash && withBase.length > 1 && !withBase.endsWith('/') ? `${withBase}/` : withBase;
-  return new URL(slash, SITE_URL).toString();
-}

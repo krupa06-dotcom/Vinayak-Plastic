@@ -71,38 +71,7 @@ export interface ProductVariant {
   display_order: number;
 }
 
-export interface Industry {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  is_active: boolean;
-}
-
-export interface Enquiry {
-  id: string;
-  product_id: string | null;
-  name: string;
-  company: string | null;
-  phone: string;
-  email: string | null;
-  quantity: string | null;
-  message: string | null;
-  status: string;
-  created_at: string;
-}
-
-export interface SiteSetting {
-  key: string;
-  value: unknown;
-  updated_at: string;
-}
-
 // Extended types with relations
-export interface ProductWithImages extends Product {
-  product_images: ProductImage[];
-}
-
 export interface ProductWithDetails extends Product {
   product_images: ProductImage[];
   product_specifications: ProductSpecification[];
@@ -119,39 +88,6 @@ export interface CategoryWithSubCategories extends Category {
 // ============================================================
 // Category Queries
 // ============================================================
-
-export async function getCategories(): Promise<Category[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  if (!hasSupabase()) return null;
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single();
-
-  if (error) {
-    console.error('Error fetching category:', error);
-    return null;
-  }
-
-  return data;
-}
 
 export async function getCategoriesWithSubCategories(): Promise<CategoryWithSubCategories[]> {
   if (!hasSupabase()) return [];
@@ -180,86 +116,8 @@ export async function getCategoriesWithSubCategories(): Promise<CategoryWithSubC
 }
 
 // ============================================================
-// Sub-Category Queries
-// ============================================================
-
-export async function getSubCategories(): Promise<SubCategory[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('sub_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching sub-categories:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-export async function getSubCategoryBySlug(slug: string): Promise<SubCategory | null> {
-  if (!hasSupabase()) return null;
-  const { data, error } = await supabase
-    .from('sub_categories')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single();
-
-  if (error) {
-    console.error('Error fetching sub-category:', error);
-    return null;
-  }
-
-  return data;
-}
-
-// ============================================================
 // Product Queries
 // ============================================================
-
-export async function getProducts(): Promise<Product[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
-
-  return (data || []) as unknown as Product[];
-}
-
-export async function getProductsByCategory(categorySlug: string): Promise<Product[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      sub_category:sub_categories!inner (
-        *,
-        category:categories!inner (
-          slug
-        )
-      )
-    `)
-    .eq('sub_category.category.slug', categorySlug)
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching products by category:', error);
-    return [];
-  }
-
-  return (data || []) as unknown as Product[];
-}
 
 export async function getProductBySlug(slug: string): Promise<ProductWithDetails | null> {
   if (!hasSupabase()) return null;
@@ -312,28 +170,6 @@ export async function getProductVariants(productId: string): Promise<ProductVari
   return (data || []) as unknown as ProductVariant[];
 }
 
-export async function getFeaturedProducts(): Promise<ProductWithImages[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      product_images (
-        *
-      )
-    `)
-    .eq('is_active', true)
-    .eq('is_featured', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching featured products:', error);
-    return [];
-  }
-
-  return (data || []) as unknown as ProductWithImages[];
-}
-
 export async function getAllProductSlugs(): Promise<string[]> {
   if (!hasSupabase()) return [];
   const { data, error } = await supabase
@@ -347,113 +183,6 @@ export async function getAllProductSlugs(): Promise<string[]> {
   }
 
   return (data || []).map(p => p.slug);
-}
-
-// ============================================================
-// Product Image Queries
-// ============================================================
-
-export async function getProductImages(productId: string): Promise<ProductImage[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('product_images')
-    .select('*')
-    .eq('product_id', productId)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching product images:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-// ============================================================
-// Product Specification Queries
-// ============================================================
-
-export async function getProductSpecifications(productId: string): Promise<ProductSpecification[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('product_specifications')
-    .select('*')
-    .eq('product_id', productId)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching product specifications:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-// ============================================================
-// Industry Queries
-// ============================================================
-
-export async function getIndustries(): Promise<Industry[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('industries')
-    .select('*')
-    .eq('is_active', true)
-    .order('name', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching industries:', error);
-    return [];
-  }
-
-  return data || [];
-}
-
-export async function getProductsByIndustry(industrySlug: string): Promise<Product[]> {
-  if (!hasSupabase()) return [];
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      product_industries!inner (
-        industry:industries!inner (
-          slug
-        )
-      )
-    `)
-    .eq('product_industries.industry.slug', industrySlug)
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching products by industry:', error);
-    return [];
-  }
-
-  return (data || []) as unknown as Product[];
-}
-
-// ============================================================
-// Enquiry Queries
-// ============================================================
-
-export async function createEnquiry(enquiry: Omit<Enquiry, 'id' | 'status' | 'created_at'>): Promise<Enquiry | null> {
-  if (!hasSupabase()) return null;
-  // Note: no .select() here - returning requires read access (admin only).
-  // Public users can insert but cannot read back their own row.
-  const { error } = await supabase
-    .from('enquiries')
-    .insert({
-      ...enquiry,
-      status: 'new'
-    });
-
-  if (error) {
-    console.error('Error creating enquiry:', error);
-    return null;
-  }
-
-  return enquiry as Enquiry;
 }
 
 // ============================================================
@@ -476,23 +205,6 @@ export async function getSiteSetting(key: string): Promise<unknown> {
   return data?.value ?? null;
 }
 
-export async function getSiteSettings(): Promise<Record<string, unknown>> {
-  if (!hasSupabase()) return {};
-  const { data, error } = await supabase
-    .from('site_settings')
-    .select('*');
-
-  if (error) {
-    console.error('Error fetching site settings:', error);
-    return {};
-  }
-
-  return (data || []).reduce((acc, setting) => {
-    acc[setting.key] = setting.value;
-    return acc;
-  }, {} as Record<string, unknown>);
-}
-
 // ============================================================
 // Storage Helpers
 // ============================================================
@@ -503,20 +215,4 @@ export function getProductImageUrl(path: string): string {
     .getPublicUrl(path);
 
   return data.publicUrl;
-}
-
-export async function uploadProductImage(file: File, path: string): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from('product-images')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-
-  if (error) {
-    console.error('Error uploading image:', error);
-    return null;
-  }
-
-  return data.path;
 }

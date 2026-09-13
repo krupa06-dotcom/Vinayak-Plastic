@@ -40,15 +40,20 @@ try {
 }
 
 // Use fallback products if no categories from database
-const allProducts = categories.length > 0 
-  ? categories.map(cat => ({
-      title: cat.name,
-      slug: cat.slug,
-      img: cat.image_url || plasticCrates, // Default image
-      alt: cat.description || cat.name,
-      desc: cat.description || '',
-      keywords: cat.name.toLowerCase()
-    }))
+const allProducts = categories.length > 0
+  ? categories.map(cat => {
+      const catImg = cat.image_url
+        ? (cat.image_url.startsWith('/') ? path(cat.image_url) : cat.image_url)
+        : null;
+      return {
+        title: cat.name,
+        slug: cat.slug,
+        img: catImg ? { src: catImg } : plasticCrates, // { src } shape matches Astro Image assets
+        alt: cat.description || cat.name,
+        desc: cat.description || '',
+        keywords: cat.name.toLowerCase()
+      };
+    })
   : fallbackProducts;
 ---
 

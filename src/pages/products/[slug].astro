@@ -7,7 +7,7 @@ import plasticCratesImg from '../../assets/images/plastic-crates.webp';
 import plasticPalletsImg from '../../assets/images/plastic-pallets.webp';
 import plasticWastebinsImg from '../../assets/images/plastic-wastebins.webp';
 import handPalletTruckImg from '../../assets/images/hand-pallet-truck.webp';
-import { path } from '../../lib/site';
+import { path, SITE_URL } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
 import { getProductBySlug, getAllProductSlugs, getProductImageUrl } from '../../lib/db';
 import { hasSupabase } from '../../lib/supabase';
@@ -248,7 +248,15 @@ const productData: {
   applications: (product!.applications as Array<{ name: string; description: string }>) || [],
   ctaTitle: 'Need Custom Sizes or Bulk Pricing?',
   ctaDescription: 'We supply to dairy distributors, warehouses, and municipal buyers across India. Call or WhatsApp for a quote.',
-  dbImage: product!.product_images?.[0]?.image_url ? getProductImageUrl(product!.product_images[0].image_url) : null
+  dbImage: (() => {
+    const img = product!.product_images?.[0]?.image_url;
+    if (!img) return null;
+    if (/^https?:\/\//i.test(img)) return img;
+    // Root-relative paths point at static assets in public/ (base-prefixed);
+    // anything else is a Supabase Storage object path.
+    if (img.startsWith('/')) return path(img);
+    return getProductImageUrl(img);
+  })()
 };
 
 const productVariants = productData.variants;
@@ -269,7 +277,6 @@ const breadcrumbTitle = productData.title;
 const pageTitle = `${productData.title} | Vinayak Plastics`;
 const pageDescription = `${productData.description.slice(0, 150)}...`;
 
-const BASE_SITE = 'https://krupa06-dotcom.github.io';
 // The schema "image" is only consumed by search-engine crawlers (never fetched
 // by the browser at render time), so point it at the stable public logo image
 // instead of the full-resolution source PNG. This keeps the built site from
@@ -279,7 +286,7 @@ const productSchema = `{
   "@type": "Product",
   "name": "${productData.title}",
   "description": ${JSON.stringify(productData.description)},
-  "image": "${BASE_SITE}/Vinayak-Plastic/images/vp-logo.png",
+  "image": "${SITE_URL}${path('/images/vp-logo.png')}",
   "brand": { "@type": "Brand", "name": "Vinayak Plastics" },
   "category": "Material Handling Equipment",
   "material": "HDPE / PP"

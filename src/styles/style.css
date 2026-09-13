@@ -200,18 +200,6 @@ button {
   background: rgba(255, 255, 255, 0.08)
 }
 
-.btn-outline {
-  background: transparent;
-  color: var(--navy);
-  border: 2px solid var(--navy)
-}
-
-.btn-outline:hover,
-.btn-outline:focus-visible {
-  background: var(--navy);
-  color: var(--white)
-}
-
 .btn-outline-light {
   background: transparent;
   color: var(--white);
@@ -245,26 +233,6 @@ button {
 
 .btn-ghost:hover {
   gap: 12px
-}
-
-.btn-ghost-light {
-  color: rgba(255, 255, 255, 0.75);
-  padding: 10px 4px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-  transition: all 0.2s
-}
-
-.btn-ghost-light:hover,
-.btn-ghost-light:focus-visible {
-  color: var(--white);
-  border-color: var(--orange-light)
 }
 
 /* ===== SECTION ===== */
@@ -1357,15 +1325,6 @@ button {
   color: var(--orange-light)
 }
 
-.footer-placeholder {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 10px;
-  padding: 6px 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  display: inline-block
-}
-
 .footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 22px 0;
@@ -1966,12 +1925,6 @@ button {
   min-height: 120px
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px
-}
-
 /* ===== SPECS TABLE ===== */
 .specs-table-wrap {
   overflow-x: auto;
@@ -2169,10 +2122,6 @@ html.js .reveal.visible {
   }
 
   .cat-grid {
-    grid-template-columns: 1fr
-  }
-
-  .form-row {
     grid-template-columns: 1fr
   }
 

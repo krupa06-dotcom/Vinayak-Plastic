@@ -4,7 +4,25 @@
 
 This document describes how to configure Supabase Storage for product images.
 
-### Manual Setup (Supabase Dashboard)
+## Recommended: apply the migration
+
+The bucket and its policies are created by a migration:
+
+```bash
+supabase link --project-ref your-project-ref
+supabase db push
+```
+
+or paste `migrations/20260913000000_create_product_images_bucket.sql`
+into the Supabase SQL Editor (Dashboard → SQL Editor).
+
+This creates the `product-images` bucket (public, 5 MB, image MIME types),
+plus a public-read policy. Admin full-access policies were already added by
+`20260911000000_admin_storage_rls.sql`.
+
+## Manual Setup (Supabase Dashboard)
+
+Only if you prefer the dashboard:
 
 1. Go to your Supabase project dashboard
 2. Navigate to **Storage** in the left sidebar
@@ -13,123 +31,61 @@ This document describes how to configure Supabase Storage for product images.
    - **Name**: `product-images`
    - **Public bucket**: ✅ Checked (for public read access)
    - **File size limit**: 5 MB
-   - **Allowed MIME types**: 
+   - **Allowed MIME types**:
      - `image/jpeg`
      - `image/png`
      - `image/webp`
      - `image/gif`
 5. Click **Create bucket**
 
-### CLI Setup (Alternative)
+## Storage Policies
 
-If you have the Supabase CLI installed:
+The migration (`20260913000000_create_product_images_bucket.sql`) creates:
 
-```bash
-# Login to Supabase
-supabase login
-
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Create the storage bucket
-supabase storage create-bucket product-images --public
-```
-
-### Storage Policies
-
-After creating the bucket, set up these storage policies:
-
-#### Public Read Access
+#### Public read access
 ```sql
--- Allow public read access to product images
-CREATE POLICY "Public can view product images"
+CREATE POLICY "Public read product-images"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'product-images');
 ```
 
-#### Admin Upload Access
+#### Admin full access (from `20260911000000_admin_storage_rls.sql`)
 ```sql
--- Allow authenticated admins to upload product images
-CREATE POLICY "Admins can upload product images"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'product-images' AND
-  auth.role() = 'authenticated' AND
-  EXISTS (
-    SELECT 1 FROM auth.users
-    WHERE id = auth.uid()
-    AND email LIKE '%@vinayakplastics.com'
-  )
-);
+CREATE POLICY "Admin full access to product-images"
+ON storage.objects FOR ALL TO authenticated
+USING (bucket_id = 'product-images' AND public.is_admin())
+WITH CHECK (bucket_id = 'product-images' AND public.is_admin());
 ```
 
-#### Admin Delete Access
-```sql
--- Allow authenticated admins to delete product images
-CREATE POLICY "Admins can delete product images"
-ON storage.objects FOR DELETE
-USING (
-  bucket_id = 'product-images' AND
-  auth.role() = 'authenticated' AND
-  EXISTS (
-    SELECT 1 FROM auth.users
-    WHERE id = auth.uid()
-    AND email LIKE '%@vinayakplastics.com'
-  )
-);
-```
+## Product images served from the site bundle
 
-### Image URL Structure
+The built site's product pages use **web-path images** shipped with the repo
+under `public/images/products/*` and stored in `product_images.image_url` as
+`/images/products/<name>` (e.g. `/images/products/plastic-crates.webp`).
+These are served from the static site, not from Storage, and are seeded by
+`20260913000001_fix_content_images.sql`.
 
-Once uploaded, product images will be accessible at:
+The admin panel treats a root-relative `/...` path as a static asset
+(base-prefixed) and anything else as a Storage object path.
+
+## Storage-backed images (used by admin uploads)
+
+When an admin uploads an image in the admin panel, the file is stored as a
+Storage object and `product_images.image_url` holds the Storage path, e.g.:
 
 ```
-https://your-project-ref.supabase.co/storage/v1/object/public/product-images/{path}
+https://{ref}.supabase.co/storage/v1/object/public/product-images/products/plastic-crates.webp
 ```
 
-Example:
-```
-https://abc123.supabase.co/storage/v1/object/public/product-images/products/plastic-crates.webp
-```
+`getProductImageUrl()` / the admin `publicUrl()` helper build this from a
+storage path, so both storage-backed and static web-path images are
+supported.
 
 ### Recommended File Structure
 
-Organize product images in the storage bucket:
-
 ```
 product-images/
-├── products/
-│   ├── plastic-crates.webp
-│   ├── plastic-pallets.webp
-│   ├── waste-bins.webp
-│   └── hand-pallet-trucks.webp
+├── products/          <-- admin image uploads land here
 ├── categories/
-│   ├── plastic-crates.webp
-│   └── ...
 └── general/
-    ├── warehouse-interior.webp
-    └── ...
-```
-
-### Integration with Database
-
-In the `product_images` table, store the storage path:
-
-```sql
-INSERT INTO product_images (product_id, image_url, alt_text, display_order)
-VALUES (
-  'product-uuid',
-  'products/plastic-crates.webp',  -- Storage path
-  'Plastic crates stacked in warehouse',
-  1
-);
-```
-
-Then use the `getProductImageUrl()` helper to get the full URL:
-
-```typescript
-import { getProductImageUrl } from '../lib/db';
-
-const imageUrl = getProductImageUrl('products/plastic-crates.webp');
-// Returns: https://abc123.supabase.co/storage/v1/object/public/product-images/products/plastic-crates.webp
 ```

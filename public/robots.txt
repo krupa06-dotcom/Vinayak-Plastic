@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
 
-# Public pages only. Block private/administrative sections if added later:
-# Disallow: /admin/
-# Disallow: /login/
+# Public pages only. Block private/administrative sections.
+Disallow: /admin/
+Disallow: /admin/login/
 
 Sitemap: https://krupa06-dotcom.github.io/Vinayak-Plastic/sitemap.xml
