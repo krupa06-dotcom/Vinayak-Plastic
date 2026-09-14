@@ -2459,8 +2459,21 @@ html.js .reveal.visible {
   }
 }
 
-/* Tablet portrait / mobile landscape */
-@media(max-width:768px) {
+/* Narrow desktops (<1200) — drop the phone link and slim the search so
+   the full menu never overflows before the mobile header kicks in. */
+@media(max-width:1200px) {
+  .nav-phone {
+    display: none
+  }
+
+  .site-nav.nav-products .nav-search .search-form {
+    width: 230px
+  }
+}
+
+/* Small desktops / tablets — collapse to the mobile-style header so
+   nothing overflows between 769px and 1024px. */
+@media(max-width:1024px) {
   .site-nav {
     height: auto;
     min-height: var(--nav-height);
@@ -2545,7 +2558,10 @@ html.js .reveal.visible {
     flex-shrink: 0;
     align-self: center
   }
+}
 
+/* Tablet portrait / mobile landscape */
+@media(max-width:768px) {
   .hero {
     min-height: 480px
   }
