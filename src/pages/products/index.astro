@@ -429,7 +429,13 @@ const subCategoryCards = subCategories.map(sub => ({
     transform: translateX(3px);
   }
 
-  /* Responsive — card count per viewport */
+  /* ----------------------------------------------------------
+     Responsive ladder — aligned to the site breakpoints
+     1024 / 768 / 560 / 480 / 390
+     Cards per view: 4 desktop · 2 tablet · 1.25 mobile
+     ---------------------------------------------------------- */
+
+  /* Tablet ≤1024 — two cards side by side */
   @media (max-width: 1024px) {
     #subcategory-section .sc-track {
       gap: 16px;
@@ -438,8 +444,29 @@ const subCategoryCards = subCategories.map(sub => ({
     #subcategory-section .sc-track > .sc-card {
       width: calc((100% - 16px) / 2);
     }
+
+    #subcategory-section .sc-card__img {
+      flex-basis: 132px;
+      height: 132px;
+    }
   }
 
+  /* Small tablet / large phone ≤768 */
+  @media (max-width: 768px) {
+    #categories-section .mc-grid {
+      gap: 20px;
+    }
+
+    #categories-section .mc-card__body {
+      padding: 22px 20px 18px;
+    }
+
+    #categories-section .mc-card__body h3 {
+      font-size: 1.4rem;
+    }
+  }
+
+  /* Mobile ≤560 — one card plus a peek of the next */
   @media (max-width: 560px) {
     #subcategory-section .sc-track {
       gap: 14px;
@@ -458,18 +485,84 @@ const subCategoryCards = subCategories.map(sub => ({
     #subcategory-section .sc-card__body {
       padding: 14px 14px 12px;
     }
-  }
 
-  @media (max-width: 1024px) {
-    #categories-section .mc-grid {
-      grid-template-columns: repeat(2, 1fr);
+    #subcategory-section .sc-card__body h3 {
+      font-size: 0.95rem;
     }
-  }
 
-  @media (max-width: 560px) {
     #categories-section .mc-grid {
       grid-template-columns: 1fr;
       gap: 20px;
+    }
+
+    #categories-section .mc-card__body {
+      padding: 20px 18px 16px;
+    }
+
+    #categories-section .mc-card__body h3 {
+      font-size: 1.2rem;
+    }
+  }
+
+  /* Small phones ≤480 */
+  @media (max-width: 480px) {
+    #subcategory-section .sc-track {
+      gap: 12px;
+    }
+
+    #subcategory-section .sc-track > .sc-card {
+      width: calc((100% - 12px) / 1.25);
+    }
+
+    #subcategory-section .sc-card__img {
+      flex-basis: 108px;
+      height: 108px;
+      padding: 12px;
+    }
+
+    #subcategory-section .sc-card__body {
+      padding: 12px 12px 10px;
+    }
+
+    #subcategory-section .sc-card__parent {
+      font-size: 0.56rem;
+    }
+
+    #subcategory-section .sc-card__body h3 {
+      font-size: 0.88rem;
+      min-height: 2.2em;
+    }
+
+    #subcategory-section .sc-card__meta {
+      gap: 8px;
+    }
+
+    #subcategory-section .sc-card__count {
+      font-size: 0.56rem;
+      padding: 3px 6px;
+    }
+
+    #subcategory-section .sc-card__cta {
+      font-size: 0.72rem;
+    }
+  }
+
+  /* Tiny phones ≤390 */
+  @media (max-width: 390px) {
+    #subcategory-section .sc-card__img {
+      padding: 10px;
+    }
+
+    #subcategory-section .sc-card__parent {
+      font-size: 0.54rem;
+    }
+
+    #subcategory-section .sc-card__body h3 {
+      font-size: 0.84rem;
+    }
+
+    #subcategory-section .sc-card__cta span {
+      display: none;
     }
   }
 </style>

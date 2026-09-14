@@ -28,6 +28,12 @@ function isActive(templatePath: string): boolean {
       <span class="logo-text">Vinayak Plastics</span>
     </a>
 
+    <button class="nav-toggle" aria-label="Toggle menu" aria-controls="nav-links" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
     <div class="nav-inner">
       <div class="nav-links" id="nav-links">
         <a href={path('/')} class={isActive('/') ? 'active' : ''}>Home</a>
@@ -49,11 +55,6 @@ function isActive(templatePath: string): boolean {
         </div>
         <a href={CONTACT.phoneHref} class="nav-phone" aria-label="Call us">{CONTACT.phoneDisplay}</a>
         <a href={path('/contact')} class="nav-cta">Get a Quote</a>
-        <button class="nav-toggle" aria-label="Toggle menu" aria-controls="nav-links" aria-expanded="false">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
       </div>
     </div>
   </div>
