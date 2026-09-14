@@ -12,7 +12,7 @@ const configured = hasSupabase();
 
 <div id="enquiry-form-container">
   <form id="enquiry-form" class="enquiry-form">
-    <input type="hidden" id="product-id" name="product_id" value="" />
+    <input type="hidden" id="sub-category-id" name="sub_category_id" value="" />
     
     <div class="form-group">
       <label for="name">Name *</label>
@@ -127,12 +127,12 @@ const configured = hasSupabase();
     const form = document.getElementById('enquiry-form');
     if (!form) return;
 
-    // Get product ID from URL if on a product page
+    // Get sub-category ID from URL if on a product / sub-category page
     const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('product_id');
-    const productIdInput = document.getElementById('product-id');
-    if (productId && productIdInput) {
-      productIdInput.value = productId;
+    const subCategoryId = urlParams.get('sub_category_id');
+    const subCategoryIdInput = document.getElementById('sub-category-id');
+    if (subCategoryId && subCategoryIdInput) {
+      subCategoryIdInput.value = subCategoryId;
     }
 
     form.addEventListener('submit', async (e) => {
@@ -153,7 +153,7 @@ const configured = hasSupabase();
       // Get form data
       const formData = new FormData(form);
       const data = {
-        product_id: formData.get('product_id') || null,
+        sub_category_id: formData.get('sub_category_id') || null,
         name: formData.get('name'),
         company: formData.get('company') || null,
         phone: formData.get('phone'),

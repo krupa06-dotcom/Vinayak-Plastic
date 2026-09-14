@@ -55,7 +55,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
       let query = supabase
         .from('enquiries')
-        .select('id, name, company, phone, email, quantity, message, status, created_at, product_id, product:products(name, slug)', { count: 'exact' })
+        .select('id, name, company, phone, email, quantity, message, status, created_at, sub_category_id, sub_category:sub_categories(name, slug)', { count: 'exact' })
         .order('created_at', { ascending: false });
 
       if (status) query = query.eq('status', status);
@@ -83,7 +83,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         <div class="a-table-wrap">
           <table class="a-table">
             <thead><tr>
-              <th>Name</th><th>Company</th><th>Product</th><th>Message</th><th>Status</th><th>Date</th><th style="width:100px">Actions</th>
+              <th>Name</th><th>Company</th><th>Product / Range</th><th>Message</th><th>Status</th><th>Date</th><th style="width:100px">Actions</th>
             </tr></thead>
             <tbody>${rows.map((r: any) => `
               <tr>
@@ -92,7 +92,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
                   <span style="font-size:0.75rem;color:var(--a-muted);">${esc(r.email || r.phone)}</span>
                 </td>
                 <td>${esc(r.company || '—')}</td>
-                <td>${esc(r.product?.name || '—')}</td>
+                <td>${esc(r.sub_category?.name || '—')}</td>
                 <td title="${esc(r.message || '')}">${esc(truncate(r.message, 35))}</td>
                 <td>${statusBadge(r.status)}</td>
                 <td style="white-space:nowrap;font-size:0.82rem;">${fmtDateTime(r.created_at)}</td>
@@ -125,7 +125,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               <div class="a-detail-item"><h4>Company</h4><p>${esc(row.company || '—')}</p></div>
               <div class="a-detail-item"><h4>Phone</h4><p><a href="tel:${esc(row.phone)}">${esc(row.phone)}</a></p></div>
               <div class="a-detail-item"><h4>Email</h4><p><a href="mailto:${esc(row.email || '')}">${esc(row.email || '—')}</a></p></div>
-              <div class="a-detail-item"><h4>Product</h4><p>${esc(row.product?.name || '—')}</p></div>
+              <div class="a-detail-item"><h4>Product / Range</h4><p>${esc(row.sub_category?.name || '—')}</p></div>
               <div class="a-detail-item"><h4>Quantity</h4><p>${esc(row.quantity || '—')}</p></div>
               <div class="a-detail-item" style="grid-column:1/-1;"><h4>Message</h4><p style="white-space:pre-wrap;">${esc(row.message || '—')}</p></div>
               <div class="a-detail-item"><h4>Received</h4><p>${fmtDateTime(row.created_at)}</p></div>

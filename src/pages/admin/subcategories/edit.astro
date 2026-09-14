@@ -3,19 +3,28 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { path } from '../../../lib/site';
 ---
 
-<AdminLayout title="Edit Sub-category" current="subcategories">
+<AdminLayout title="Sub-category" current="subcategories">
   <div class="a-page-head">
     <h2 id="page-title">New Sub-category</h2>
-    <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm">&larr; Back to sub-categories</a>
+    <div style="display:flex;gap:10px;">
+      <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm">&larr; Back to sub-categories</a>
+      <button type="button" class="a-btn a-btn-primary" id="sub-save-top" style="display:none;">Save sub-category</button>
+    </div>
   </div>
 
   <div id="edit-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
-  <form id="sub-form" novalidate style="display:none;" class="a-form-page">
-    <div class="a-card">
-      <div class="a-card-head"><h2>Sub-category details</h2></div>
-      <div class="a-card-body">
-        <input type="hidden" id="sub-id" />
+  <form id="sub-form" novalidate style="display:none;">
+    <div class="a-card is-tabs">
+      <div class="a-tabs" role="tablist">
+        <button type="button" class="a-tab is-active" data-tab="tab-basics" role="tab">Basics</button>
+        <button type="button" class="a-tab" data-tab="tab-desc" role="tab">Description &amp; Features</button>
+        <button type="button" class="a-tab" data-tab="tab-variants" role="tab">Sizes &amp; Colours</button>
+        <button type="button" class="a-tab" data-tab="tab-images" role="tab">Images</button>
+      </div>
+
+      <!-- ======================= BASICS ======================= -->
+      <div class="a-tab-panel is-active" id="tab-basics">
         <div class="a-form-grid">
           <div class="a-field a-field-full">
             <label for="sub-category">Parent category <span style="color:var(--a-danger)">*</span></label>
@@ -26,18 +35,19 @@ import { path } from '../../../lib/site';
           <div class="a-field">
             <label for="sub-name">Sub-category name <span style="color:var(--a-danger)">*</span></label>
             <input id="sub-name" class="a-input" required autocomplete="off" placeholder="e.g. Standard Crates" />
+            <span class="a-hint">This is the range name. Individual sizes go under "Sizes &amp; Colours".</span>
           </div>
           <div class="a-field">
             <label for="sub-slug">Slug</label>
             <input id="sub-slug" class="a-input" required autocomplete="off" placeholder="auto-generated from name" />
             <span class="a-hint">Leave blank to auto-generate.</span>
           </div>
-          <div class="a-field a-field-full">
-            <label for="sub-description">Description</label>
-            <textarea id="sub-description" class="a-textarea" rows="2" placeholder="Brief description (optional)"></textarea>
+          <div class="a-field">
+            <label for="sub-sku">SKU / Series code</label>
+            <input id="sub-sku" class="a-input" autocomplete="off" placeholder="e.g. VPC-SERIES" />
           </div>
           <div class="a-field a-field-full">
-            <label for="sub-image-picker">Image</label>
+            <label for="sub-image-picker">Main image</label>
             <div id="sub-image-picker"></div>
           </div>
           <div class="a-field">
@@ -47,11 +57,62 @@ import { path } from '../../../lib/site';
           </div>
           <div class="a-field">
             <label>&nbsp;</label>
-            <label class="a-check">
-              <input type="checkbox" id="sub-active" checked />
-              Active (visible on website)
-            </label>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              <label class="a-check"><input type="checkbox" id="sub-active" checked /> Active</label>
+              <label class="a-check"><input type="checkbox" id="sub-featured" /> Featured on homepage</label>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ======================= DESCRIPTION ======================= -->
+      <div class="a-tab-panel" id="tab-desc">
+        <div class="a-form-grid">
+          <div class="a-field a-field-full">
+            <label for="sub-short">Short description</label>
+            <textarea id="sub-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="sub-desc">Full description</label>
+            <textarea id="sub-desc" class="a-textarea" rows="5" placeholder="Detailed product description"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="sub-features">Features (one per line)</label>
+            <textarea id="sub-features" class="a-textarea" rows="4" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
+          </div>
+          <div class="a-field a-field-full">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label for="apps-container">Applications</label>
+              <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add application</button>
+            </div>
+            <div id="apps-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================= SIZES & COLOURS ======================= -->
+      <div class="a-tab-panel" id="tab-variants">
+        <div class="a-guide" style="margin-bottom:16px;">
+          <h4>Add the sizes, shapes and colours this range is made in</h4>
+          <p style="margin:0;">Each row is one model / size. On the website these are shown as a specification table, so customers can see every option at a glance.</p>
+        </div>
+        <div class="a-var-head">
+          <span style="font-weight:600;font-size:0.9rem;">Sizes / Models</span>
+          <button type="button" class="a-btn a-btn-sm a-btn-primary" id="add-variant">+ Add size</button>
+        </div>
+        <div id="variants-container"></div>
+        <p class="a-hint" style="margin-top:6px;">Add at least one size so customers can see what is available. Leave a field empty if not applicable.</p>
+      </div>
+
+      <!-- ======================= IMAGES ======================= -->
+      <div class="a-tab-panel" id="tab-images">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-weight:600;font-size:0.9rem;">Gallery images</span>
+            <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
+          </div>
+          <div id="images-container"></div>
+          <p class="a-hint" style="margin-top:8px;">The first image is shown as the main image on the website. Reorder them as needed.</p>
         </div>
       </div>
     </div>
@@ -59,7 +120,7 @@ import { path } from '../../../lib/site';
     <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
     <div class="a-sticky-actions">
-      <span class="a-hint" id="save-helper">The image is uploaded from your device when you save.</span>
+      <span class="a-hint" id="save-helper">Details and sizes are saved together.</span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="a-btn a-btn-primary" id="sub-submit">Save sub-category</button>
         <a href={path('/admin/subcategories/')} class="a-btn">Cancel</a>
@@ -68,41 +129,268 @@ import { path } from '../../../lib/site';
   </form>
 
   <script>
-    import { gate, supabase, slugify, toast, esc, deleteFile } from '../../../scripts/admin/core';
+    import { gate, supabase, esc, slugify, toast, publicUrl, uploadFile, deleteFile } from '../../../scripts/admin/core';
     import { createImagePicker } from '../../../scripts/admin/imagePicker';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const r = new FileReader(); r.onload = () => resolve(r.result as string); r.onerror = reject; r.readAsDataURL(file);
+    });
+
+    const COMMON_COLORS = ['Blue', 'Green', 'Red', 'Yellow', 'White', 'Black', 'Grey', 'Orange'];
 
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('id');
     const preCategory = params.get('category');
 
     const formEl = document.getElementById('sub-form') as HTMLFormElement;
-    const loadingEl = document.getElementById('edit-loading');
-    const titleEl = document.getElementById('page-title');
+    const loadingEl = document.getElementById('edit-loading')!;
+    const titleEl = document.getElementById('page-title')!;
     const catEl = document.getElementById('sub-category') as HTMLSelectElement;
     const nameEl = document.getElementById('sub-name') as HTMLInputElement;
     const slugEl = document.getElementById('sub-slug') as HTMLInputElement;
-    const descEl = document.getElementById('sub-description') as HTMLTextAreaElement;
+    const skuEl = document.getElementById('sub-sku') as HTMLInputElement;
+    const shortEl = document.getElementById('sub-short') as HTMLTextAreaElement;
+    const descEl = document.getElementById('sub-desc') as HTMLTextAreaElement;
+    const featuresEl = document.getElementById('sub-features') as HTMLTextAreaElement;
     const orderEl = document.getElementById('sub-order') as HTMLInputElement;
     const activeEl = document.getElementById('sub-active') as HTMLInputElement;
+    const featuredEl = document.getElementById('sub-featured') as HTMLInputElement;
+    const appsEl = document.getElementById('apps-container')!;
+    const variantsEl = document.getElementById('variants-container')!;
+    const imagesEl = document.getElementById('images-container')!;
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('sub-submit') as HTMLButtonElement;
+    const saveTopBtn = document.getElementById('sub-save-top') as HTMLButtonElement;
 
     const picker = createImagePicker(document.getElementById('sub-image-picker')!, {
-      hint: 'Choose a photo from your computer. The image is uploaded and shown on the product listing.'
+      hint: 'Choose a photo from your computer. This becomes the main image for the range.'
     });
 
     function showError(msg: string) {
-      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth' }); }
     }
 
+    if (editId) titleEl.textContent = 'Edit Sub-category';
+
+    // ---- Tabs ----
+    document.querySelectorAll<HTMLButtonElement>('.a-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.a-tab').forEach(t => t.classList.remove('is-active'));
+        document.querySelectorAll('.a-tab-panel').forEach(p => p.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        document.getElementById(tab.dataset.tab!)?.classList.add('is-active');
+      });
+    });
+
+    // ---- Header save button mirrors the sticky submit ----
+    saveTopBtn?.addEventListener('click', () => formEl.requestSubmit());
+
+    // Slug auto-gen
     nameEl?.addEventListener('input', () => {
       if (!slugEl.hasAttribute('data-manual')) slugEl.value = slugify(nameEl.value);
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
 
+    // ================= GALLERY IMAGES =================
+    interface ImageEntry { id: string | null; url: string; file?: File; alt: string; order: number; deleted: boolean; preview?: string }
+    let imagesState: ImageEntry[] = [];
+
+    function renderImages() {
+      const active = imagesState.filter(i => !i.deleted);
+      if (!active.length) {
+        imagesEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No images added yet.</p>';
+        return;
+      }
+      imagesEl.innerHTML = active.map((img, idx) => {
+        const preview = img.preview || (img.url ? publicUrl(img.url) : '');
+        return `
+          <div class="a-img-row" data-idx="${idx}">
+            ${preview ? `<img src="${esc(preview)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>'}
+            <div>
+              <input type="text" class="a-input img-alt" data-idx="${idx}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
+            </div>
+            <span style="font-size:0.78rem;color:var(--a-muted);text-align:center;">Order ${img.order}</span>
+            <div class="a-row-tools">
+              <button type="button" data-reorder="${idx}" title="Move up">&uarr;</button>
+              <button type="button" data-remove="${idx}" title="Remove" style="color:var(--a-danger);">&times;</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      imagesEl.querySelectorAll('.img-alt').forEach((el) => {
+        el.addEventListener('change', (e) => {
+          const i = Number((e.target as HTMLElement).getAttribute('data-idx'));
+          imagesState.filter(x => !x.deleted)[i].alt = (e.target as HTMLInputElement).value;
+        });
+      });
+      imagesEl.querySelectorAll<HTMLButtonElement>('[data-reorder]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.dataset.reorder);
+          const arr = imagesState.filter(x => !x.deleted);
+          if (i > 0) { const tmp = arr[i]; arr[i] = arr[i-1]; arr[i-1] = tmp; arr.forEach((x,j) => x.order = j); renderImages(); }
+        });
+      });
+      imagesEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.dataset.remove);
+          const entry = imagesState.filter(x => !x.deleted)[i];
+          entry.deleted = true;
+          renderImages();
+        });
+      });
+    }
+
+    document.getElementById('add-image')?.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.onchange = async () => {
+        const files = Array.from(input.files || []);
+        for (const file of files) {
+          const preview = await toBase64(file);
+          imagesState.push({ id: null, url: '', file, alt: '', order: imagesState.filter(x => !x.deleted).length, deleted: false, preview });
+        }
+        renderImages();
+      };
+      input.click();
+    });
+
+    // ================= APPLICATIONS =================
+    interface AppRow { name: string; description: string }
+    let appsState: AppRow[] = [];
+
+    function renderApps() {
+      if (!appsState.length) { appsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No applications added.</p>'; return; }
+      appsEl.innerHTML = appsState.map((a, i) => `
+        <div class="a-app-row">
+          <input class="a-input app-name" data-idx="${i}" value="${esc(a.name)}" placeholder="Application name" />
+          <input class="a-input app-desc" data-idx="${i}" value="${esc(a.description)}" placeholder="Brief description" />
+          <div class="a-row-tools">
+            <button type="button" data-app-del="${i}" title="Remove">&times;</button>
+          </div>
+        </div>`).join('');
+
+      appsEl.querySelectorAll('.app-name').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].name = (e.target as HTMLInputElement).value; }));
+      appsEl.querySelectorAll('.app-desc').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].description = (e.target as HTMLInputElement).value; }));
+      appsEl.querySelectorAll<HTMLButtonElement>('[data-app-del]').forEach(btn => btn.addEventListener('click', () => { appsState.splice(Number(btn.dataset.appDel), 1); renderApps(); }));
+    }
+
+    document.getElementById('add-app')?.addEventListener('click', () => { appsState.push({ name: '', description: '' }); renderApps(); });
+
+    // ================= VARIANTS (sizes, shapes, colours) =================
+    interface VariantRow {
+      id: string | null;
+      name: string; size: string; shape: string; color: string;
+      weight: string; capacity: string; material: string; price: string;
+      is_active: boolean; order: number;
+    }
+    let variantsState: VariantRow[] = [];
+
+    function renderVariants() {
+      const active = variantsState; // keep all rows visible, order is manual
+      if (!active.length) {
+        variantsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No sizes added yet. Click "+ Add size" to start.</p>';
+        return;
+      }
+      variantsEl.innerHTML = active.map((v, idx) => `
+        <div class="a-var-card" data-idx="${idx}" data-variant-id="${v.id || ''}">
+          <div class="a-var-top">
+            <span class="a-var-label">Size #${idx + 1}</span>
+            <div class="a-var-actions">
+              <label class="a-check" style="font-size:0.78rem;"><input type="checkbox" data-active="${idx}" ${v.is_active ? 'checked' : ''} /> Active</label>
+              <button type="button" class="a-btn a-btn-sm" data-moveup="${idx}" title="Move up">&uarr;</button>
+              <button type="button" class="a-btn a-btn-sm a-btn-danger" data-remove="${idx}" title="Remove">&times;</button>
+            </div>
+          </div>
+          <div class="a-var-grid">
+            <div class="a-field a-field-full">
+              <label>Model / name <span style="color:var(--a-danger)">*</span></label>
+              <input class="a-input v-name" data-idx="${idx}" value="${esc(v.name)}" placeholder="e.g. VPC-400" />
+            </div>
+            <div class="a-field">
+              <label>Size (L × W × H)</label>
+              <input class="a-input v-size" data-idx="${idx}" value="${esc(v.size)}" placeholder="400 × 300 × 130 mm" />
+            </div>
+            <div class="a-field">
+              <label>Shape</label>
+              <input class="a-input v-shape" data-idx="${idx}" value="${esc(v.shape)}" placeholder="e.g. Rectangular / Nestable" />
+            </div>
+            <div class="a-field">
+              <label>Weight</label>
+              <input class="a-input v-weight" data-idx="${idx}" value="${esc(v.weight)}" placeholder="e.g. ~750 g" />
+            </div>
+            <div class="a-field">
+              <label>Capacity / Load</label>
+              <input class="a-input v-capacity" data-idx="${idx}" value="${esc(v.capacity)}" placeholder="e.g. 15 kg" />
+            </div>
+            <div class="a-field">
+              <label>Material</label>
+              <input class="a-input v-material" data-idx="${idx}" value="${esc(v.material)}" placeholder="e.g. PP / HDPE" />
+            </div>
+            <div class="a-field">
+              <label>Approx. price</label>
+              <input class="a-input v-price" data-idx="${idx}" value="${esc(v.price)}" placeholder="e.g. ₹250 / piece" />
+            </div>
+            <div class="a-field">
+              <label>Colour</label>
+              <input class="a-input v-color" data-idx="${idx}" value="${esc(v.color)}" placeholder="e.g. Blue" />
+              <div class="a-var-colors" style="margin-top:6px;">
+                ${COMMON_COLORS.map(c => `<button type="button" class="a-color-swatch ${v.color === c ? 'is-selected' : ''}" data-color="${c}" data-idx="${idx}" title="${c}"></button>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`).join('');
+
+      // Fields
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-name').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].name = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-size').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].size = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-shape').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].shape = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-weight').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].weight = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-capacity').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].capacity = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-material').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].material = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-price').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].price = (e.target as HTMLInputElement).value; }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-color').forEach(el => el.addEventListener('input', (e) => {
+        const i = Number((e.target as HTMLElement).dataset.idx);
+        variantsState[i].color = (e.target as HTMLInputElement).value;
+        const card = variantsEl.querySelector(`.a-var-card[data-idx="${i}"]`);
+        card?.querySelectorAll('.a-color-swatch').forEach((sw: any) => sw.classList.toggle('is-selected', sw.dataset.color === variantsState[i].color));
+      }));
+
+      // Swatches
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-color]').forEach(sw => sw.addEventListener('click', () => {
+        const i = Number(sw.dataset.idx);
+        variantsState[i].color = sw.dataset.color!;
+        const input = variantsEl.querySelector<HTMLInputElement>(`.a-var-card[data-idx="${i}"] .v-color`);
+        if (input) input.value = sw.dataset.color!;
+        variantsEl.querySelectorAll<HTMLButtonElement>(`.a-var-card[data-idx="${i}"] [data-color]`).forEach(s2 => s2.classList.toggle('is-selected', s2.dataset.color === variantsState[i].color));
+      }));
+
+      // Active toggle
+      variantsEl.querySelectorAll<HTMLInputElement>('[data-active]').forEach(cb => cb.addEventListener('change', (e) => {
+        const i = Number((e.target as HTMLElement).dataset.active);
+        variantsState[i].is_active = (e.target as HTMLInputElement).checked;
+      }));
+
+      // Move up / remove
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-moveup]').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.moveup);
+        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); }
+      }));
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+        variantsState.splice(Number(btn.dataset.remove), 1);
+        renderVariants();
+      }));
+    }
+
+    document.getElementById('add-variant')?.addEventListener('click', () => {
+      variantsState.push({ id: null, name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length });
+      renderVariants();
+    });
+
+    // ================= INIT =================
     void (async () => {
       if (!(await gate())) return;
 
@@ -119,25 +407,50 @@ import { path } from '../../../lib/site';
 
       if (editId) {
         titleEl!.textContent = 'Edit Sub-category';
-        const { data, error } = await supabase.from('sub_categories').select('*').eq('id', editId).single();
-        if (error || !data) { showError(error?.message || 'Sub-category not found'); loadingEl?.remove(); formEl.style.display = ''; return; }
-        (document.getElementById('sub-id') as HTMLInputElement).value = data.id;
-        catEl.value = data.category_id;
-        nameEl.value = data.name;
-        slugEl.value = data.slug;
+        const { data: sub, error } = await supabase
+          .from('sub_categories')
+          .select('*, sub_category_images(*), sub_category_variants(*)')
+          .eq('id', editId)
+          .single();
+        if (error || !sub) { showError(error?.message || 'Sub-category not found'); loadingEl.remove(); formEl.style.display = ''; return; }
+
+        catEl.value = sub.category_id;
+        nameEl.value = sub.name;
+        slugEl.value = sub.slug;
         slugEl.setAttribute('data-manual', '1');
-        descEl.value = data.description ?? '';
-        orderEl.value = String(data.display_order);
-        activeEl.checked = data.is_active;
-        picker.setValue({ existing: data.image_url ?? null, file: null });
+        skuEl.value = (sub as any).product_code ?? '';
+        shortEl.value = (sub as any).short_description ?? '';
+        descEl.value = sub.description ?? '';
+        featuresEl.value = (Array.isArray(sub.features) ? sub.features : []).join('\n');
+        orderEl.value = String(sub.display_order);
+        activeEl.checked = sub.is_active;
+        featuredEl.checked = (sub as any).is_featured ?? false;
+        picker.setValue({ existing: sub.image_url ?? null, file: null });
+
+        imagesState = ((sub as any).sub_category_images || []).map((img: any) => ({
+          id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false
+        })).sort((a: any, b: any) => a.order - b.order);
+        renderImages();
+
+        variantsState = ((sub as any).sub_category_variants || []).map((v: any) => ({
+          id: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
+          weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+          is_active: v.is_active, order: v.display_order
+        })).sort((a: any, b: any) => a.order - b.order);
+        renderVariants();
+
+        appsState = Array.isArray(sub.applications) ? [...(sub.applications as unknown as AppRow[])] : [];
+        renderApps();
       } else if (preCategory) {
         catEl.value = preCategory;
       }
 
-      loadingEl?.remove();
+      loadingEl.remove();
       formEl.style.display = '';
+      saveTopBtn!.style.display = '';
     })();
 
+    // ================= SAVE =================
     formEl?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (errorEl) errorEl.style.display = 'none';
@@ -145,53 +458,117 @@ import { path } from '../../../lib/site';
       const name = nameEl.value.trim();
       const categoryId = catEl.value;
       if (!categoryId) { showError('Please select a parent category.'); return; }
-      if (!name) { showError('Name is required.'); return; }
+      if (!name) { showError('Sub-category name is required.'); return; }
+
+      const validVariants = variantsState.filter(v => v.name.trim());
+      if (!editId && !validVariants.length) {
+        showError('Please add at least one size in the "Sizes & Colours" tab.');
+        return;
+      }
+
+      submitBtn?.setAttribute('disabled', '');
+      submitBtn.textContent = 'Saving…';
+      saveTopBtn?.setAttribute('disabled', '');
 
       const slug = slugEl.value.trim() || slugify(name);
       const pickerValue = picker.getValue();
       let imageUrl: string | null = pickerValue.existing;
       const previousImage = pickerValue.existing;
-
-      submitBtn?.setAttribute('disabled', '');
-      submitBtn.textContent = 'Saving…';
+      const subCategoryId = editId || crypto.randomUUID();
 
       if (pickerValue.file) {
         const result = await picker.upload(`media/sub-categories/${slug}-${Date.now()}`);
-        if ('error' in result) {
-          submitBtn?.removeAttribute('disabled');
-          submitBtn.textContent = 'Save sub-category';
-          showError(result.error);
-          return;
-        }
+        if ('error' in result) { resetBtn(); showError(result.error); return; }
         imageUrl = result.url;
       }
 
       const payload: Record<string, unknown> = {
-        id: editId || undefined,
+        id: editId || subCategoryId,
         category_id: categoryId,
         name,
         slug,
+        product_code: skuEl.value.trim() || null,
+        short_description: shortEl.value.trim() || null,
         description: descEl.value.trim() || null,
         image_url: imageUrl,
+        features: featuresEl.value.split('\n').map(l => l.trim()).filter(Boolean),
+        applications: appsState.filter(a => a.name.trim()),
         display_order: Number(orderEl.value) || 0,
         is_active: activeEl.checked,
+        is_featured: featuredEl.checked,
         updated_at: new Date().toISOString()
       };
-      if (!payload.id) delete payload.id;
 
-      const { error } = await supabase.from('sub_categories').upsert(payload as never, { onConflict: 'id' });
-      if (error) {
-        submitBtn?.removeAttribute('disabled');
-        submitBtn.textContent = 'Save sub-category';
-        showError(error.message);
-        return;
-      }
+      const { error: subErr } = await supabase.from('sub_categories').upsert(payload as never, { onConflict: 'id' });
+      if (subErr) { resetBtn(); showError(subErr.message); return; }
 
-      // If the image was replaced, remove the old stored file (best-effort).
+      // If the main image was replaced, remove the old stored file (best-effort).
       if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
 
-      toast(editId ? 'Sub-category updated.' : 'Sub-category created.', 'success');
+      // ---- Variants (sizes & colours) ----
+      const variantRows = variantsState
+        .filter(v => v.name.trim())
+        .map((v, i) => ({
+          id: v.id || crypto.randomUUID(),
+          sub_category_id: subCategoryId,
+          name: v.name.trim(),
+          size: v.size.trim() || null,
+          shape: v.shape.trim() || null,
+          color: v.color.trim() || null,
+          weight: v.weight.trim() || null,
+          capacity: v.capacity.trim() || null,
+          material: v.material.trim() || null,
+          price: v.price.trim() || null,
+          is_active: v.is_active,
+          display_order: i,
+          updated_at: new Date().toISOString()
+        }));
+      if (editId) {
+        const { error: delVErr } = await supabase.from('sub_category_variants').delete().eq('sub_category_id', subCategoryId);
+        if (delVErr) { resetBtn(); showError(`Failed to update sizes: ${delVErr.message}`); return; }
+      }
+      if (variantRows.length) {
+        const { error: insVErr } = await supabase.from('sub_category_variants').insert(variantRows as never);
+        if (insVErr) { resetBtn(); showError(`Failed to save sizes: ${insVErr.message}`); return; }
+      }
+
+      // ---- Gallery images ----
+      const uploadErrors: string[] = [];
+      for (let i = 0; i < imagesState.length; i++) {
+        const entry = imagesState[i];
+        if (entry.deleted && entry.id) {
+          const { error: delImgErr } = await supabase.from('sub_category_images').delete().eq('id', entry.id);
+          if (delImgErr) uploadErrors.push(`Delete image error: ${delImgErr.message}`);
+          else if (entry.url) await deleteFile(entry.url);
+          continue;
+        }
+        if (entry.file) {
+          const result = await uploadFile(entry.file, `sub-categories/${subCategoryId}/${Date.now()}-${i}`);
+          if ('error' in result) { uploadErrors.push(`Upload failed (${entry.file.name}): ${result.error}`); continue; }
+          const { error: insImgErr } = await supabase.from('sub_category_images').insert({ sub_category_id: subCategoryId, image_url: result.path, alt_text: entry.alt || null, display_order: i });
+          if (insImgErr) uploadErrors.push(`Save image error: ${insImgErr.message}`);
+          continue;
+        }
+        if (entry.id) {
+          const { error: updErr } = await supabase.from('sub_category_images').update({ display_order: i, alt_text: entry.alt || null }).eq('id', entry.id);
+          if (updErr) uploadErrors.push(`Update image order error: ${updErr.message}`);
+        }
+      }
+
+      resetBtn();
+
+      if (uploadErrors.length) {
+        toast(`Saved, but some image operations failed: ${uploadErrors[0]}`, 'error');
+      } else {
+        toast(editId ? 'Sub-category updated.' : 'Sub-category created.', 'success');
+      }
       window.location.href = href('admin/subcategories/');
     });
+
+    function resetBtn() {
+      submitBtn?.removeAttribute('disabled');
+      submitBtn!.textContent = 'Save sub-category';
+      saveTopBtn?.removeAttribute('disabled');
+    }
   </script>
 </AdminLayout>

@@ -6,7 +6,7 @@ import { path } from '../../lib/site';
 <AdminLayout title="Dashboard" current="dashboard">
   <div class="a-page-head">
     <h2>Overview</h2>
-    <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Product</a>
+    <a href={path('/admin/subcategories/edit/')} class="a-btn a-btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Sub-category</a>
   </div>
 
   <div id="dashboard-stats" class="a-stats"></div>
@@ -50,7 +50,7 @@ import { path } from '../../lib/site';
         <div class="a-card-head"><h2>Shortcuts</h2></div>
         <div class="a-card-body">
           <div class="a-quick">
-            <a href={path('/admin/products/')}><span>View products</span><span>&rarr;</span></a>
+            <a href={path('/admin/subcategories/')}><span>Manage sub-categories</span><span>&rarr;</span></a>
             <a href={path('/admin/categories/edit/')}><span>New category</span><span>&rarr;</span></a>
             <a href={path('/admin/subcategories/edit/')}><span>New sub-category</span><span>&rarr;</span></a>
             <a href={path('/admin/media/')}><span>Upload images</span><span>&rarr;</span></a>
@@ -73,26 +73,26 @@ import { path } from '../../lib/site';
 
       const [
         newEnqRes,
-        { data: products }, { data: subCats }, { data: cats },
-        { data: variants }, { data: projImgs }
+        { data: subCats }, { data: cats },
+        { data: variants }, { data: subImgs }
       ] = await Promise.all([
         supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('products').select('id, sub_category_id, name, is_active, is_featured'),
-        supabase.from('sub_categories').select('id, category_id'),
+        supabase.from('sub_categories').select('id, category_id, name, is_active, is_featured, image_url'),
         supabase.from('categories').select('id, name, display_order').order('display_order'),
-        supabase.from('product_variants').select('product_id'),
-        supabase.from('product_images').select('product_id')
+        supabase.from('sub_category_variants').select('sub_category_id, is_active'),
+        supabase.from('sub_category_images').select('sub_category_id')
       ]);
 
-      const prods = (products || []) as any[];
       const subs = (subCats || []) as any[];
       const catsData = (cats || []) as any[];
-      const variantsProdIds = new Set((variants || []).map((v: any) => v.product_id));
-      const imgsProdIds = new Set((projImgs || []).map((i: any) => i.product_id));
+      const varsBySub = new Map<string, number>();
+      (variants || []).forEach((v: any) => { if (v.is_active) varsBySub.set(v.sub_category_id, (varsBySub.get(v.sub_category_id) || 0) + 1); });
+      const imgsSubIds = new Set((subImgs || []).map((i: any) => i.sub_category_id));
 
-      const activeCount = prods.filter(p => p.is_active).length;
-      const noVariants = prods.filter(p => !variantsProdIds.has(p.id));
-      const noImages = prods.filter(p => !imgsProdIds.has(p.id));
+      const activeCount = subs.filter(s => s.is_active).length;
+      const sizeCount = (id: string) => varsBySub.get(id) || 0;
+      const noSizes = subs.filter(s => !sizeCount(s.id));
+      const noImages = subs.filter(s => !s.image_url && !imgsSubIds.has(s.id));
 
       const svg = (paths: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
       const STAT_ICONS: Record<string, string> = {
@@ -105,10 +105,9 @@ import { path } from '../../lib/site';
       };
 
       const stats = [
-        { num: prods.length, label: 'Products', icon: 'products' },
-        { num: activeCount, label: 'Active products', icon: 'active' },
-        { num: noVariants.length, label: 'Missing sizes/shapes', icon: 'missing' },
-        { num: subs.length, label: 'Sub-categories', icon: 'subs' },
+        { num: subs.length, label: 'Products / Ranges', icon: 'products' },
+        { num: activeCount, label: 'Active', icon: 'active' },
+        { num: noSizes.length, label: 'Missing sizes/shapes', icon: 'missing' },
         { num: catsData.length, label: 'Categories', icon: 'cats' },
         { num: newEnqRes.count ?? 0, label: 'New enquiries', icon: 'enquiries' }
       ];
@@ -127,9 +126,9 @@ import { path } from '../../lib/site';
 
       if (healthEl) {
         const rows = catsData.map(c => {
-          const subIds = subs.filter(s => s.category_id === c.id).map(s => s.id);
-          const prodCount = prods.filter(p => subIds.includes(p.sub_category_id)).length;
-          return { name: c.name, subs: subIds.length, prods: prodCount };
+          const catSubs = subs.filter(s => s.category_id === c.id);
+          const sizeTotal = catSubs.reduce((n, s) => n + sizeCount(s.id), 0);
+          return { name: c.name, subs: catSubs.length, sizes: sizeTotal };
         });
         if (!rows.length) {
           healthEl.innerHTML = '<li style="color:var(--a-faint);justify-content:flex-start;">No categories yet.</li>';
@@ -137,22 +136,22 @@ import { path } from '../../lib/site';
           healthEl.innerHTML = rows.map(r => `
             <li>
               <span><strong>${esc(r.name)}</strong> &middot; <span style="color:var(--a-muted);font-size:0.8rem;">${esc(r.subs)} sub-categor${r.subs === 1 ? 'y' : 'ies'}</span></span>
-              <span class="a-chip ${r.prods ? 'a-chip-ok' : ''}">${r.prods} product${r.prods === 1 ? '' : 's'}</span>
+              <span class="a-chip ${r.sizes ? 'a-chip-ok' : ''}">${r.sizes} size${r.sizes === 1 ? '' : 's'}</span>
             </li>`).join('');
         }
       }
 
       if (attentionEl) {
-        const bothMissing = noVariants.length + noImages.length;
+        const bothMissing = noSizes.length + noImages.length;
         if (!bothMissing) {
-          showEmpty(attentionEl, 'Everything looks complete', 'Every product has photos and size/shape details.');
+          showEmpty(attentionEl, 'Everything looks complete', 'Every product range has photos and size/shape details.');
         } else {
-          const list = (n: any[], label: string) => n.length
-            ? `<li><strong>${n.length} ${label}</strong><div style="font-size:0.8rem;color:var(--a-muted);">${n.slice(0, 4).map(p => esc(p.name)).join(', ')}${n.length > 4 ? ` +${n.length - 4} more` : ''}</div></li>`
+          const list = (n: any[], label: string, max = 4) => n.length
+            ? `<li><strong>${n.length} ${label}</strong><div style="font-size:0.8rem;color:var(--a-muted);">${n.slice(0, max).map(p => esc(p.name)).join(', ')}${n.length > max ? ` +${n.length - max} more` : ''}</div></li>`
             : '';
           attentionEl.innerHTML = `<ul class="a-health" style="margin:0;padding:0;list-style:none;">
-            ${list(noVariants, 'products missing sizes & shapes')}
-            ${list(noImages, 'products missing photos')}
+            ${list(noSizes, 'ranges missing sizes & shapes')}
+            ${list(noImages, 'ranges missing photos')}
           </ul>`;
         }
       }

@@ -144,7 +144,7 @@ const process = [
       </div>
       <div class="about-range__grid">
         {products.map((p, i) => (
-          <a href={path(`/products/${['plastic-crates','plastic-pallets','waste-bins','hand-pallet-trucks'][i]}`)} class="about-range__card reveal">
+          <a href={path(`/categories/${['plastic-crates','plastic-pallets','waste-bins','hand-pallet-trucks'][i]}`)} class="about-range__card reveal">
             <div class="about-range__img">
               <Image src={p.img} alt={p.alt} width={600} height={450} widths={[360, 520]} sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" />
             </div>

@@ -1,0 +1,293 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { path, SITE_URL } from '../../lib/site';
+import { CONTACT } from '../../lib/contact';
+import { getCatalogueData, resolveImageUrl } from '../../lib/db';
+
+// Build the list of category pages (from Supabase, or the static fallback).
+export async function getStaticPaths() {
+  const catalogue = await getCatalogueData();
+  return catalogue.categories.map(cat => ({
+    params: { slug: cat.slug }
+  }));
+}
+
+const catalogue = await getCatalogueData();
+const category = catalogue.categories.find(c => c.slug === Astro.params.slug) ?? null;
+
+if (!category) {
+  return Astro.redirect('/products');
+}
+
+const subCategories = category.sub_categories;
+const totalSizes = category.variants_count;
+
+const heroImage = resolveImageUrl(category.image_url);
+const pageTitle = `${category.name} | Vinayak Plastics`;
+const pageDescription = `${category.description || `Explore our range of ${category.name.toLowerCase()} and related product types.`} View sub-categories and specifications.`;
+
+const categorySchema = `{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "${SITE_URL}${path('/')}" },
+    { "@type": "ListItem", "position": 2, "name": "Products", "item": "${SITE_URL}${path('/products')}" },
+    { "@type": "ListItem", "position": 3, "name": ${JSON.stringify(category.name)}, "item": "${SITE_URL}${path(`/categories/${category.slug}`)}" }
+  ]
+}`;
+
+function sizeCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'Size / Model' : 'Sizes / Models'}`;
+}
+---
+
+<Layout title={pageTitle} description={pageDescription} structuredData={categorySchema}>
+  <Header currentPage="/products" />
+
+  <main id="main">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / {category.name}</p>
+      <h1 class="display-800">{category.name}</h1>
+      <p>{category.description}</p>
+    </div>
+  </section>
+
+  <!-- ===== CATEGORY DETAILS ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="cat-detail">
+        <div class="cat-detail__media reveal">
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={`${category.name} — Vinayak Plastics product range`}
+              width="800"
+              height="600"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <span class="cat-detail__placeholder">{category.name}</span>
+          )}
+        </div>
+        <div class="cat-detail__body reveal">
+          <span class="sec-index">Category Overview</span>
+          <h2 class="display-700">{category.name}</h2>
+          <p>{category.description || 'We supply this product range in multiple types and sizes to suit your application.'}</p>
+          <div class="cat-detail__stats">
+            <div class="cat-detail__stat">
+              <strong>{subCategories.length}</strong>
+              <span>Sub-Categor{subCategories.length === 1 ? 'y' : 'ies'}</span>
+            </div>
+            <div class="cat-detail__stat">
+              <strong>{totalSizes}</strong>
+              <span>{totalSizes === 1 ? 'Size / Model' : 'Sizes / Models'}</span>
+            </div>
+          </div>
+          {subCategories.length > 0 && (
+            <div class="cat-detail__types">
+              <span class="cat-detail__types-label">Available types:</span>
+              {subCategories.map(sub => (
+                <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="cat-detail__chip">{sub.name}</a>
+              ))}
+            </div>
+          )}
+          <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SUB CATEGORIES ===== -->
+  <section class="section section-warm" id="subcategories">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="sec-index">Sub Categories</span>
+        <h2 class="display-700">Browse {category.name} by Type</h2>
+        <p>Specific product types within the {category.name.toLowerCase()} family — choose a type to see detailed specifications.</p>
+      </div>
+
+      {subCategories.length > 0 ? (
+        <div class="sc-grid">
+          {subCategories.map(sub => (
+            <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card reveal">
+              <div class="sc-card__img">
+                {resolveImageUrl(sub.image_url) ? (
+                  <img
+                    src={resolveImageUrl(sub.image_url)!}
+                    alt={`${sub.name} — ${sub.category_name}`}
+                    width="480"
+                    height="300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="sc-card__placeholder">{sub.name}</span>
+                )}
+              </div>
+              <div class="sc-card__body">
+                <span class="sc-card__parent">{sub.category_name}</span>
+                <h3>{sub.name}</h3>
+                {sub.description && <p>{sub.description}</p>}
+                <div class="sc-card__meta">
+                  <span class="sc-card__count">{sizeCountLabel(sub.variants_count)}</span>
+                  <span class="sc-card__cta">View Details <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state reveal">
+          <h3>Product types coming soon</h3>
+          <p>We are adding detailed product breakdowns for this family. Please check back or <a href={path('/contact')}>contact us</a> for the full range.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-banner" aria-label={`Enquire about ${category.name.toLowerCase()}`}>
+    <div class="container reveal">
+      <h2 class="display-700">Need {category.name.toLowerCase()} specs or pricing?</h2>
+      <p>Call or WhatsApp us directly for dimensions, material grades, custom sizes and dispatch timelines.</p>
+      <div class="cta-buttons">
+        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+      </div>
+    </div>
+  </section>
+
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .cat-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    padding: 72px 0 96px;
+  }
+
+  .cat-detail__media {
+    position: relative;
+    aspect-ratio: 4/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--warm-off-white);
+  }
+
+  .cat-detail__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cat-detail__placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    color: rgba(18, 42, 78, 0.3);
+    background:
+      linear-gradient(rgba(232, 99, 12, 0.04), rgba(232, 99, 12, 0.04)),
+      var(--warm-off-white);
+  }
+
+  .cat-detail__body .sec-index {
+    margin-bottom: 12px;
+  }
+
+  .cat-detail__body h2 {
+    margin-bottom: 14px;
+  }
+
+  .cat-detail__body p {
+    color: var(--steel);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .cat-detail__stats {
+    display: flex;
+    gap: 40px;
+    border-top: 1px solid rgba(18, 42, 78, 0.08);
+    border-bottom: 1px solid rgba(18, 42, 78, 0.08);
+    padding: 20px 0;
+    margin-bottom: 24px;
+  }
+
+  .cat-detail__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cat-detail__stat strong {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--orange-deep);
+    line-height: 1;
+  }
+
+  .cat-detail__stat span {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .cat-detail__types {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .cat-detail__types-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .cat-detail__chip {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--deep-navy);
+    background: rgba(18, 42, 78, 0.05);
+    border: 1px solid rgba(18, 42, 78, 0.1);
+    border-radius: 100px;
+    padding: 6px 14px;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .cat-detail__chip:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white);
+  }
+
+  @media (max-width: 900px) {
+    .cat-detail {
+      grid-template-columns: 1fr;
+      gap: 32px;
+      padding: 48px 0 72px;
+    }
+  }
+</style>

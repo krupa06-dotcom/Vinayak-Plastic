@@ -4,10 +4,16 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
-import { getCatalogueData, resolveImageUrl, type CatalogueProduct } from '../../lib/db';
+import { getCatalogueData, resolveImageUrl } from '../../lib/db';
 
 const catalogue = await getCatalogueData();
-const { categories, subCategories, productsByCategorySlug, productsBySubCategorySlug } = catalogue;
+const { categories, subCategories } = catalogue;
+
+function sizeLabel(count: number): string {
+  return count > 0
+    ? `${count} ${count === 1 ? 'Size / Model' : 'Sizes / Models'}`
+    : 'Range on request';
+}
 
 // Build card data
 const categoryCards = categories.map(cat => ({
@@ -15,67 +21,20 @@ const categoryCards = categories.map(cat => ({
   slug: cat.slug,
   description: cat.description,
   image: resolveImageUrl(cat.image_url),
-  productCount: cat.product_count,
-  href: path(`/products?category=${cat.slug}`)
+  count: sizeLabel(cat.variants_count),
+  href: path(`/categories/${cat.slug}`)
 }));
 
 const subCategoryCards = subCategories.map(sub => ({
   name: sub.name,
   slug: sub.slug,
   categoryName: sub.category_name,
+  categorySlug: sub.category_slug,
   description: sub.description,
   image: resolveImageUrl(sub.image_url),
-  productCount: sub.product_count,
-  href: path(`/products?subcategory=${sub.slug}`)
+  count: sizeLabel(sub.variants_count),
+  href: path(`/categories/${sub.category_slug}/${sub.slug}`)
 }));
-
-// Build lightweight search index: categories + subcategories
-const searchIndex = [
-  ...categoryCards.map(c => ({
-    type: 'category' as const,
-    name: c.name,
-    slug: c.slug,
-    desc: c.description || '',
-    image: c.image,
-    keywords: `${c.name} ${c.description || ''}`.toLowerCase(),
-    href: c.href
-  })),
-  ...subCategoryCards.map(c => ({
-    type: 'subcategory' as const,
-    name: c.name,
-    slug: c.slug,
-    parentName: c.categoryName,
-    desc: c.description || '',
-    image: c.image,
-    keywords: `${c.name} ${c.categoryName} ${c.description || ''}`.toLowerCase(),
-    href: c.href
-  }))
-];
-
-// Build filter index: products by category slug / subcategory slug
-const productsForFilter = (list: CatalogueProduct[]) =>
-  list.map(p => ({
-    name: p.name,
-    slug: p.slug,
-    desc: p.short_description || '',
-    image: resolveImageUrl(p.image_url),
-    href: `${path('/products')}/${p.slug}`
-  }));
-
-const filterIndex = {
-  category: Object.fromEntries(
-    Object.entries(productsByCategorySlug).map(([slug, prods]) => {
-      const cat = categories.find(c => c.slug === slug);
-      return [slug, { title: cat?.name || slug, items: productsForFilter(prods) }];
-    })
-  ),
-  subcategory: Object.fromEntries(
-    Object.entries(productsBySubCategorySlug).map(([slug, prods]) => {
-      const sub = subCategories.find(s => s.slug === slug);
-      return [slug, { title: sub?.name || slug, parent: sub?.category_name || '', items: productsForFilter(prods) }];
-    })
-  )
-};
 ---
 
 <Layout
@@ -91,22 +50,6 @@ const filterIndex = {
       <p class="breadcrumb"><a href={path('/')}>Home</a> / Products</p>
       <h1 class="display-800">Our Product Range</h1>
       <p>Industrial-grade material handling and packaging equipment for warehouses, dairy, municipal, and commercial buyers.</p>
-    </div>
-  </section>
-
-  <!-- ===== FILTERED PRODUCTS (shown by JS when ?category= or ?subcategory=) ===== -->
-  <section class="section" id="filter-results" style="display:none">
-    <div class="container">
-      <div class="section-header">
-        <span class="sec-index">Filtered Catalogue</span>
-        <h2 class="display-700" id="filter-title"></h2>
-        <p id="filter-subtitle"></p>
-      </div>
-      <div class="res-grid" id="filter-grid"></div>
-      <div id="filter-no-results" class="empty-state" style="display:none">
-        <h3>No products found</h3>
-        <p>No products are currently listed in this section. <a href={path('/products')}>View all products</a></p>
-      </div>
     </div>
   </section>
 
@@ -137,7 +80,7 @@ const filterIndex = {
       {categoryCards.length > 0 ? (
         <div class="mc-grid">
           {categoryCards.map(card => (
-            <a href={card.href} class="mc-card reveal">
+            <a href={card.href} class="mc-card reveal" data-cat={card.slug}>
               <div class="mc-card__img">
                 {card.image ? (
                   <img
@@ -156,8 +99,8 @@ const filterIndex = {
                 <h3>{card.name}</h3>
                 {card.description && <p>{card.description}</p>}
                 <div class="mc-card__meta">
-                  <span class="mc-card__count">{card.productCount} {card.productCount === 1 ? 'Product' : 'Products'}</span>
-                  <span class="mc-card__cta">View Products <span aria-hidden="true">→</span></span>
+                  <span class="mc-card__count">{card.count}</span>
+                  <span class="mc-card__cta">Explore Range <span aria-hidden="true">→</span></span>
                 </div>
               </div>
             </a>
@@ -176,15 +119,15 @@ const filterIndex = {
   <section class="section section-warm" id="subcategory-section">
     <div class="container">
       <div class="section-header reveal">
-        <span class="sec-index">02 · Sub Categories</span>
+        <span class="sec-index">02 · Product Types</span>
         <h2 class="display-700">Browse by Product Type</h2>
-        <p>Specific product types within each family — reference these to get exact dimensions, specifications and availability.</p>
+        <p>Specific product types within each family — choose a type to see exact dimensions, specifications and availability.</p>
       </div>
 
       {subCategoryCards.length > 0 ? (
         <div class="sc-grid">
           {subCategoryCards.map(card => (
-            <a href={card.href} class="sc-card reveal">
+            <a href={card.href} class="sc-card reveal" data-sub={card.slug} data-cat={card.categorySlug} data-search={`${card.name} ${card.categoryName} ${card.description || ''}`.toLowerCase()}>
               <div class="sc-card__img">
                 {card.image ? (
                   <img
@@ -204,8 +147,8 @@ const filterIndex = {
                 <h3>{card.name}</h3>
                 {card.description && <p>{card.description}</p>}
                 <div class="sc-card__meta">
-                  <span class="sc-card__count">{card.productCount} {card.productCount === 1 ? 'Product' : 'Products'}</span>
-                  <span class="sc-card__cta">Explore <span aria-hidden="true">→</span></span>
+                  <span class="sc-card__count">{card.count}</span>
+                  <span class="sc-card__cta">View Details <span aria-hidden="true">→</span></span>
                 </div>
               </div>
             </a>
@@ -217,64 +160,6 @@ const filterIndex = {
           <p>We are adding detailed product breakdowns. Please check back or <a href={path('/contact')}>contact us</a> for the full range.</p>
         </div>
       )}
-    </div>
-  </section>
-
-  <!-- ===== ADDITIONAL PRODUCTS ===== -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header reveal">
-        <h2 class="display-700">Also Available</h2>
-        <p>Beyond our core range, we supply additional products for specialized material handling needs.</p>
-      </div>
-      <div class="product-grid reveal">
-        <article class="product-card">
-          <div class="product-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
-              <path d="M8 18h32M16 6v36M32 6v36" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-            </svg>
-          </div>
-          <h3>Ice Boxes</h3>
-          <p>Insulated plastic ice boxes for food transport, fishing, and catering. Available in multiple capacities with durable latch closures.</p>
-        </article>
-
-        <article class="product-card">
-          <div class="product-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="8" width="40" height="32" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
-              <rect x="10" y="14" width="28" height="6" rx="1" stroke="currentColor" stroke-width="1.5" opacity="0.5" fill="none"/>
-              <rect x="10" y="24" width="28" height="6" rx="1" stroke="currentColor" stroke-width="1.5" opacity="0.5" fill="none"/>
-              <rect x="10" y="34" width="28" height="2" rx="1" stroke="currentColor" stroke-width="1.5" opacity="0.4" fill="none"/>
-            </svg>
-          </div>
-          <h3>Storage Bins</h3>
-          <p>Plastic storage bins for warehouse organization, inventory management, and parts handling. Available in multiple sizes with color options.</p>
-        </article>
-
-        <article class="product-card">
-          <div class="product-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="6" y="10" width="36" height="28" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
-              <path d="M6 20h36" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-              <rect x="16" y="10" width="16" height="28" stroke="currentColor" stroke-width="1.5" opacity="0.3" fill="none"/>
-            </svg>
-          </div>
-          <h3>Racking Systems</h3>
-          <p>Industrial racking solutions for warehouse storage optimization. Boltless assembly, adjustable shelf heights, and heavy-duty load capacity.</p>
-        </article>
-
-        <article class="product-card">
-          <div class="product-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="24" r="18" stroke="currentColor" stroke-width="2" fill="none"/>
-              <path d="M24 12v12l8 4" stroke="currentColor" stroke-width="2" opacity="0.5"/>
-            </svg>
-          </div>
-          <h3>Custom Molding</h3>
-          <p>We work with buyers to develop custom plastic products for specific industrial, municipal, or commercial applications.</p>
-        </article>
-      </div>
     </div>
   </section>
 
@@ -294,26 +179,17 @@ const filterIndex = {
   <Footer />
 </Layout>
 
-<script is:inline define:vars={{ searchJson: JSON.stringify(searchIndex), filterJson: JSON.stringify(filterIndex), basePath: path('/products') }}>
+<script is:inline>
 (function () {
   var params = new URLSearchParams(window.location.search);
 
-  var filterResults = document.getElementById('filter-results');
-  var filterGrid    = document.getElementById('filter-grid');
-  var filterTitle   = document.getElementById('filter-title');
-  var filterSub     = document.getElementById('filter-subtitle');
-  var filterNo      = document.getElementById('filter-no-results');
   var searchResults = document.getElementById('search-results');
-  var searchGrid    = document.getElementById('search-grid');
-  var searchNo      = document.getElementById('no-results');
-  var searchQuery   = document.getElementById('search-query-text');
-  var catsSection   = document.getElementById('categories-section');
-  var subsSection   = document.getElementById('subcategory-section');
+  var searchGrid = document.getElementById('search-grid');
+  var searchNo = document.getElementById('no-results');
+  var searchQuery = document.getElementById('search-query-text');
+  var catsSection = document.getElementById('categories-section');
+  var subsSection = document.getElementById('subcategory-section');
 
-  var searchIndex  = JSON.parse(searchJson);
-  var filterIndex  = JSON.parse(filterJson);
-
-  // --- Helpers ---
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -322,97 +198,65 @@ const filterIndex = {
       .replace(/"/g, '&quot;');
   }
 
-  function renderResultCard(item) {
-    var a = document.createElement('a');
-    a.href = item.href;
-    a.className = 'sc-card';
-    var imgHtml = item.image
-      ? '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" width="480" height="300" loading="lazy" decoding="async" />'
-      : '<span class="sc-card__placeholder">' + escapeHtml(item.name) + '</span>';
-    var parentTag = item.parentName || item.parent || '';
-    a.innerHTML =
-      '<div class="sc-card__img">' + imgHtml + '</div>' +
-      '<div class="sc-card__body">' +
-        (parentTag ? '<span class="sc-card__parent">' + escapeHtml(parentTag) + '</span>' : '') +
-        '<h3>' + escapeHtml(item.name) + '</h3>' +
-        (item.desc ? '<p>' + escapeHtml(item.desc) + '</p>' : '') +
-        '<div class="sc-card__meta"><span class="sc-card__cta">View <span aria-hidden="true">→</span></span></div>' +
-      '</div>';
-    return a;
+  function highlight(el) {
+    if (!el) return;
+    el.scrollIntoView();
+    el.classList.add('is-highlighted');
+    window.setTimeout(function () { el.classList.remove('is-highlighted'); }, 1600);
   }
 
-  // --- Category / Subcategory filter (?category= or ?subcategory=) ---
-  var catParam  = params.get('category');
-  var subParam  = params.get('subcategory');
-
-  if (catParam || subParam) {
-    var key = catParam || subParam;
-    var store = catParam ? filterIndex.category : filterIndex.subcategory;
-    var entry = store[key];
-    var known = entry || searchIndex.some(function (i) { return i.slug === key; });
-
-    if (known) {
-      var label = entry ? entry.title : '';
-      if (!label) {
-        var hit = searchIndex.find(function (i) { return i.slug === key; });
-        if (hit) label = hit.name;
-      }
-      filterTitle.textContent = label;
-      filterSub.textContent = catParam
-        ? 'All products in this category.'
-        : 'All products in this sub-category.';
-
-      if (entry && entry.items && entry.items.length) {
-        entry.items.forEach(function (item) { filterGrid.appendChild(renderResultCard(item)); });
-      } else {
-        filterNo.style.display = 'block';
-      }
-
-      // Rewrite section headings to signal filter is active
-      if (catsSection) {
-        catsSection.querySelector('.section-header').innerHTML =
-          '<h2 class="display-700">Explore Our Product Range</h2>' +
-          '<p>Browse our core product families — <a href="' + basePath + '">view all</a>.</p>';
-      }
-      if (subsSection) {
-        subsSection.querySelector('.section-header').innerHTML =
-          '<h2 class="display-700">Browse by Product Type</h2>' +
-          '<p>Specific product types — <a href="' + basePath + '">view all</a>.</p>';
-      }
-
-      filterResults.style.display = 'block';
-      if (filterResults.scrollIntoView) filterResults.scrollIntoView();
-    }
+  // --- Deep-link: ?subcategory= or ?category= jumps to the matching card ---
+  var subSlug = params.get('subcategory');
+  var catSlug = params.get('category');
+  if (subSlug) {
+    var subLink = document.querySelector('[data-sub="' + subSlug + '"]');
+    highlight(subLink);
+  } else if (catSlug) {
+    highlight(document.querySelector('[data-cat="' + catSlug + '"]'));
   }
 
-  // --- Search (?q=) ---
+  // --- Search (?q=): filter the two card grids ---
   var q = (params.get('q') || '').trim().toLowerCase();
-  if (q && !catParam && !subParam) {
-    var matches = searchIndex.filter(function (item) {
-      return item.keywords.indexOf(q) !== -1;
+  if (!q) return;
+
+  var subs = Array.prototype.slice.call(document.querySelectorAll('.sc-card'));
+
+  var subMatches = subs.filter(function (c) {
+    return (c.getAttribute('data-search') || '').indexOf(q) !== -1;
+  });
+
+  var cards = subMatches.map(function (c) {
+    return {
+      href: c.getAttribute('href'),
+      parent: c.querySelector('.sc-card__parent')?.textContent || '',
+      name: c.querySelector('h3')?.textContent || '',
+      desc: c.querySelector('p')?.textContent || ''
+    };
+  });
+
+  searchQuery.textContent = 'Showing results for "' + escapeHtml(params.get('q')) + '"';
+
+  if (cards.length > 0) {
+    cards.forEach(function (item) {
+      var a = document.createElement('a');
+      a.href = item.href;
+      a.className = 'sc-card';
+      a.innerHTML =
+          '<div class="sc-card__body">' +
+            (item.parent ? '<span class="sc-card__parent">' + escapeHtml(item.parent) + '</span>' : '') +
+            '<h3>' + escapeHtml(item.name) + '</h3>' +
+            (item.desc ? '<p>' + escapeHtml(item.desc) + '</p>' : '') +
+            '<div class="sc-card__meta"><span class="sc-card__cta">View <span aria-hidden="true">→</span></span></div>' +
+          '</div>';
+      searchGrid.appendChild(a);
     });
-
-    searchQuery.textContent = 'Showing results for "' + escapeHtml(params.get('q')) + '"';
-
-    if (matches.length > 0) {
-      matches.forEach(function (item) { searchGrid.appendChild(renderResultCard(item)); });
-    } else {
-      searchNo.style.display = 'block';
-    }
-
-    // Adjust headings
-    if (catsSection) {
-      catsSection.querySelector('.section-header').innerHTML =
-        '<h2 class="display-700">All Products</h2>' +
-        '<p>Browse our complete range of industrial material handling equipment.</p>';
-    }
-    if (subsSection) {
-      subsSection.querySelector('.section-header').innerHTML =
-        '<h2 class="display-700">Product Types</h2>' +
-        '<p>Browse by specific product type.</p>';
-    }
-
-    searchResults.style.display = 'block';
+  } else {
+    searchNo.style.display = 'block';
   }
+
+  // Hide the regular browse sections once the user searched.
+  catsSection.style.display = 'none';
+  subsSection.style.display = 'none';
+  searchResults.style.display = 'block';
 })();
 </script>

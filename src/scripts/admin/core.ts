@@ -311,10 +311,16 @@ export async function imageInUse(pathOrUrl: string): Promise<string[]> {
   }
   const refs: string[] = [];
 
-  const { data: pimgs } = await supabase.from('product_images').select('image_url, product_id').limit(1000);
-  for (const row of pimgs || []) {
-    if (candidates.has(row.image_url)) {
-      refs.push('as a product image');
+  const { data: simgs } = await supabase
+    .from('sub_category_images')
+    .select('image_url, sub_category:sub_categories(name)')
+    .limit(1000);
+  for (const row of simgs || []) {
+    if (row.image_url && candidates.has(row.image_url)) {
+      const subName = (row.sub_category && Array.isArray(row.sub_category)
+        ? row.sub_category[0]?.name
+        : (row as any).sub_category?.name) || null;
+      refs.push(subName ? `as an image for "${subName}"` : 'as a sub-category image');
       break;
     }
   }

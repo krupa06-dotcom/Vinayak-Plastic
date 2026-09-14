@@ -31,22 +31,22 @@ import { path } from '../../../lib/site';
       const listEl = document.getElementById('cat-list');
       if (!listEl) return;
 
-      const [catsRes, subsRes, prodsRes] = await Promise.all([
+      const [catsRes, subsRes, varsRes] = await Promise.all([
         supabase.from('categories').select('id, name, slug, is_active, display_order, image_url').order('display_order'),
         supabase.from('sub_categories').select('id, category_id, name, slug, is_active'),
-        supabase.from('products').select('id, sub_category_id')
+        supabase.from('sub_category_variants').select('sub_category_id, is_active')
       ]);
 
       if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
       if (subsRes.error) { showError(listEl, subsRes.error.message); return; }
-      if (prodsRes.error) { showError(listEl, prodsRes.error.message); return; }
+      if (varsRes.error) { showError(listEl, varsRes.error.message); return; }
 
       const cats = (catsRes.data || []) as CatRow[];
       const subs = (subsRes.data || []) as SubRow[];
-      const prods = (prodsRes.data || []) as any[];
+      const variants = (varsRes.data || []) as any[];
 
       if (!cats.length) {
-        showEmpty(listEl, 'No categories yet', 'Create a category first — products are organised as Category → Sub-category.',
+        showEmpty(listEl, 'No categories yet', 'Create a category first — the catalogue is organised as Category → Sub-category → Sizes.',
           `<a href="${href('admin/categories/edit/')}" class="a-btn a-btn-primary">+ New Category</a>`);
         return;
       }
@@ -60,8 +60,8 @@ import { path } from '../../../lib/site';
             <tbody>
               ${cats.map(c => {
                 const catSubs = subs.filter(s => s.category_id === c.id);
-                const subIds = catSubs.map(s => s.id);
-                const prodCount = prods.filter(p => subIds.includes(p.sub_category_id)).length;
+                const sizeCount = (subId: string) => variants.filter(v => v.sub_category_id === subId && v.is_active).length;
+                const catSizeTotal = catSubs.reduce((n, s) => n + sizeCount(s.id), 0);
                 return `
                   <tr class="a-tree-parent" data-cat="${c.id}">
                     <td><button type="button" class="a-tree-toggle" data-toggle="${c.id}" aria-label="Toggle">▶</button></td>
@@ -76,7 +76,7 @@ import { path } from '../../../lib/site';
                     </td>
                     <td>
                       <span class="a-chip">${catSubs.length} sub-categor${catSubs.length === 1 ? 'y' : 'ies'}</span>
-                      <span class="a-chip ${prodCount ? 'a-chip-ok' : ''}">${prodCount} product${prodCount === 1 ? '' : 's'}</span>
+                      <span class="a-chip ${catSizeTotal ? 'a-chip-ok' : ''}">${catSizeTotal} size${catSizeTotal === 1 ? '' : 's'}</span>
                     </td>
                     <td>${activeBadge(c.is_active)}</td>
                     <td class="a-actions">
@@ -92,11 +92,10 @@ import { path } from '../../../lib/site';
                         <span style="color:var(--a-faint)">↳</span> ${esc(s.name)}<br>
                         <span style="font-size:0.75rem;color:var(--a-faint);padding-left:14px">${esc(s.slug)}</span>
                       </td>
-                      <td><span class="a-chip">${prods.filter(p => p.sub_category_id === s.id).length} products</span></td>
+                      <td><span class="a-chip ${sizeCount(s.id) ? 'a-chip-ok' : ''}">${sizeCount(s.id)} size${sizeCount(s.id) === 1 ? '' : 's'}</span></td>
                       <td>${activeBadge(s.is_active)}</td>
                       <td class="a-actions">
                         <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                        <a href="${href(`admin/products/?sub=${s.id}`)}" class="a-btn a-btn-sm">Products</a>
                       </td>
                     </tr>`).join('')}
                 `;
@@ -120,7 +119,7 @@ import { path } from '../../../lib/site';
           const id = btn.dataset.deleteId!;
           const cat = cats.find(c => c.id === id);
           const ok = await confirmDialog(`Delete "${cat?.name ?? 'category'}"?`,
-            'This permanently deletes the category and its sub-categories and all products under them. This cannot be undone.');
+            'This permanently deletes the category and all sub-categories, sizes and media under it. This cannot be undone.');
           if (!ok) return;
           const { error } = await supabase.from('categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }

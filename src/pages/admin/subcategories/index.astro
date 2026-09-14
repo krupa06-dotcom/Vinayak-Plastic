@@ -25,19 +25,20 @@ import { path } from '../../../lib/site';
       const listEl = document.getElementById('sub-list');
       if (!listEl) return;
 
-      const [subsRes, catsRes, prodsRes] = await Promise.all([
+      const [subsRes, catsRes, varsRes] = await Promise.all([
         supabase.from('sub_categories').select('id, category_id, name, slug, is_active, display_order, image_url').order('display_order'),
         supabase.from('categories').select('id, name, is_active').order('display_order'),
-        supabase.from('products').select('id, sub_category_id')
+        supabase.from('sub_category_variants').select('sub_category_id, is_active')
       ]);
 
       if (subsRes.error) { showError(listEl, subsRes.error.message); return; }
       if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
-      if (prodsRes.error) { showError(listEl, prodsRes.error.message); return; }
+      if (varsRes.error) { showError(listEl, varsRes.error.message); return; }
 
       const subs = (subsRes.data || []) as any[];
       const cats = (catsRes.data || []) as any[];
-      const prods = (prodsRes.data || []) as any[];
+      const variants = (varsRes.data || []) as any[];
+      const sizeCount = (subId: string) => variants.filter(v => v.sub_category_id === subId && v.is_active).length;
 
       if (!subs.length) {
         showEmpty(listEl, 'No sub-categories yet', 'Sub-categories group related products under a parent category.',
@@ -49,7 +50,7 @@ import { path } from '../../../lib/site';
         <div class="a-table-wrap">
           <table class="a-table">
             <thead><tr>
-              <th>Sub-category</th><th>Parent category</th><th style="width:110px">Products</th><th style="width:110px">Status</th><th style="width:120px">Actions</th>
+              <th>Sub-category</th><th>Parent category</th><th style="width:130px">Sizes / Models</th><th style="width:110px">Status</th><th style="width:120px">Actions</th>
             </tr></thead>
             <tbody>
               ${cats.map(c => {
@@ -68,16 +69,13 @@ import { path } from '../../../lib/site';
                         <div style="font-size:0.72rem;color:var(--a-faint);margin-top:2px;">${esc(c.slug)}</div>
                       </td>` : ''}
                     <td>
-                      <div style="display:flex;align-items:center;gap:10px;">
-                        ${s.image_url ? `<img src="${esc(publicUrl(s.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
-                        <div><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></div>
-                      </div>
+                      ${s.image_url ? `<img src="${esc(publicUrl(s.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
+                      <div><strong>${esc(s.name)}</strong><br><span style="font-size:0.75rem;color:var(--a-faint)">${esc(s.slug)}</span></div>
                     </td>
-                    <td><span class="a-chip">${prods.filter(p => p.sub_category_id === s.id).length} products</span></td>
+                    <td><span class="a-chip ${sizeCount(s.id) ? 'a-chip-ok' : ''}">${sizeCount(s.id)}</span></td>
                     <td>${activeBadge(s.is_active)}</td>
                     <td class="a-actions">
                       <a href="${href(`admin/subcategories/edit/?id=${s.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                      <a href="${href(`admin/products/?sub=${s.id}`)}" class="a-btn a-btn-sm">Products</a>
                       <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${s.id}">Delete</button>
                     </td>
                   </tr>`).join('');
@@ -90,7 +88,7 @@ import { path } from '../../../lib/site';
         btn.addEventListener('click', async () => {
           const id = btn.dataset.deleteId!;
           const ok = await confirmDialog('Delete sub-category?',
-            'This permanently deletes the sub-category and all products inside it. This cannot be undone.');
+            'This permanently deletes the sub-category and all of its sizes, specifications and images. This cannot be undone.');
           if (!ok) return;
           const { error } = await supabase.from('sub_categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }
