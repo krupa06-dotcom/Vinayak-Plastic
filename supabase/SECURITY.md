@@ -52,8 +52,8 @@ once it is deployed. Do the following **before/at go-live**:
 
 ## 6. Go-live checklist
 
-- [ ] Storage bucket `product-images` exists (`20260913000000_create_product_images_bucket.sql`)
-- [ ] Product images seeded (`20260913000001_fix_content_images.sql`)
+- [ ] Storage bucket `product-images` exists (created by `supabase/provision_remote.sql`)
+- [ ] Catalogue data populated via the admin panel
 - [ ] Dummy admin password locked + real password set (`20260913000002_lock_dummy_admin.sql` + Dashboard)
 - [ ] Live site shows real contact (not `+91 XXXXX-XXXXX` placeholders)
 - [ ] `/admin/` return of the live build is reachable by you and (correctly) blocked from crawlers
