@@ -44,7 +44,26 @@ const specificationModels = (subCategory.specifications || []).reduce((acc, spec
 
 const features = subCategory.features || [];
 const applications = (subCategory.applications || []).filter(a => a.name);
-const mainImage = resolveImageUrl(subCategory.images[0]?.image_url ?? subCategory.image_url);
+const gallery = subCategory.images.length > 0
+  ? subCategory.images
+  : subCategory.image_url
+    ? [{ id: 'main', sub_category_id: subCategory.id, image_url: subCategory.image_url, alt_text: null, display_order: 0 }]
+    : [];
+const mainImage = resolveImageUrl(gallery[0]?.image_url ?? subCategory.image_url);
+
+// Known CSS colours used to render colour swatches in the spec table.
+const COLOR_HEX: Record<string, string> = {
+  blue: '#2563eb', green: '#16a34a', red: '#dc2626', yellow: '#eab308',
+  white: '#f8fafc', black: '#111827', grey: '#6b7280', gray: '#6b7280',
+  orange: '#ea580c', brown: '#92400e', pink: '#ec4899', purple: '#7c3aed'
+};
+
+function colorSwatch(color: string | null): string {
+  if (!color) return '';
+  const key = color.trim().toLowerCase();
+  const hex = COLOR_HEX[key] || null;
+  return `<span class="v-color-chip"${hex ? ` style="--chip:${hex}"` : ''}>${color.trim()}</span>`;
+}
 
 const subtitle = subCategory.short_description || subCategory.description || subCategory.name;
 const pageTitle = `${subCategory.name} | Vinayak Plastics`;
@@ -91,9 +110,19 @@ const productSchema = `{
               height={600}
               loading="lazy"
               decoding="async"
+              class="pd-image__main"
             />
           ) : (
             <span class="cat-detail__placeholder">{subCategory.name}</span>
+          )}
+          {gallery.length > 1 && (
+            <div class="pd-thumbs" role="group" aria-label="Product images">
+              {gallery.map((img, i) => (
+                <button type="button" class:list={['pd-thumb', i === 0 && 'is-active']} data-src={resolveImageUrl(img.image_url)} aria-label={`View image ${i + 1}`}>
+                  <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${subCategory.name} image ${i + 1}`} width="120" height="90" loading="lazy" decoding="async" />
+                </button>
+              ))}
+            </div>
           )}
         </div>
         <div class="pd-summary reveal">
@@ -141,7 +170,7 @@ const productSchema = `{
               {variants.map(v => (
                 <tr>
                   {variantCols.map(k => (
-                    <td>{v[k] || '—'}</td>
+                    <td>{k === 'color' ? <span set:html={colorSwatch(v.color)} /> : (v[k] || '—')}</td>
                   ))}
                 </tr>
               ))}
@@ -213,3 +242,74 @@ const productSchema = `{
   </main>
   <Footer />
 </Layout>
+
+<style>
+  .pd-image__main {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: var(--warm-off-white);
+  }
+
+  .pd-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .pd-thumb {
+    width: 84px;
+    height: 64px;
+    padding: 0;
+    border: 2px solid rgba(18, 42, 78, 0.1);
+    border-radius: var(--radius-sm);
+    background: var(--warm-off-white);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .pd-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  .pd-thumb:hover { transform: translateY(-2px); }
+  .pd-thumb.is-active { border-color: var(--orange); }
+
+  .v-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+
+  .v-color-chip::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--chip, #ccc);
+    border: 1px solid rgba(18, 42, 78, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+</style>
+
+<script is:inline>
+(function () {
+  var main = document.querySelector('.pd-image__main');
+  if (!main) return;
+  var thumbs = Array.prototype.slice.call(document.querySelectorAll('.pd-thumb'));
+  thumbs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = btn.getAttribute('data-src');
+      if (src) main.setAttribute('src', src);
+      thumbs.forEach(function (t) { t.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+    });
+  });
+})();
+</script>

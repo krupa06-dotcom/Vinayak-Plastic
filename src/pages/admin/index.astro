@@ -6,7 +6,7 @@ import { path } from '../../lib/site';
 <AdminLayout title="Dashboard" current="dashboard">
   <div class="a-page-head">
     <h2>Overview</h2>
-    <a href={path('/admin/subcategories/edit/')} class="a-btn a-btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Sub-category</a>
+    <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Product</a>
   </div>
 
   <div id="dashboard-stats" class="a-stats"></div>
@@ -16,7 +16,7 @@ import { path } from '../../lib/site';
       <div class="a-card">
         <div class="a-card-head">
           <h2>Catalogue Health</h2>
-          <a href={path('/admin/categories/')} class="a-btn a-btn-sm">Manage catalogue</a>
+          <a href={path('/admin/products/')} class="a-btn a-btn-sm">Manage products</a>
         </div>
         <div class="a-card-body">
           <ul class="a-health" id="dashboard-health">
@@ -50,9 +50,9 @@ import { path } from '../../lib/site';
         <div class="a-card-head"><h2>Shortcuts</h2></div>
         <div class="a-card-body">
           <div class="a-quick">
-            <a href={path('/admin/subcategories/')}><span>Manage sub-categories</span><span>&rarr;</span></a>
-            <a href={path('/admin/categories/edit/')}><span>New category</span><span>&rarr;</span></a>
-            <a href={path('/admin/subcategories/edit/')}><span>New sub-category</span><span>&rarr;</span></a>
+            <a href={path('/admin/products/')}><span>Manage products</span><span>&rarr;</span></a>
+            <a href={path('/admin/products/edit/')}><span>New product</span><span>&rarr;</span></a>
+            <a href={path('/admin/products/edit/?category=new')}><span>New category</span><span>&rarr;</span></a>
             <a href={path('/admin/media/')}><span>Upload images</span><span>&rarr;</span></a>
           </div>
         </div>
@@ -74,19 +74,22 @@ import { path } from '../../lib/site';
       const [
         newEnqRes,
         { data: subCats }, { data: cats },
-        { data: variants }, { data: subImgs }
+        { data: variants }, { data: subImgs }, { data: catVars }
       ] = await Promise.all([
         supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
         supabase.from('sub_categories').select('id, category_id, name, is_active, is_featured, image_url'),
         supabase.from('categories').select('id, name, display_order').order('display_order'),
         supabase.from('sub_category_variants').select('sub_category_id, is_active'),
-        supabase.from('sub_category_images').select('sub_category_id')
+        supabase.from('sub_category_images').select('sub_category_id'),
+        supabase.from('category_variants').select('category_id, is_active')
       ]);
 
       const subs = (subCats || []) as any[];
       const catsData = (cats || []) as any[];
       const varsBySub = new Map<string, number>();
       (variants || []).forEach((v: any) => { if (v.is_active) varsBySub.set(v.sub_category_id, (varsBySub.get(v.sub_category_id) || 0) + 1); });
+      const varsByCat = new Map<string, number>();
+      (catVars || []).forEach((v: any) => { if (v.is_active) varsByCat.set(v.category_id, (varsByCat.get(v.category_id) || 0) + 1); });
       const imgsSubIds = new Set((subImgs || []).map((i: any) => i.sub_category_id));
 
       const activeCount = subs.filter(s => s.is_active).length;
@@ -127,7 +130,7 @@ import { path } from '../../lib/site';
       if (healthEl) {
         const rows = catsData.map(c => {
           const catSubs = subs.filter(s => s.category_id === c.id);
-          const sizeTotal = catSubs.reduce((n, s) => n + sizeCount(s.id), 0);
+          const sizeTotal = catSubs.reduce((n, s) => n + sizeCount(s.id), 0) + (varsByCat.get(c.id) || 0);
           return { name: c.name, subs: catSubs.length, sizes: sizeTotal };
         });
         if (!rows.length) {

@@ -266,10 +266,6 @@ export function activeBadge(active: boolean): string {
     : '<span class="a-badge a-badge-inactive">Inactive</span>';
 }
 
-export function featuredBadge(): string {
-  return '<span class="a-badge a-badge-featured">Featured</span>';
-}
-
 // ============================================================
 // Storage helpers (bucket: product-images)
 // ============================================================
@@ -328,6 +324,19 @@ export async function imageInUse(pathOrUrl: string): Promise<string[]> {
   for (const row of cats || []) {
     if (row.image_url && candidates.has(row.image_url)) {
       refs.push(`as the image for category "${row.name}"`);
+      break;
+    }
+  }
+  const { data: catImgs } = await supabase
+    .from('category_images')
+    .select('image_url, category:categories(name)')
+    .limit(1000);
+  for (const row of catImgs || []) {
+    if (row.image_url && candidates.has(row.image_url)) {
+      const catName = (row.category && Array.isArray(row.category)
+        ? row.category[0]?.name
+        : (row as any).category?.name) || null;
+      refs.push(catName ? `as an image for "${catName}"` : 'as a category image');
       break;
     }
   }

@@ -174,6 +174,110 @@ export interface Database {
           },
         ];
       };
+      category_variants: {
+        Row: {
+          id: string;
+          category_id: string;
+          name: string;
+          size: string | null;
+          shape: string | null;
+          color: string | null;
+          weight: string | null;
+          capacity: string | null;
+          material: string | null;
+          price: string | null;
+          is_active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category_id: string;
+          name: string;
+          size?: string | null;
+          shape?: string | null;
+          color?: string | null;
+          weight?: string | null;
+          capacity?: string | null;
+          material?: string | null;
+          price?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          category_id?: string;
+          name?: string;
+          size?: string | null;
+          shape?: string | null;
+          color?: string | null;
+          weight?: string | null;
+          capacity?: string | null;
+          material?: string | null;
+          price?: string | null;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "category_variants_category_id_fkey",
+            columns: ["category_id"],
+            isOneToOne: false,
+            referencedRelation: "categories",
+            referencedColumns: ["id"],
+          },
+        ];
+      };
+      category_images: {
+        Row: {
+          id: string;
+          category_id: string;
+          category_variant_id: string | null;
+          image_url: string;
+          alt_text: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          category_id: string;
+          category_variant_id?: string | null;
+          image_url: string;
+          alt_text?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          category_id?: string;
+          category_variant_id?: string | null;
+          image_url?: string;
+          alt_text?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "category_images_category_variant_id_fkey",
+            columns: ["category_variant_id"],
+            isOneToOne: false,
+            referencedRelation: "category_variants",
+            referencedColumns: ["id"],
+          },
+          {
+            foreignKeyName: "category_images_category_id_fkey",
+            columns: ["category_id"],
+            isOneToOne: false,
+            referencedRelation: "categories",
+            referencedColumns: ["id"],
+          },
+        ];
+      };
       sub_category_variants: {
         Row: {
           id: string;

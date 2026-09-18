@@ -57,6 +57,30 @@ export interface SubCategoryVariant {
   display_order: number;
 }
 
+export interface CategoryVariant {
+  id: string;
+  category_id: string;
+  name: string;
+  size: string | null;
+  shape: string | null;
+  color: string | null;
+  weight: string | null;
+  capacity: string | null;
+  material: string | null;
+  price: string | null;
+  is_active: boolean;
+  display_order: number;
+}
+
+export interface CategoryImage {
+  id: string;
+  category_id: string;
+  category_variant_id: string | null;
+  image_url: string;
+  alt_text: string | null;
+  display_order: number;
+}
+
 export interface SubCategoryApplication {
   name: string;
   description: string;
@@ -74,10 +98,6 @@ export interface SubCategoryDetail extends SubCategory {
   variants: SubCategoryVariant[];
 }
 
-export interface CategoryWithSubCategories extends Category {
-  sub_categories: SubCategoryDetail[];
-}
-
 // ============================================================
 // Catalogue types (public site)
 // ============================================================
@@ -93,6 +113,10 @@ export interface CatalogueCategory extends Category {
   /** Total active sizes/models across all sub-categories. */
   variants_count: number;
   sub_categories: CatalogueSubCategory[];
+  /** Sizes/models that belong directly to the category itself. */
+  variants: CategoryVariant[];
+  /** Gallery images for the category (optionally tied to a specific size). */
+  images: CategoryImage[];
 }
 
 export interface CatalogueData {
@@ -106,21 +130,7 @@ const EMPTY_CATALOGUE: CatalogueData = { categories: [], subCategories: [] };
 // Category Queries
 // ============================================================
 
-export async function getCategoriesWithSubCategories(): Promise<CategoryWithSubCategories[]> {
-  const catalogue = await getCatalogueData();
-  return catalogue.categories.map(cat => ({
-    id: cat.id,
-    name: cat.name,
-    slug: cat.slug,
-    description: cat.description,
-    image_url: cat.image_url,
-    display_order: cat.display_order,
-    is_active: cat.is_active,
-    sub_categories: cat.sub_categories.map(sub => detailFromCatalogue(sub))
-  }));
-}
-
-export function getSubCategoryPath(sub: CatalogueSubCategory): { params: { category: string; sub: string } } {
+function getSubCategoryPath(sub: CatalogueSubCategory): { params: { category: string; sub: string } } {
   return { params: { category: sub.category_slug, sub: sub.slug } };
 }
 
@@ -135,6 +145,61 @@ export async function getSubCategoryPaths(): Promise<{ params: { category: strin
 export async function getSubCategoryBySlug(categorySlug: string, subSlug: string): Promise<CatalogueSubCategory | null> {
   const catalogue = await getCatalogueData();
   return catalogue.subCategories.find(s => s.slug === subSlug && s.category_slug === categorySlug) ?? null;
+}
+
+// ============================================================
+// Category variant (per-size / model) queries — Level-3 pages
+// ============================================================
+
+/** Slugify a variant name into a URL-safe identifier (variants have no slug column). */
+export function variantSlug(name: string): string {
+  return (name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'size';
+}
+
+export interface CategoryVariantDetail extends CategoryVariant {
+  category_slug: string;
+  category_name: string;
+  category_description: string | null;
+  /** Gallery images attached specifically to this size/model. */
+  images: CategoryImage[];
+  /** Fallback image for the parent range when this size has no own photo. */
+  category_image_url: string | null;
+}
+
+function getCategoryVariantPath(categorySlug: string, variant: string): { params: { category: string; variant: string } } {
+  return { params: { category: categorySlug, variant } };
+}
+
+/** (category slug, variant slug) pairs for the per-size detail pages. */
+export async function getCategoryVariantPaths(): Promise<{ params: { category: string; variant: string } }[]> {
+  const catalogue = await getCatalogueData();
+  const out: { params: { category: string; variant: string } }[] = [];
+  for (const cat of catalogue.categories) {
+    for (const v of cat.variants) {
+      out.push(getCategoryVariantPath(cat.slug, variantSlug(v.name || v.size || 'size')));
+    }
+  }
+  return out;
+}
+
+export async function getCategoryVariantBySlug(categorySlug: string, variant: string): Promise<CategoryVariantDetail | null> {
+  const catalogue = await getCatalogueData();
+  const cat = catalogue.categories.find(c => c.slug === categorySlug);
+  if (!cat) return null;
+  const v = cat.variants.find(v => variantSlug(v.name || v.size || 'size') === variant);
+  if (!v) return null;
+  return {
+    ...v,
+    category_slug: cat.slug,
+    category_name: cat.name,
+    category_description: cat.description,
+    images: cat.images.filter(i => i.category_variant_id === v.id),
+    category_image_url: cat.image_url
+  };
 }
 
 // ============================================================
@@ -176,10 +241,21 @@ function sortVariants(variants: SubCategoryVariant[]): SubCategoryVariant[] {
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 }
 
+function sortCategoryVariants(variants: CategoryVariant[]): CategoryVariant[] {
+  return (variants || [])
+    .slice()
+    .filter(v => v.is_active !== false)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+}
+
+function sortCategoryImages(images: CategoryImage[]): CategoryImage[] {
+  return (images || []).slice().sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+}
+
 export function getCatalogueData(): Promise<CatalogueData> {
   if (!hasSupabase()) return Promise.resolve(getFallbackCatalogueData());
 
-  const [categoriesQuery, subCategoriesQuery] = [
+  const [categoriesQuery, subCategoriesQuery, categoryVariantsQuery, categoryImagesQuery] = [
     supabase
       .from('categories')
       .select('*')
@@ -194,14 +270,27 @@ export function getCatalogueData(): Promise<CatalogueData> {
         sub_category_variants ( * )
       `)
       .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('category_variants')
+      .select('*')
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('category_images')
+      .select('*')
       .order('display_order', { ascending: true })
   ];
 
-  return Promise.all([categoriesQuery, subCategoriesQuery]).then(
-    ([categoriesRes, subCategoriesRes]) => {
-      const firstError = categoriesRes.error || subCategoriesRes.error;
-      if (firstError) {
-        console.error('Error fetching catalogue data:', firstError);
+  return Promise.all([categoriesQuery, subCategoriesQuery, categoryVariantsQuery, categoryImagesQuery]).then(
+    ([categoriesRes, subCategoriesRes, categoryVariantsRes, categoryImagesRes]) => {
+      const allErrors = [
+        categoriesRes.error,
+        subCategoriesRes.error,
+        categoryVariantsRes.error,
+        categoryImagesRes.error
+      ].filter(Boolean);
+      if (allErrors.length) {
+        console.error('Error fetching catalogue data:', allErrors[0]);
         return EMPTY_CATALOGUE;
       }
 
@@ -234,12 +323,27 @@ export function getCatalogueData(): Promise<CatalogueData> {
         };
       });
 
+      const categoryVariantsByCat = new Map<string, CategoryVariant[]>();
+      for (const v of (categoryVariantsRes.data || []) as CategoryVariant[]) {
+        const list = categoryVariantsByCat.get(v.category_id) ?? [];
+        list.push(v);
+        categoryVariantsByCat.set(v.category_id, list);
+      }
+      const categoryImagesByCat = new Map<string, CategoryImage[]>();
+      for (const img of (categoryImagesRes.data || []) as CategoryImage[]) {
+        const list = categoryImagesByCat.get(img.category_id) ?? [];
+        list.push(img);
+        categoryImagesByCat.set(img.category_id, list);
+      }
+
       const catalogueCategories: CatalogueCategory[] = categories.map(cat => {
         const subs = catalogueSubs.filter(s => s.category_id === cat.id);
         return {
           ...cat,
           variants_count: subs.reduce((sum, s) => sum + s.variants_count, 0),
-          sub_categories: subs
+          sub_categories: subs,
+          variants: sortCategoryVariants(categoryVariantsByCat.get(cat.id) || []),
+          images: sortCategoryImages(categoryImagesByCat.get(cat.id) || [])
         };
       });
 
@@ -250,11 +354,6 @@ export function getCatalogueData(): Promise<CatalogueData> {
       return EMPTY_CATALOGUE;
     }
   );
-}
-
-function detailFromCatalogue(sub: CatalogueSubCategory): SubCategoryDetail {
-  const { category_name: _a, category_slug: _b, variants_count: _c, ...rest } = sub;
-  return rest as SubCategoryDetail;
 }
 
 // ============================================================
@@ -444,6 +543,24 @@ function getCapName(slug: string): string {
   return slug === 'standard-crates' ? 'Capacity' : slug === 'standard-trucks' ? 'Load Capacity' : 'Capacity';
 }
 
+/** Build a small set of category-level sizes from the range's own models. */
+function buildFallbackCategoryVariants(detail: FallbackDetail, category: Category): CategoryVariant[] {
+  return detail.variants.slice(0, 3).map((v, i) => ({
+    id: `cv-${category.slug}-${i + 1}`,
+    category_id: category.id,
+    name: v.model,
+    size: v.size,
+    shape: null,
+    color: i % 2 === 0 ? 'Blue' : null,
+    weight: v.weight,
+    capacity: v.capacity,
+    material: v.material,
+    price: null,
+    is_active: true,
+    display_order: i
+  }));
+}
+
 function getFallbackCatalogueData(): CatalogueData {
   const categories: CatalogueCategory[] = FALLBACK_CATEGORIES.map((cat) => {
     const detail = FALLBACK_DETAILS[cat.slug === 'plastic-crates' ? 'standard-crates' : cat.slug === 'plastic-pallets' ? 'standard-pallets' : cat.slug === 'waste-bins' ? 'standard-bins' : 'standard-trucks'];
@@ -477,7 +594,9 @@ function getFallbackCatalogueData(): CatalogueData {
     return {
       ...cat,
       variants_count: subs.reduce((sum, s) => sum + s.variants_count, 0),
-      sub_categories: subs
+      sub_categories: subs,
+      variants: buildFallbackCategoryVariants(detail, cat),
+      images: [{ id: `ci-${cat.slug}`, category_id: cat.id, category_variant_id: null, image_url: cat.image_url ?? '', alt_text: `${cat.name} — Vinayak Plastics`, display_order: 0 }]
     };
   });
 
@@ -500,7 +619,7 @@ export function resolveImageUrl(image: string | null): string | null {
   return getProductImageUrl(image);
 }
 
-export function getProductImageUrl(path: string): string {
+function getProductImageUrl(path: string): string {
   const { data } = supabase.storage
     .from('product-images')
     .getPublicUrl(path);

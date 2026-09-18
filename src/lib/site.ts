@@ -3,7 +3,7 @@
 // (where `base` would be '/'), with no further code changes.
 
 export const SITE_URL = 'https://krupa06-dotcom.github.io';
-export const BASE_PATH = '/Vinayak-Plastic';
+const BASE_PATH = '/Vinayak-Plastic';
 
 /** Prefix a root-relative path with the configured base path. */
 export function path(p: string): string {

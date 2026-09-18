@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import vpLogo from '../assets/images/vp-logo.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
-import { getCatalogueData } from '../lib/db';
+import { getCatalogueData, variantSlug } from '../lib/db';
 
 export interface Props {
   currentPage?: string;
@@ -35,7 +35,14 @@ const searchItems = [
     href: sub.category_slug ? path(`/categories/${sub.category_slug}/${sub.slug}`) : path('/products'),
     k: `${sub.name} ${sub.category_name || ''} ${sub.short_description || ''} ${sub.description || ''}`.toLowerCase(),
     group: 1
-  }))
+  })),
+  ...catalogue.categories.flatMap(cat => cat.variants.map(v => ({
+    label: v.name || v.size || '',
+    hint: `${cat.name} · Size / Model`,
+    href: path(`/categories/${cat.slug}/variant/${variantSlug(v.name || v.size || 'size')}`),
+    k: `${v.name} ${v.size} ${v.color} ${v.material} ${cat.name}`.toLowerCase(),
+    group: 2
+  })))
 ];
 
 // Helper function to determine if a link is active

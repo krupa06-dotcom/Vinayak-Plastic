@@ -1,13 +1,13 @@
 import { esc, publicUrl, uploadFile, toast } from './core';
 
-export interface ImagePickerValue {
+interface ImagePickerValue {
   /** Storage path or URL of the current (already saved / existing) image. */
   existing: string | null;
   /** A newly selected file that has not been uploaded yet. */
   file: File | null;
 }
 
-export interface ImagePicker {
+interface ImagePicker {
   getValue(): ImagePickerValue;
   setValue(v: ImagePickerValue): void;
   /** Uploads the pending file to Storage under the given path prefix (no extension). */

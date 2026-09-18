@@ -1,0 +1,407 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import { path } from '../../../../lib/site';
+import { CONTACT } from '../../../../lib/contact';
+import { getCategoryVariantPaths, getCategoryVariantBySlug, getCatalogueData, variantSlug, resolveImageUrl } from '../../../../lib/db';
+
+export async function getStaticPaths() {
+  return await getCategoryVariantPaths();
+}
+
+const { category, variant } = Astro.params;
+const size = await getCategoryVariantBySlug(category || '', variant || '');
+
+if (!size) {
+  return Astro.redirect('/products');
+}
+
+const catalogue = await getCatalogueData();
+const parent = catalogue.categories.find(c => c.slug === size.category_slug) ?? null;
+const relatedSizes = (parent?.variants || []).filter(v => v.id !== size.id);
+const relatedProducts = (parent?.sub_categories || []).filter(s => s.is_active);
+
+const sizeImages = size.images;
+const mainImage = resolveImageUrl(sizeImages.length > 0 ? sizeImages[0].image_url : size.category_image_url);
+
+// Known CSS colours used to render colour swatches.
+const COLOR_HEX: Record<string, string> = {
+  blue: '#2563eb', green: '#16a34a', red: '#dc2626', yellow: '#eab308',
+  white: '#f8fafc', black: '#111827', grey: '#6b7280', gray: '#6b7280',
+  orange: '#ea580c', brown: '#92400e', pink: '#ec4899', purple: '#7c3aed'
+};
+
+const specs = [
+  { label: 'Model', value: size.name },
+  { label: 'External Size (L × W × H)', value: size.size },
+  { label: 'Shape / Version', value: size.shape },
+  { label: 'Colour', value: size.color },
+  { label: 'Weight', value: size.weight },
+  { label: 'Capacity / Load', value: size.capacity },
+  { label: 'Material', value: size.material },
+  { label: 'Price / Band', value: size.price }
+].filter(s => s.value);
+
+const colorValues = size.color ? size.color.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+const familyApplications = Array.from(new Map(
+  relatedProducts
+    .flatMap(s => (s.applications || []).map(a => ({ name: a.name, description: a.description })))
+    .map(a => [a.name, a])
+).values()).filter(a => a.name);
+
+const subtitle = size.category_description ?? 'Size / model in the Vinayak Plastics range.';
+const pageTitle = `${size.name} | ${size.category_name} | Vinayak Plastics`;
+const pageDescription = `${size.name} ${size.category_name.toLowerCase()} — ${[size.size, size.color, size.weight, size.capacity].filter(Boolean).join(' · ')}.`;
+
+const schema = `{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": ${JSON.stringify(size.name)},
+  "description": ${JSON.stringify(subtitle)},
+  ${mainImage ? `"image": ${JSON.stringify(mainImage)},` : ''}
+  "brand": { "@type": "Brand", "name": "Vinayak Plastics" },
+  "category": ${JSON.stringify(size.category_name)},
+  ${size.size ? `"size": ${JSON.stringify(size.size)},` : ''}
+  ${size.color ? `"color": ${JSON.stringify(size.color)},` : ''}
+  ${size.material ? `"material": ${JSON.stringify(size.material)}` : ''}
+}`;
+---
+
+<Layout title={pageTitle} description={pageDescription} structuredData={schema}>
+  <Header currentPage="/products" />
+
+  <main id="main">
+  <!-- ===== PAGE HERO ===== -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb">
+        <a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> /
+        <a href={path(`/categories/${size.category_slug}`)}>{size.category_name}</a> / {size.name}
+      </p>
+      <h1 class="display-800">{size.name}</h1>
+      <p>{size.size || size.category_name}</p>
+    </div>
+  </section>
+
+  <!-- ===== SIZE DETAIL ===== -->
+  <section class="section" id="size-detail">
+    <div class="container">
+      <div class="cat-detail">
+        <div class="cat-detail__media reveal">
+          {mainImage ? (
+            <img
+              src={mainImage}
+              alt={`${size.name} — ${size.category_name}`}
+              width="800"
+              height="600"
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <span class="cat-detail__placeholder">{size.name}</span>
+          )}
+          {sizeImages.length > 1 && (
+            <div class="pd-thumbs" role="group" aria-label="Size images">
+              {sizeImages.map((img, i) => (
+                <button type="button" class:list={['pd-thumb', i === 0 && 'is-active']} data-src={resolveImageUrl(img.image_url)} aria-label={`View image ${i + 1}`}>
+                  <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${size.name} image ${i + 1}`} width="120" height="90" loading="lazy" decoding="async" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div class="cat-detail__body reveal">
+          <span class="sec-index">{size.category_name} · Size / Model</span>
+          <h2 class="display-700">{size.name}</h2>
+          <p>{subtitle}</p>
+
+          {colorValues.length > 0 && (
+            <div class="cat-detail__types">
+              <span class="cat-detail__types-label">Colours available:</span>
+              {colorValues.map(c => {
+                const hex = COLOR_HEX[c.trim().toLowerCase()] || null;
+                return <span class="cat-detail__chip v-chip" style={hex ? `--chip:${hex}` : ''}>{c}</span>;
+              })}
+            </div>
+          )}
+
+          {specs.length > 0 && (
+            <dl class="vd-specs">
+              {specs.map(s => (
+                <div class="vd-spec">
+                  <dt>{s.label}</dt>
+                  <dd>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TECHNICAL DETAILS ===== -->
+  {specs.length > 0 && (
+  <section class="section-warm" id="technical-details">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Technical Details</p>
+        <h2 class="display-700">{size.name} specifications</h2>
+        <p>Dimensions, colour and build details for this size / model.</p>
+      </div>
+      <div class="specs-table-wrap reveal">
+        <table class="specs-table specs-table--compact">
+          <tbody>
+            {specs.map(s => (
+              <tr>
+                <th>{s.label}</th>
+                <td>{s.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
+        <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== APPLICATIONS ===== -->
+  {familyApplications.length > 0 && (
+  <section class="section" id="applications">
+    <div class="container-sm">
+      <div class="section-header reveal">
+        <p class="sec-index">Applications</p>
+        <h2 class="display-700">Common applications</h2>
+        <p>Where {size.category_name.toLowerCase()} of this size are typically used.</p>
+      </div>
+      <div class="app-grid reveal">
+        {familyApplications.map(app => (
+          <div class="app-card">
+            <h3>{app.name}</h3>
+            <p>{app.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== OTHER SIZES IN RANGE ===== -->
+  {relatedSizes.length > 0 && (
+  <section class="section section-warm" id="related-sizes">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Range</p>
+        <h2 class="display-700">Other sizes in this range</h2>
+        <p>Explore every model in the {size.category_name.toLowerCase()} family.</p>
+      </div>
+      <div class="sc-grid reveal">
+        {relatedSizes.map(v => {
+          const vImage = parent?.images.find(i => i.category_variant_id === v.id);
+          const img = resolveImageUrl(vImage?.image_url ?? size.category_image_url);
+          const hex = (v.color || '').trim();
+          const hexCss = COLOR_HEX[hex.toLowerCase()] || null;
+          const chipStyle = hexCss ? `--chip:${hexCss}` : '';
+          return (
+            <a href={path(`/categories/${size.category_slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="sc-card">
+              <div class="sc-card__img">
+                {img ? (
+                  <img src={img} alt={`${v.name} — ${size.category_name}`} width="480" height="300" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="sc-card__placeholder">{v.name}</span>
+                )}
+              </div>
+              <div class="sc-card__body">
+                <h3>{v.name || v.size}</h3>
+                {v.size && <p>{v.size}</p>}
+                <div class="sc-card__meta">
+                  {hex ? (
+                    <span class="v-color-chip" style={chipStyle}>{hex}</span>
+                  ) : (
+                    <span class="sc-card__count">{size.category_name}</span>
+                  )}
+                  <span class="sc-card__cta">View Size <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== PRODUCTS IN THIS RANGE ===== -->
+  {relatedProducts.length > 0 && (
+  <section class="section" id="products">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Products</p>
+        <h2 class="display-700">{size.category_name} product types</h2>
+        <p>Related product types sharing this range.</p>
+      </div>
+      <div class="sc-grid reveal">
+        {relatedProducts.map(sub => (
+          <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card">
+            <div class="sc-card__img">
+              {resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url) ? (
+                <img src={resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url)!} alt={sub.name} width="480" height="300" loading="lazy" decoding="async" />
+              ) : (
+                <span class="sc-card__placeholder">{sub.name}</span>
+              )}
+            </div>
+            <div class="sc-card__body">
+              <h3>{sub.name}</h3>
+              {sub.short_description && <p>{sub.short_description}</p>}
+              <div class="sc-card__meta">
+                <span class="sc-card__count">{sub.variants_count} size{sub.variants_count === 1 ? '' : 's'}</span>
+                <span class="sc-card__cta">View Details <span aria-hidden="true">→</span></span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-banner" aria-label={`Enquire about ${size.name}`}>
+    <div class="container reveal">
+      <h2 class="display-700">Need {size.name} specs or pricing?</h2>
+      <p>Call or WhatsApp us directly for dimensions, material grades, custom sizes and dispatch timelines.</p>
+      <div class="cta-buttons">
+        <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
+        <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+      </div>
+    </div>
+  </section>
+
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .vd-specs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: var(--white);
+  }
+  .vd-spec {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(18, 42, 78, 0.06);
+  }
+  .vd-spec:nth-child(n+3) { border-bottom: none; }
+  .vd-spec dt {
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin-bottom: 4px;
+  }
+  .vd-spec dd {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--deep-navy);
+  }
+
+  .specs-table--compact td { white-space: normal; }
+
+  .pd-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .pd-thumb {
+    width: 84px;
+    height: 64px;
+    padding: 0;
+    border: 2px solid rgba(18, 42, 78, 0.1);
+    border-radius: var(--radius-sm);
+    background: var(--warm-off-white);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .pd-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+  .pd-thumb:hover { transform: translateY(-2px); }
+  .pd-thumb.is-active { border-color: var(--orange); }
+
+  .v-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .v-chip::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--chip, #ccc);
+    border: 1px solid rgba(18, 42, 78, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+
+  .v-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.04);
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+  .v-color-chip::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--chip, #ccc);
+    border: 1px solid rgba(18, 42, 78, 0.18);
+  }
+
+  @media (max-width: 640px) {
+    .vd-specs { grid-template-columns: 1fr; }
+    .vd-spec:nth-child(n+3) { border-bottom: 1px solid rgba(18, 42, 78, 0.06); }
+    .vd-spec:last-child { border-bottom: none; }
+  }
+</style>
+
+<script is:inline>
+(function () {
+  var main = document.querySelector('.cat-detail__media img');
+  if (!main) return;
+  var thumbs = Array.prototype.slice.call(document.querySelectorAll('.pd-thumb'));
+  thumbs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = btn.getAttribute('data-src');
+      if (src) main.setAttribute('src', src);
+      thumbs.forEach(function (t) { t.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+    });
+  });
+})();
+</script>

@@ -4,7 +4,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { path, SITE_URL } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
-import { getCatalogueData, resolveImageUrl } from '../../lib/db';
+import { getCatalogueData, resolveImageUrl, variantSlug } from '../../lib/db';
 
 // Build the list of category pages (from Supabase, or the static fallback).
 export async function getStaticPaths() {
@@ -21,12 +21,37 @@ if (!category) {
   return Astro.redirect('/products');
 }
 
-const subCategories = category.sub_categories;
+const products = category.sub_categories;
 const totalSizes = category.variants_count;
+const categorySizes = category.variants;
+
+const variantCols = (['name', 'size', 'color', 'weight', 'capacity', 'material'] as const)
+  .filter(k => categorySizes.some(v => v[k] !== null && v[k] !== ''));
+const variantLabels: Record<string, string> = {
+  name: 'Model',
+  size: 'Size (L × W × H)',
+  color: 'Colour',
+  weight: 'Weight',
+  capacity: 'Capacity / Load',
+  material: 'Material'
+};
+
+const colors = Array.from(new Set(categorySizes.map(v => (v.color || '').trim()).filter(Boolean)));
+
+// Known CSS colours used to render colour swatches on size cards.
+const HEX_MAP: Record<string, string> = {
+  blue: '#2563eb', green: '#16a34a', red: '#dc2626', yellow: '#eab308',
+  white: '#f8fafc', black: '#111827', grey: '#6b7280', gray: '#6b7280',
+  orange: '#ea580c', brown: '#92400e', pink: '#ec4899', purple: '#7c3aed'
+};
+function colorHex(color: string | null): string | null {
+  if (!color) return null;
+  return HEX_MAP[color.trim().toLowerCase()] || null;
+}
 
 const heroImage = resolveImageUrl(category.image_url);
 const pageTitle = `${category.name} | Vinayak Plastics`;
-const pageDescription = `${category.description || `Explore our range of ${category.name.toLowerCase()} and related product types.`} View sub-categories and specifications.`;
+const pageDescription = `${category.description || `Explore our range of ${category.name.toLowerCase()}.`} View sizes, colours and available product types.`;
 
 const categorySchema = `{
   "@context": "https://schema.org",
@@ -56,8 +81,8 @@ function sizeCountLabel(count: number): string {
     </div>
   </section>
 
-  <!-- ===== CATEGORY DETAILS ===== -->
-  <section class="section">
+  <!-- ===== RANGE DETAIL ===== -->
+  <section class="section" id="range-detail">
     <div class="container">
       <div class="cat-detail">
         <div class="cat-detail__media reveal">
@@ -75,25 +100,34 @@ function sizeCountLabel(count: number): string {
           )}
         </div>
         <div class="cat-detail__body reveal">
-          <span class="sec-index">Category Overview</span>
+          <span class="sec-index">Product Range</span>
           <h2 class="display-700">{category.name}</h2>
-          <p>{category.description || 'We supply this product range in multiple types and sizes to suit your application.'}</p>
+          <p>{category.description || `We supply this product range in multiple sizes and colours to suit your application.`}</p>
           <div class="cat-detail__stats">
             <div class="cat-detail__stat">
-              <strong>{subCategories.length}</strong>
-              <span>Sub-Categor{subCategories.length === 1 ? 'y' : 'ies'}</span>
+              <strong>{products.length}</strong>
+              <span>{products.length === 1 ? 'Product' : 'Products'}</span>
             </div>
             <div class="cat-detail__stat">
               <strong>{totalSizes}</strong>
-              <span>{totalSizes === 1 ? 'Size / Model' : 'Sizes / Models'}</span>
+              <span>{sizeCountLabel(totalSizes)}</span>
             </div>
           </div>
-          {subCategories.length > 0 && (
+          {colors.length > 0 && (
             <div class="cat-detail__types">
-              <span class="cat-detail__types-label">Available types:</span>
-              {subCategories.map(sub => (
-                <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="cat-detail__chip">{sub.name}</a>
+              <span class="cat-detail__types-label">Colours available:</span>
+              {colors.map(color => (
+                <span class="cat-detail__chip">{color}</span>
               ))}
+            </div>
+          )}
+          {categorySizes.length > 0 && (
+            <div class="cat-detail__types">
+              <span class="cat-detail__types-label">Models:</span>
+              {categorySizes.slice(0, 6).map(v => (
+                <a href={path(`/categories/${category.slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="cat-detail__chip">{v.name || v.size}</a>
+              ))}
+              {categorySizes.length > 6 && <span class="cat-detail__types-label">+{categorySizes.length - 6} more</span>}
             </div>
           )}
           <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
@@ -102,24 +136,139 @@ function sizeCountLabel(count: number): string {
     </div>
   </section>
 
-  <!-- ===== SUB CATEGORIES ===== -->
-  <section class="section section-warm" id="subcategories">
+  <!-- ===== RANGE: SIZES AS CARDS ===== -->
+  {categorySizes.length > 0 && (
+  <section class="section-warm" id="range">
     <div class="container">
       <div class="section-header reveal">
-        <span class="sec-index">Sub Categories</span>
-        <h2 class="display-700">Browse {category.name} by Type</h2>
-        <p>Specific product types within the {category.name.toLowerCase()} family — choose a type to see detailed specifications.</p>
+        <p class="sec-index">Range</p>
+        <h2 class="display-700">Available sizes &amp; models</h2>
+        <p>Each {category.name.toLowerCase()} model below opens its own detail page with full specifications.</p>
+      </div>
+      <div class="vr-grid reveal">
+        {categorySizes.map(v => {
+          const vImg = category.images.find(i => i.category_variant_id === v.id);
+          const img = resolveImageUrl(vImg?.image_url ?? category.image_url);
+          const hex = (v.color || '').trim();
+          const hexCss = colorHex(hex);
+          const chipStyle = hexCss ? `--vr-chip:${hexCss}` : '';
+          return (
+            <a href={path(`/categories/${category.slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="vr-card reveal">
+              <div class="vr-card__img">
+                {img ? (
+                  <img src={img} alt={`${v.name || v.size} — ${category.name}`} width="480" height="300" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="sc-card__placeholder">{v.name || v.size}</span>
+                )}
+              </div>
+              <div class="vr-card__body">
+                <h3>{v.name || v.size}</h3>
+                {v.size && <p class="vr-card__size">{v.size}</p>}
+                <div class="vr-card__meta">
+                  {hex ? (
+                    <span class="vr-chip" style={chipStyle}>{hex}</span>
+                  ) : (
+                    <span class="vr-chip-noc">Model</span>
+                  )}
+                  <span class="vr-card__cta">View Size <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== CATEGORY SIZES & COLOURS ===== -->
+  {categorySizes.length > 0 && (
+  <section class="section-warm" id="sizes">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Sizes &amp; Colours</p>
+        <h2 class="display-700">{category.name}: standard sizes</h2>
+        <p>Common {category.name.toLowerCase()} models produced by our unit. Custom sizes available on request.</p>
+      </div>
+      <div class="specs-table-wrap reveal">
+        <table class="specs-table">
+          <thead>
+            <tr>
+              {variantCols.map(k => (
+                <th>{variantLabels[k]}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {categorySizes.map(v => (
+              <tr>
+                {variantCols.map(k => (
+                  <td>
+                    {k === 'name' ? (
+                      <a href={path(`/categories/${category.slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="specs-model">{v[k] || '—'}</a>
+                    ) : (
+                      v[k] || '—'
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
+        <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== PER-SIZE PHOTOS ===== -->
+  {categorySizes.filter(v => category.images.some(i => i.category_variant_id === v.id)).length > 0 && (
+  <section class="section" id="size-photos">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Photos</p>
+        <h2 class="display-700">Each size, in detail</h2>
+        <p>Close-up photos of every {category.name.toLowerCase()} model.</p>
+      </div>
+      <div class="size-strips reveal">
+        {categorySizes.filter(v => category.images.some(i => i.category_variant_id === v.id)).map(v => {
+          const vImages = category.images.filter(i => i.category_variant_id === v.id);
+          return (
+            <div class="size-strip">
+              <h3>{v.name || v.size}</h3>
+              <div class="size-strip__grid">
+                {vImages.map(img => (
+                  <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${category.name} ${v.name}`} loading="lazy" decoding="async" />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== PRODUCTS IN THIS RANGE ===== -->
+  <section class="section section-warm" id="products">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Products in this range</p>
+        <h2 class="display-700">Browse {category.name} products</h2>
+        <p>Specific product types within the {category.name.toLowerCase()} family — choose one to see full specifications.</p>
       </div>
 
-      {subCategories.length > 0 ? (
+      {products.length > 0 ? (
         <div class="sc-grid">
-          {subCategories.map(sub => (
+          {products.map(sub => (
             <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card reveal">
               <div class="sc-card__img">
-                {resolveImageUrl(sub.image_url) ? (
+                {resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url) ? (
                   <img
-                    src={resolveImageUrl(sub.image_url)!}
-                    alt={`${sub.name} — ${sub.category_name}`}
+                    src={resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url)!}
+                    alt={`${sub.name}`}
                     width="480"
                     height="300"
                     loading="lazy"
@@ -130,9 +279,8 @@ function sizeCountLabel(count: number): string {
                 )}
               </div>
               <div class="sc-card__body">
-                <span class="sc-card__parent">{sub.category_name}</span>
                 <h3>{sub.name}</h3>
-                {sub.description && <p>{sub.description}</p>}
+                {sub.short_description && <p>{sub.short_description}</p>}
                 <div class="sc-card__meta">
                   <span class="sc-card__count">{sizeCountLabel(sub.variants_count)}</span>
                   <span class="sc-card__cta">View Details <span aria-hidden="true">→</span></span>
@@ -143,8 +291,8 @@ function sizeCountLabel(count: number): string {
         </div>
       ) : (
         <div class="empty-state reveal">
-          <h3>Product types coming soon</h3>
-          <p>We are adding detailed product breakdowns for this family. Please check back or <a href={path('/contact')}>contact us</a> for the full range.</p>
+          <h3>Products in this range are coming soon</h3>
+          <p>We are adding detailed breakdowns. <a href={path('/contact')}>Contact us</a> for the full range.</p>
         </div>
       )}
     </div>
@@ -279,10 +427,56 @@ function sizeCountLabel(count: number): string {
     transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
 
-  .cat-detail__chip:hover {
+  a.cat-detail__chip:hover {
     background: var(--orange);
     border-color: var(--orange);
     color: var(--white);
+  }
+
+  /* Per-size photo strips */
+  .size-strips {
+    display: grid;
+    gap: 34px;
+  }
+
+  .size-strip h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--deep-navy);
+    margin-bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    position: relative;
+  }
+  .size-strip h3::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 30px;
+    height: 2px;
+    background: var(--orange);
+  }
+
+  .size-strip__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .size-strip__grid img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: contain;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-radius: var(--radius-sm);
+    padding: 14px;
   }
 
   @media (max-width: 900px) {
@@ -291,5 +485,143 @@ function sizeCountLabel(count: number): string {
       gap: 32px;
       padding: 48px 0 72px;
     }
+  }
+
+  /* Range: size/model cards */
+  .vr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px;
+  }
+
+  .vr-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-top: 3px solid var(--orange);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .vr-card:hover,
+  .vr-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(18, 42, 78, 0.12);
+  }
+
+  .vr-card__img {
+    position: relative;
+    aspect-ratio: 16/10;
+    padding: 24px;
+    overflow: hidden;
+    background: var(--deep-navy);
+    border-bottom: 1px solid rgba(18, 42, 78, 0.08);
+  }
+
+  .vr-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+
+  .vr-card__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 18px 16px;
+  }
+
+  .vr-card__body h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--deep-navy);
+    margin-bottom: 4px;
+  }
+
+  .vr-card__size {
+    color: var(--steel);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .vr-card__meta {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid rgba(18, 42, 78, 0.08);
+    padding-top: 12px;
+  }
+
+  .vr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.04);
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+
+  .vr-chip::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--vr-chip, #ccc);
+    border: 1px solid rgba(18, 42, 78, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+
+  .vr-chip-noc {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.04);
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+
+  .vr-card__cta {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--orange-deep);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .vr-card__cta span { transition: transform 0.2s ease; }
+  .vr-card:hover .vr-card__cta { color: var(--orange); }
+  .vr-card:hover .vr-card__cta span { transform: translateX(3px); }
+
+  .specs-model {
+    color: var(--orange-deep);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(232, 99, 12, 0.4);
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .specs-model:hover {
+    color: var(--orange);
+    border-bottom-color: var(--orange);
   }
 </style>

@@ -9,32 +9,49 @@ import { getCatalogueData, resolveImageUrl } from '../../lib/db';
 const catalogue = await getCatalogueData();
 const { categories, subCategories } = catalogue;
 
-function sizeLabel(count: number): string {
-  return count > 0
-    ? `${count} ${count === 1 ? 'Size / Model' : 'Sizes / Models'}`
-    : 'Range on request';
+function sizeLabel(count: number, colors = 0): string {
+  const parts: string[] = [];
+  parts.push(count > 0
+    ? `${count} ${count === 1 ? 'size / model' : 'sizes / models'}`
+    : 'range on request');
+  if (colors > 1) parts.push(`${colors} colour${colors === 1 ? '' : 's'}`);
+  return parts.join(' · ');
 }
 
-// Build card data
-const categoryCards = categories.map(cat => ({
+function colorCount(variants: Array<{ color: string | null }>): number {
+  return new Set(variants.map(v => (v.color || '').trim()).filter(Boolean)).size;
+}
+
+// Category cards — the main ranges, numbered like a catalogue index.
+const categoryCards = categories.map((cat, i) => ({
+  index: String(i + 1).padStart(2, '0'),
   name: cat.name,
   slug: cat.slug,
   description: cat.description,
-  image: resolveImageUrl(cat.image_url),
-  count: sizeLabel(cat.variants_count),
+  image: resolveImageUrl(cat.images[0]?.image_url ?? cat.image_url),
+  sizes: cat.variants,
+  colors: colorCount(cat.variants),
+  count: cat.variants.length,
+  subCount: cat.sub_categories.length,
   href: path(`/categories/${cat.slug}`)
 }));
 
-const subCategoryCards = subCategories.map(sub => ({
+// Product cards — every actual product across all categories.
+const productCards = subCategories.map(sub => ({
   name: sub.name,
   slug: sub.slug,
   categoryName: sub.category_name,
   categorySlug: sub.category_slug,
-  description: sub.description,
-  image: resolveImageUrl(sub.image_url),
-  count: sizeLabel(sub.variants_count),
+  description: sub.short_description || sub.description,
+  image: resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url),
+  sizes: sub.variants.length,
+  colors: colorCount(sub.variants),
   href: path(`/categories/${sub.category_slug}/${sub.slug}`)
 }));
+
+const productSearch = productCards.map(p =>
+  `${p.name} ${p.categoryName} ${p.description || ''}`.toLowerCase()
+);
 ---
 
 <Layout
@@ -53,61 +70,47 @@ const subCategoryCards = subCategories.map(sub => ({
     </div>
   </section>
 
-  <!-- ===== SEARCH RESULTS (shown by JS when ?q=) ===== -->
-  <section class="section search-results" id="search-results" style="display:none">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="display-700">Search Results</h2>
-        <p id="search-query-text"></p>
-      </div>
-      <div class="res-grid" id="search-grid"></div>
-      <div id="no-results" class="empty-state" style="display:none">
-        <h3>No results found</h3>
-        <p>No categories or product types match your search. <a href={path('/products')}>View all products</a></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== SECTION 1: MAIN CATEGORIES ===== -->
+  <!-- ===== CATEGORY INDEX ===== -->
   <section class="section" id="categories-section">
     <div class="container">
-      <div class="section-header reveal">
-        <span class="sec-index">01 · Main Categories</span>
-        <h2 class="display-700">Explore Our Product Range</h2>
-        <p>Industrial-grade material handling and packaging equipment, organised by primary product family.</p>
-      </div>
+      <header class="pl-head reveal">
+        <p class="sec-index">Product Categories</p>
+        <h2 class="display-700">Browse by product range</h2>
+        <p>Every family, from compact crates to industrial pallets — pick a range to see the sizes, colours and products inside.</p>
+      </header>
 
       {categoryCards.length > 0 ? (
-        <div class="mc-grid">
+        <div class="pl-cat-list">
           {categoryCards.map(card => (
-            <a href={card.href} class="mc-card reveal" data-cat={card.slug}>
-              <div class="mc-card__img">
-                {card.image ? (
-                  <img
-                    src={card.image}
-                    alt={`${card.name} — Vinayak Plastics product range`}
-                    width="600"
-                    height="450"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span class="mc-card__placeholder">{card.name}</span>
-                )}
-              </div>
-              <div class="mc-card__body">
+            <a href={card.href} class="pl-cat reveal" data-cat={card.slug} aria-label={`Browse ${card.name}`}>
+              <div class="pl-cat__index" aria-hidden="true">{card.index}</div>
+              <div class="pl-cat__body">
                 <h3>{card.name}</h3>
                 {card.description && <p>{card.description}</p>}
-                <div class="mc-card__meta">
-                  <span class="mc-card__count">{card.count}</span>
-                  <span class="mc-card__cta">Explore Range <span aria-hidden="true">→</span></span>
+                <div class="pl-cat__meta">
+                  <span class="pl-chip">{card.count ? `${card.count} · ${card.count === 1 ? 'model' : 'models'}` : 'Range'}</span>
+                  {card.subCount > 0 && <span class="pl-chip">{card.subCount} product{card.subCount === 1 ? '' : 's'}</span>}
+                  {card.sizes.slice(0, 3).map(v => v.name).filter(Boolean).map(name => (
+                    <span class="pl-chip pl-chip-outline">{name}</span>
+                  ))}
+                  {card.sizes.length > 3 && <span class="pl-chip pl-chip-outline">+{card.sizes.length - 3} more</span>}
                 </div>
               </div>
+              {card.image ? (
+                <div class="pl-cat__img">
+                  <img src={card.image} alt={`${card.name} — Vinayak Plastics`} width="480" height="360" loading="lazy" decoding="async" />
+                </div>
+              ) : (
+                <div class="pl-cat__img pl-cat__img-empty">{card.name}</div>
+              )}
+              <span class="pl-cat__arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+              </span>
             </a>
           ))}
         </div>
       ) : (
-        <div class="empty-state reveal">
+        <div class="pl-empty reveal">
           <h3>Product catalogue coming soon</h3>
           <p>We are currently updating our product listings. Please check back shortly or <a href={path('/contact')}>contact us</a> directly for product information.</p>
         </div>
@@ -115,60 +118,70 @@ const subCategoryCards = subCategories.map(sub => ({
     </div>
   </section>
 
-  <!-- ===== SECTION 2: SUB CATEGORIES ===== -->
-  <section class="section section-warm" id="subcategory-section">
+  <!-- ===== ALL PRODUCTS ===== -->
+  <section class="section section-warm" id="products-section">
     <div class="container">
-      <div class="section-header reveal">
-        <span class="sec-index">02 · Product Types</span>
-        <h2 class="display-700">Browse by Product Type</h2>
-        <p>Specific product types within each family — choose a type to see exact dimensions, specifications and availability.</p>
+      <header class="pl-head pl-head--left reveal">
+        <p class="sec-index">All Products</p>
+        <h2 class="display-700">Every product in one place</h2>
+        <p>Search the full range or filter by category — each product shows its available sizes and colours.</p>
+      </header>
+
+      <div class="pl-filter reveal">
+        <div class="pl-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+          <input type="search" id="pl-search-input" placeholder="Search products…" aria-label="Search products" autocomplete="off">
+          <button type="button" id="pl-search-clear" aria-label="Clear search" hidden>&times;</button>
+        </div>
+        <div class="pl-chips" id="pl-chips" role="group" aria-label="Filter by category">
+          {categoryCards.map(card => (
+            <button type="button" class="pl-chip-btn" data-cat={card.slug}>{card.name}</button>
+          ))}
+        </div>
       </div>
 
-      {subCategoryCards.length > 0 ? (
-        <div class="sc-carousel reveal" id="sc-carousel" role="region" aria-roledescription="carousel" aria-label="Product types">
-          <div class="sc-carousel__viewport" tabindex="0" aria-label="Scroll through product types">
-            <div class="sc-track">
-              {subCategoryCards.map(card => (
-                <a
-                  href={card.href}
-                  class="sc-card"
-                  data-sub={card.slug}
-                  data-cat={card.categorySlug}
-                  data-search={`${card.name} ${card.categoryName} ${card.description || ''}`.toLowerCase()}
-                >
-                  <div class="sc-card__img">
-                    {card.image ? (
-                      <img
-                        src={card.image}
-                        alt={`${card.name} — ${card.categoryName}`}
-                        width="480"
-                        height="300"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span class="sc-card__placeholder">{card.name}</span>
-                    )}
-                  </div>
-                  <div class="sc-card__body">
-                    <span class="sc-card__parent">{card.categoryName}</span>
-                    <h3>{card.name}</h3>
-                    <div class="sc-card__meta">
-                      <span class="sc-card__count">{card.count}</span>
-                      <span class="sc-card__cta">View <span aria-hidden="true">→</span></span>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
+      <div class="pl-results-info" id="pl-results-info" hidden aria-live="polite"></div>
+
+      {productCards.length > 0 ? (
+        <div class="pl-grid reveal" id="pl-grid">
+          {productCards.map((card, i) => (
+            <a
+              href={card.href}
+              class="pl-card"
+              data-sub={card.slug}
+              data-cat={card.categorySlug}
+              data-search={productSearch[i]}
+            >
+              <div class="pl-card__img">
+                {card.image ? (
+                  <img src={card.image} alt={`${card.name} — ${card.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="pl-card__placeholder">{card.name}</span>
+                )}
+              </div>
+              <div class="pl-card__body">
+                <span class="pl-card__parent">{card.categoryName}</span>
+                <h3>{card.name}</h3>
+                {card.description && <p>{card.description}</p>}
+                <div class="pl-card__meta">
+                  <span class="pl-card__count">{sizeLabel(card.sizes, card.colors)}</span>
+                  <span class="pl-card__cta">View Details <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          ))}
         </div>
       ) : (
-        <div class="empty-state reveal">
+        <div class="pl-empty reveal">
           <h3>Product types coming soon</h3>
           <p>We are adding detailed product breakdowns. Please check back or <a href={path('/contact')}>contact us</a> for the full range.</p>
         </div>
       )}
+
+      <div class="pl-empty" id="pl-no-results" hidden>
+        <h3>No matching products</h3>
+        <p id="pl-no-results-text">No products match your search. Try a different term or clear the filters.</p>
+      </div>
     </div>
   </section>
 
@@ -190,118 +203,288 @@ const subCategoryCards = subCategories.map(sub => ({
 
 <style>
   /* ==========================================================
-     Products page — section-specific overrides
+     Products page — redesigned catalogue index
      ========================================================== */
 
-  /* SECTION 01 · Main categories: wide feature cards, 2-up */
-  #categories-section .mc-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
+  .pl-head {
+    text-align: center;
+    margin-bottom: 44px;
+  }
+  .pl-head--left {
+    text-align: left;
+  }
+  .pl-head .sec-index {
+    justify-content: center;
+  }
+  .pl-head--left .sec-index {
+    justify-content: flex-start;
+  }
+  .pl-head h2 {
+    color: var(--deep-navy);
+    margin-bottom: 10px;
+  }
+  .pl-head p:not(.sec-index) {
+    color: var(--steel);
+    font-size: 1.05rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .pl-head--left p:not(.sec-index) {
+    margin: 0;
   }
 
-  #categories-section .mc-card {
-    border-top: 3px solid var(--orange);
+  /* ---------- Category index cards ---------- */
+  .pl-cat-list {
+    display: grid;
+    gap: 18px;
+  }
+
+  .pl-cat {
+    position: relative;
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) minmax(0, 300px) 44px;
+    align-items: center;
+    gap: 26px;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-left: 4px solid var(--orange);
     border-radius: var(--radius-md);
     box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
+    padding: 26px 28px;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    overflow: hidden;
   }
 
-  #categories-section .mc-card:hover,
-  #categories-section .mc-card:focus-visible {
-    box-shadow: 0 18px 44px rgba(232, 99, 12, 0.14);
-    border-color: rgba(232, 99, 12, 0.35);
+  .pl-cat::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: -54px;
+    bottom: -54px;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 99, 12, 0.08), transparent 68%);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+    pointer-events: none;
   }
 
-  #categories-section .mc-card__img {
-    aspect-ratio: 16/10;
+  .pl-cat:hover,
+  .pl-cat:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px rgba(18, 42, 78, 0.12);
+    border-left-color: var(--orange-deep);
+  }
+  .pl-cat:hover::after { opacity: 1; }
+
+  .pl-cat__index {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1;
+    color: rgba(18, 42, 78, 0.14);
+    text-align: center;
+    user-select: none;
   }
 
-  #categories-section .mc-card__body {
-    padding: 28px 28px 24px;
+  .pl-cat__body h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--deep-navy);
+    margin-bottom: 6px;
   }
 
-  #categories-section .mc-card__body h3 {
-    font-size: 1.7rem;
+  .pl-cat__body p {
+    color: var(--steel);
+    font-size: 0.94rem;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    max-width: 520px;
   }
 
-  #categories-section .mc-card__count {
+  .pl-cat__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pl-chip {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--orange-deep);
     background: rgba(232, 99, 12, 0.1);
+    padding: 4px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .pl-chip-outline {
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.06);
   }
 
-  #categories-section .mc-card__cta {
-    color: var(--orange-deep);
+  .pl-cat__img {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--warm-off-white);
   }
-
-  /* ==========================================================
-     SECTION 02 · Sub categories — native horizontal scroll strip
-     Manual sliding via touch / trackpad / mouse drag / arrows —
-     no arrows, progress bar or transform engine needed.
-     ========================================================== */
-
-  /* Host */
-  #subcategory-section .sc-carousel {
-    position: relative;
-    outline-offset: 4px;
-    -webkit-overflow-scrolling: touch;
+  .pl-cat__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 14px;
   }
-
-  /* Viewport — the strip itself scrolls horizontally. Snap makes
-     every swipe / drag settle on a card boundary. */
-  #subcategory-section .sc-carousel__viewport {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    touch-action: pan-x pan-y;
-    cursor: grab;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  #subcategory-section .sc-carousel__viewport:active {
-    cursor: grabbing;
-  }
-
-  #subcategory-section .sc-carousel__viewport::-webkit-scrollbar {
-    display: none;
-  }
-
-  #subcategory-section .sc-track {
+  .pl-cat__img-empty {
     display: flex;
-    align-items: stretch;
-    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    text-transform: uppercase;
+    color: rgba(18, 42, 78, 0.25);
   }
 
-  #subcategory-section .sc-track > .sc-card {
-    flex: 0 0 auto;
-    width: calc((100% - 60px) / 4);
-    scroll-snap-align: start;
+  .pl-cat__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    color: var(--orange-deep);
+    background: rgba(232, 99, 12, 0.12);
+    transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
+  }
+  .pl-cat__arrow svg { width: 20px; height: 20px; }
+  .pl-cat:hover .pl-cat__arrow {
+    transform: translateX(4px);
+    background: var(--orange);
+    color: #fff;
   }
 
-  /* ---- Compact gallery card ---- */
-  #subcategory-section .sc-card {
+  /* ---------- Filter bar ---------- */
+  .pl-filter {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(18, 42, 78, 0.08);
-    border-top: 3px solid var(--orange);
-    background: var(--white);
-    box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    gap: 14px;
+    margin-bottom: 28px;
   }
 
-  #subcategory-section .sc-card:hover,
-  #subcategory-section .sc-card:focus-visible {
-    transform: translateY(-3px);
+  .pl-search {
+    position: relative;
+    max-width: 460px;
+  }
+  .pl-search svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--steel);
+    pointer-events: none;
+  }
+  .pl-search input {
+    width: 100%;
+    height: 50px;
+    padding: 0 46px 0 46px;
+    border: 1px solid rgba(18, 42, 78, 0.14);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .pl-search input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(232, 99, 12, 0.14);
+  }
+  .pl-search input::placeholder { color: rgba(91, 100, 114, 0.7); }
+  .pl-search button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(18, 42, 78, 0.07);
+    color: var(--steel);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .pl-search button:hover { background: rgba(232, 99, 12, 0.16); color: var(--orange-deep); }
+
+  .pl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pl-chip-btn {
+    border: 1px solid rgba(18, 42, 78, 0.14);
+    background: #fff;
+    color: var(--deep-navy);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .pl-chip-btn:hover { border-color: var(--orange); color: var(--orange-deep); }
+  .pl-chip-btn.is-active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #fff;
+  }
+
+  .pl-results-info {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin-bottom: 14px;
+  }
+
+  /* ---------- Product grid ---------- */
+  .pl-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+
+  .pl-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-top: 3px solid var(--orange);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+  }
+  .pl-card:hover,
+  .pl-card:focus-visible {
+    transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(18, 42, 78, 0.12);
   }
 
-  /* Fixed image area — consistent across cards & breakpoints */
-  #subcategory-section .sc-card__img {
+  .pl-card__img {
     position: relative;
-    flex: 0 0 150px;
-    height: 150px;
-    padding: 16px;
+    aspect-ratio: 4 / 3;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,54 +492,46 @@ const subCategoryCards = subCategories.map(sub => ({
     background: var(--warm-off-white);
     border-bottom: 1px solid rgba(18, 42, 78, 0.06);
   }
-
-  #subcategory-section .sc-card__img img {
+  .pl-card__img img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: center;
-    display: block;
+    padding: 16px;
   }
-
-  #subcategory-section .sc-card__placeholder {
-    position: absolute;
-    inset: 0;
+  .pl-card__placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
+    width: 100%;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     text-transform: uppercase;
-    color: rgba(18, 42, 78, 0.3);
-    background: var(--warm-off-white);
+    color: rgba(18, 42, 78, 0.25);
   }
 
-  /* Body — flex column so the meta row is pinned to the bottom */
-  #subcategory-section .sc-card__body {
-    flex: 1 1 auto;
+  .pl-card__body {
+    flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 16px 16px 14px;
+    padding: 18px 18px 16px;
   }
-
-  #subcategory-section .sc-card__parent {
-    display: inline-block;
+  .pl-card__parent {
     font-family: var(--font-mono);
     font-size: 0.62rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--orange-deep);
+    margin-bottom: 5px;
+    padding-bottom: 6px;
+    position: relative;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 6px;
-    padding-bottom: 6px;
-    position: relative;
   }
-
-  #subcategory-section .sc-card__parent::after {
+  .pl-card__parent::after {
     content: '';
     position: absolute;
     left: 0;
@@ -365,449 +540,216 @@ const subCategoryCards = subCategories.map(sub => ({
     height: 2px;
     background: var(--orange);
   }
-
-  #subcategory-section .sc-card__body h3 {
+  .pl-card__body h3 {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     line-height: 1.15;
     text-transform: uppercase;
     letter-spacing: 0.02em;
     color: var(--deep-navy);
-    min-height: 2.4em;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+  }
+  .pl-card__body p {
+    color: var(--steel);
+    font-size: 0.86rem;
+    line-height: 1.55;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    margin-bottom: 12px;
   }
-
-  #subcategory-section .sc-card__meta {
+  .pl-card__meta {
     margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     border-top: 1px solid rgba(18, 42, 78, 0.08);
-    padding-top: 10px;
+    padding-top: 11px;
   }
-
-  #subcategory-section .sc-card__count {
+  .pl-card__count {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--steel);
     background: rgba(18, 42, 78, 0.05);
     padding: 4px 8px;
     border-radius: 2px;
-    white-space: nowrap;
   }
-
-  #subcategory-section .sc-card__cta {
-    font-family: var(--font-body);
+  .pl-card__cta {
+    font-size: 0.76rem;
     font-weight: 600;
-    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--orange-deep);
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: color 0.2s ease, gap 0.2s ease;
+    white-space: nowrap;
+  }
+  .pl-card__cta span { transition: transform 0.2s ease; }
+  .pl-card:hover .pl-card__cta { color: var(--orange); }
+  .pl-card:hover .pl-card__cta span { transform: translateX(3px); }
+
+  .pl-empty {
+    text-align: center;
+    padding: 48px 20px;
+    background: #fff;
+    border: 1px dashed rgba(18, 42, 78, 0.16);
+    border-radius: var(--radius-md);
+  }
+  .pl-empty h3 { font-family: var(--font-display); font-size: 1.4rem; text-transform: uppercase; color: var(--deep-navy); margin-bottom: 8px; }
+  .pl-empty p { color: var(--steel); font-size: 0.95rem; }
+  .pl-empty a { color: var(--orange-deep); text-decoration: underline; }
+  .pl-empty a:hover { color: var(--orange); }
+
+  /* Deep-link highlight pulse */
+  .is-highlighted {
+    animation: pl-pulse 1.6s ease;
+    border-color: var(--orange);
+  }
+  @keyframes pl-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 99, 12, 0); }
+    30% { box-shadow: 0 0 0 6px rgba(232, 99, 12, 0.18); }
   }
 
-  #subcategory-section .sc-card__cta span {
-    transition: transform 0.2s ease;
-  }
-
-  #subcategory-section .sc-card:hover .sc-card__cta {
-    color: var(--orange);
-  }
-
-  #subcategory-section .sc-card:hover .sc-card__cta span {
-    transform: translateX(3px);
-  }
-
-  /* ----------------------------------------------------------
-     Responsive ladder — aligned to the site breakpoints
-     1024 / 768 / 560 / 480 / 390
-     Cards per view: 4 desktop · 2 tablet · 1.25 mobile
-     ---------------------------------------------------------- */
-
-  /* Tablet ≤1024 — two cards side by side */
+  /* ---------- Responsive ---------- */
   @media (max-width: 1024px) {
-    #subcategory-section .sc-track {
-      gap: 16px;
-    }
-
-    #subcategory-section .sc-track > .sc-card {
-      width: calc((100% - 16px) / 2);
-    }
-
-    #subcategory-section .sc-card__img {
-      flex-basis: 132px;
-      height: 132px;
-    }
+    .pl-grid { grid-template-columns: repeat(2, 1fr); }
+    .pl-cat { grid-template-columns: 64px minmax(0, 1fr) 40px; }
+    .pl-cat__img { display: none; }
   }
 
-  /* Small tablet / large phone ≤768 */
-  @media (max-width: 768px) {
-    #categories-section .mc-grid {
-      gap: 20px;
-    }
-
-    #categories-section .mc-card__body {
-      padding: 22px 20px 18px;
-    }
-
-    #categories-section .mc-card__body h3 {
-      font-size: 1.4rem;
-    }
-  }
-
-  /* Mobile ≤560 — one card plus a peek of the next */
-  @media (max-width: 560px) {
-    #subcategory-section .sc-track {
-      gap: 14px;
-    }
-
-    #subcategory-section .sc-track > .sc-card {
-      width: calc((100% - 14px) / 1.25);
-    }
-
-    #subcategory-section .sc-card__img {
-      flex-basis: 120px;
-      height: 120px;
-      padding: 14px;
-    }
-
-    #subcategory-section .sc-card__body {
-      padding: 14px 14px 12px;
-    }
-
-    #subcategory-section .sc-card__body h3 {
-      font-size: 0.95rem;
-    }
-
-    #categories-section .mc-grid {
+  @media (max-width: 640px) {
+    .pl-grid { grid-template-columns: 1fr; }
+    .pl-cat {
       grid-template-columns: 1fr;
-      gap: 20px;
+      gap: 14px;
+      padding: 22px 20px;
     }
-
-    #categories-section .mc-card__body {
-      padding: 20px 18px 16px;
+    .pl-cat__index {
+      text-align: left;
+      font-size: 1.8rem;
     }
-
-    #categories-section .mc-card__body h3 {
-      font-size: 1.2rem;
-    }
-  }
-
-  /* Small phones ≤480 */
-  @media (max-width: 480px) {
-    #subcategory-section .sc-track {
-      gap: 12px;
-    }
-
-    #subcategory-section .sc-track > .sc-card {
-      width: calc((100% - 12px) / 1.25);
-    }
-
-    #subcategory-section .sc-card__img {
-      flex-basis: 108px;
-      height: 108px;
-      padding: 12px;
-    }
-
-    #subcategory-section .sc-card__body {
-      padding: 12px 12px 10px;
-    }
-
-    #subcategory-section .sc-card__parent {
-      font-size: 0.56rem;
-    }
-
-    #subcategory-section .sc-card__body h3 {
-      font-size: 0.88rem;
-      min-height: 2.2em;
-    }
-
-    #subcategory-section .sc-card__meta {
-      gap: 8px;
-    }
-
-    #subcategory-section .sc-card__count {
-      font-size: 0.56rem;
-      padding: 3px 6px;
-    }
-
-    #subcategory-section .sc-card__cta {
-      font-size: 0.72rem;
-    }
-  }
-
-  /* Tiny phones ≤390 */
-  @media (max-width: 390px) {
-    #subcategory-section .sc-card__img {
-      padding: 10px;
-    }
-
-    #subcategory-section .sc-card__parent {
-      font-size: 0.54rem;
-    }
-
-    #subcategory-section .sc-card__body h3 {
-      font-size: 0.84rem;
-    }
-
-    #subcategory-section .sc-card__cta span {
-      display: none;
+    .pl-cat__arrow {
+      position: absolute;
+      top: 18px;
+      right: 16px;
+      width: 34px;
+      height: 34px;
     }
   }
 </style>
 
 <script is:inline>
 (function () {
+  'use strict';
   var params = new URLSearchParams(window.location.search);
+  var q = (params.get('q') || '').trim();
 
-  var searchResults = document.getElementById('search-results');
-  var searchGrid = document.getElementById('search-grid');
-  var searchNo = document.getElementById('no-results');
-  var searchQuery = document.getElementById('search-query-text');
-  var catsSection = document.getElementById('categories-section');
-  var subsSection = document.getElementById('subcategory-section');
+  var searchInput = document.getElementById('pl-search-input');
+  var searchClear = document.getElementById('pl-search-clear');
+  var chipsEl = document.getElementById('pl-chips');
+  var resultsInfo = document.getElementById('pl-results-info');
+  var grid = document.getElementById('pl-grid');
+  var noResults = document.getElementById('pl-no-results');
+  var noResultsText = document.getElementById('pl-no-results-text');
+  if (!grid) { if (searchInput) searchInput.value = q; return; }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.pl-card'));
 
   function highlight(el) {
     if (!el) return;
-    el.scrollIntoView();
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     el.classList.add('is-highlighted');
-    window.setTimeout(function () { el.classList.remove('is-highlighted'); }, 1600);
+    window.setTimeout(function () { el.classList.remove('is-highlighted'); }, 1800);
   }
 
-  // --- Deep-link: ?subcategory= or ?category= jumps to the matching card ---
-  var subSlug = params.get('subcategory');
-  var catSlug = params.get('category');
-  if (subSlug) {
-    var subLink = document.querySelector('[data-sub="' + subSlug + '"]');
-    highlight(subLink);
-  } else if (catSlug) {
-    highlight(document.querySelector('[data-cat="' + catSlug + '"]'));
+  // Deep-links: ?subproduct= scrolls to a product card, ?category= to a range card.
+  var subLink = document.querySelector('[data-sub="' + (params.get('subproduct') || '') + '"]');
+  var catLink = document.querySelector('[data-cat="' + (params.get('category') || '') + '"]');
+  if (!params.get('q')) {
+    if (subLink) { scrollToSectionAnd(subLink); }
+    else if (catLink) { scrollToSectionAnd(catLink); }
   }
 
-  // --- Search (?q=): filter the two card grids ---
-  var q = (params.get('q') || '').trim().toLowerCase();
-  if (!q) return;
+  function scrollToSectionAnd(target) {
+    var section = document.getElementById('products-section') || document.getElementById('categories-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(function () { highlight(target); }, 420);
+  }
 
-  var subs = Array.prototype.slice.call(document.querySelectorAll('.sc-card'));
+  var activeCat = '';
 
-  var subMatches = subs.filter(function (c) {
-    return (c.getAttribute('data-search') || '').indexOf(q) !== -1;
-  });
+  function update() {
+    var term = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    var visible = 0;
 
-  var cards = subMatches.map(function (c) {
-    return {
-      href: c.getAttribute('href'),
-      parent: c.querySelector('.sc-card__parent')?.textContent || '',
-      name: c.querySelector('h3')?.textContent || '',
-      desc: c.querySelector('p')?.textContent || ''
-    };
-  });
-
-  searchQuery.textContent = 'Showing results for "' + escapeHtml(params.get('q')) + '"';
-
-  if (cards.length > 0) {
-    cards.forEach(function (item) {
-      var a = document.createElement('a');
-      a.href = item.href;
-      a.className = 'sc-card';
-      a.innerHTML =
-          '<div class="sc-card__body">' +
-            (item.parent ? '<span class="sc-card__parent">' + escapeHtml(item.parent) + '</span>' : '') +
-            '<h3>' + escapeHtml(item.name) + '</h3>' +
-            (item.desc ? '<p>' + escapeHtml(item.desc) + '</p>' : '') +
-            '<div class="sc-card__meta"><span class="sc-card__cta">View <span aria-hidden="true">→</span></span></div>' +
-          '</div>';
-      searchGrid.appendChild(a);
+    cards.forEach(function (card) {
+      var matchCat = !activeCat || card.getAttribute('data-cat') === activeCat;
+      var matchTerm = !term || (card.getAttribute('data-search') || '').indexOf(term) !== -1;
+      var show = matchCat && matchTerm;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
-  } else {
-    searchNo.style.display = 'block';
-  }
 
-  // Hide the regular browse sections once the user searched.
-  catsSection.style.display = 'none';
-  subsSection.style.display = 'none';
-  searchResults.style.display = 'block';
-})();
-</script>
+    if (searchClear) {
+      searchClear.hidden = !term && !activeCat;
+      searchClear.style.display = (!term && !activeCat) ? 'none' : '';
+    }
+    grid.style.display = visible || (!term && !activeCat) ? '' : 'none';
 
-<script is:inline>
-(function () {
-  'use strict';
-
-  var carousel = document.getElementById('sc-carousel');
-  if (!carousel) return;
-
-  var params = new URLSearchParams(window.location.search);
-  if (params.get('q')) return;
-
-  var viewport = carousel.querySelector('.sc-carousel__viewport');
-  var track = carousel.querySelector('.sc-track');
-
-  if (!viewport || !track) return;
-
-  var reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  if (reducedMotion) {
-    viewport.style.scrollBehavior = 'auto';
-  }
-
-  var slides = Array.prototype.slice.call(track.children);
-
-  // Deep link: ?subcategory= scrolls the strip to that card.
-  var subSlug = params.get('subcategory');
-  if (subSlug) {
-    for (var i = 0; i < slides.length; i++) {
-      if (slides[i].getAttribute('data-sub') === subSlug) {
-        viewport.scrollLeft = slides[i].offsetLeft;
-        break;
+    if (resultsInfo) {
+      var searching = Boolean(term || activeCat);
+      resultsInfo.hidden = !searching;
+      if (searching) {
+        resultsInfo.textContent = 'Showing ' + visible + (visible === 1 ? ' product' : ' products') +
+          (term ? ' for "' + term + '"' : '') + (activeCat ? ' in ' + activeCat : '');
       }
     }
-  }
 
-  // ============================================================
-  // Smooth autoplay — glides exactly one card per step with a
-  // rAF-driven ease (no native snap fighting it), wraps around at
-  // the end, and stops FOREVER as soon as the visitor touches or
-  // scrolls, handing control back to them.
-  // ============================================================
-  var AUTO_DELAY = 3200;
-  var GLIDE_MS = 520;
-  var timer = null;
-  var animFrame = null;
-  var autoEnabled = true;
-  var visible = false;
-  var hovered = false;
-  var focused = false;
-
-  function step() {
-    if (slides.length > 1) return slides[1].offsetLeft - slides[0].offsetLeft;
-    return viewport.clientWidth || 1;
-  }
-
-  function maxScroll() { return viewport.scrollWidth - viewport.clientWidth; }
-
-  function animateTo(targetX, duration) {
-    var startX = viewport.scrollLeft;
-    var dist = targetX - startX;
-    if (Math.abs(dist) < 0.5) { schedule(); return; }
-
-    // Toggle off snap + smooth while we move it ourselves, so every
-    // step is a clean one-card glide instead of a native jump.
-    viewport.style.scrollSnapType = 'none';
-    viewport.style.scrollBehavior = 'auto';
-    var startTime = null;
-
-    function frame(ts) {
-      if (!startTime) startTime = ts;
-      var p = Math.min(1, (ts - startTime) / duration);
-      var eased = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      viewport.scrollLeft = startX + dist * eased;
-      if (p < 1) {
-        animFrame = window.requestAnimationFrame(frame);
-      } else {
-        animFrame = null;
-        viewport.scrollLeft = targetX;
-        viewport.style.scrollSnapType = '';
-        viewport.style.scrollBehavior = '';
-        schedule();
-      }
-    }
-    animFrame = window.requestAnimationFrame(frame);
-  }
-
-  function cancelGlide() {
-    if (animFrame) {
-      window.cancelAnimationFrame(animFrame);
-      animFrame = null;
-    }
-    viewport.style.scrollSnapType = '';
-    viewport.style.scrollBehavior = '';
-  }
-
-  function advance() {
-    timer = null;
-    var max = maxScroll();
-    if (max <= 1) return;
-    var stride = step();
-    var current = Math.round(viewport.scrollLeft / stride);
-    var maxIdx = Math.round(max / stride);
-    var target = current >= maxIdx ? 0 : (current + 1) * stride;
-
-    if (reducedMotion) {
-      viewport.scrollLeft = target;
-      schedule();
-    } else {
-      animateTo(target, GLIDE_MS);
+    var noResultsVisible = visible === 0;
+    if (noResults) noResults.hidden = !noResultsVisible;
+    if (noResultsText) {
+      noResultsText.textContent = activeCat && !term
+        ? 'No products in this range yet. Choose another category or ask us directly.'
+        : 'No products match your search. Try a different term or clear the filters.';
     }
   }
 
-  function schedule() {
-    stopTimer();
-    if (!autoEnabled || reducedMotion || !visible || hovered || focused) return;
-    timer = window.setTimeout(advance, AUTO_DELAY);
+  // Brand the nav search through: ?q= arrives pre-populated.
+  if (q) {
+    if (searchInput) searchInput.value = q;
+    var catsSection = document.getElementById('categories-section');
+    if (catsSection) catsSection.scrollIntoView({ behavior: 'auto', block: 'start' });
   }
 
-  function stopTimer() {
-    if (timer) {
-      window.clearTimeout(timer);
-      timer = null;
-    }
+  if (searchInput) {
+    searchInput.addEventListener('input', update);
   }
-
-  // Any direct interaction kills autoplay for good — the visitor
-  // takes over and scrolls at their own pace.
-  function stopAutoForever() {
-    autoEnabled = false;
-    stopTimer();
-    cancelGlide();
+  if (searchClear) {
+    searchClear.addEventListener('click', function () {
+      if (searchInput) searchInput.value = '';
+      activeCat = '';
+      document.querySelectorAll('.pl-chip-btn.is-active').forEach(function (b) { b.classList.remove('is-active'); });
+      update();
+      if (searchInput) searchInput.focus();
+    });
   }
-
-  // Temporary pauses while reading-only hovering / keyboard focus.
-  carousel.addEventListener('mouseenter', function () { hovered = true; stopTimer(); });
-  carousel.addEventListener('mouseleave', function () { hovered = false; schedule(); });
-  carousel.addEventListener('focusin', function () { focused = true; stopTimer(); });
-  carousel.addEventListener('focusout', function () { focused = false; schedule(); });
-
-  // Any touch / drag / wheel scroll stops the auto motion permanently.
-  viewport.addEventListener('pointerdown', stopAutoForever);
-  viewport.addEventListener('wheel', stopAutoForever, { passive: true });
-
-  if (document.hidden !== undefined) {
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) stopTimer();
-      else schedule();
+  if (chipsEl) {
+    chipsEl.querySelectorAll('.pl-chip-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        activeCat = btn.classList.contains('is-active') ? '' : (btn.getAttribute('data-cat') || '');
+        chipsEl.querySelectorAll('.pl-chip-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        if (activeCat) btn.classList.add('is-active');
+        update();
+      });
     });
   }
 
-  // Autoplay only while the carousel is actually on screen.
-  if ('IntersectionObserver' in window) {
-    var visibilityObserver = new IntersectionObserver(function (entries) {
-      visible = !!entries[0] && entries[0].isIntersecting;
-      if (visible) schedule();
-      else stopTimer();
-    }, { threshold: 0.25 });
-    visibilityObserver.observe(carousel);
-  } else {
-    visible = true;
-    schedule();
-  }
+  update();
 })();
 </script>

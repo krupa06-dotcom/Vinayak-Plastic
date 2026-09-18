@@ -3,89 +3,85 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { path } from '../../../lib/site';
 ---
 
-<AdminLayout title="Sub-category" current="subcategories">
+<AdminLayout title="Product" current="products">
   <div class="a-page-head">
-    <h2 id="page-title">New Sub-category</h2>
+    <h2 id="page-title">New Product</h2>
     <div style="display:flex;gap:10px;">
-      <a href={path('/admin/subcategories/')} class="a-btn a-btn-sm">&larr; Back to sub-categories</a>
-      <button type="button" class="a-btn a-btn-primary" id="sub-save-top" style="display:none;">Save sub-category</button>
+      <a href={path('/admin/products/')} class="a-btn a-btn-sm">&larr; Back to products</a>
+      <button type="button" class="a-btn a-btn-primary" id="pd-save-top" style="display:none;">Save</button>
     </div>
   </div>
 
   <div id="edit-loading" class="a-inline-loading" style="padding:40px;"><div class="a-spinner"></div></div>
 
-  <form id="sub-form" novalidate style="display:none;">
+  <form id="pd-form" novalidate style="display:none;">
     <div class="a-card is-tabs">
       <div class="a-tabs" role="tablist">
         <button type="button" class="a-tab is-active" data-tab="tab-basics" role="tab">Basics</button>
-        <button type="button" class="a-tab" data-tab="tab-desc" role="tab">Description &amp; Features</button>
         <button type="button" class="a-tab" data-tab="tab-variants" role="tab">Sizes &amp; Colours</button>
         <button type="button" class="a-tab" data-tab="tab-images" role="tab">Images</button>
       </div>
 
       <!-- ======================= BASICS ======================= -->
       <div class="a-tab-panel is-active" id="tab-basics">
+        <input type="hidden" id="pd-id" />
+        <input type="hidden" id="pd-mode" />
         <div class="a-form-grid">
-          <div class="a-field a-field-full">
-            <label for="sub-category">Parent category <span style="color:var(--a-danger)">*</span></label>
-            <select id="sub-category" class="a-select" required>
+          <div class="a-field a-field-full" id="field-category">
+            <label for="pd-category">Category <span style="color:var(--a-danger)">*</span></label>
+            <select id="pd-category" class="a-select" required>
               <option value="">— Select category —</option>
             </select>
+            <span class="a-hint" id="category-hint">The range this product belongs to.</span>
           </div>
           <div class="a-field">
-            <label for="sub-name">Sub-category name <span style="color:var(--a-danger)">*</span></label>
-            <input id="sub-name" class="a-input" required autocomplete="off" placeholder="e.g. Standard Crates" />
-            <span class="a-hint">This is the range name. Individual sizes go under "Sizes &amp; Colours".</span>
+            <label for="pd-name">Name <span style="color:var(--a-danger)">*</span></label>
+            <input id="pd-name" class="a-input" required autocomplete="off" placeholder="e.g. Standard Crates" />
+            <span class="a-hint" id="name-hint">Product or range name shown to customers.</span>
           </div>
           <div class="a-field">
-            <label for="sub-slug">Slug</label>
-            <input id="sub-slug" class="a-input" required autocomplete="off" placeholder="auto-generated from name" />
+            <label for="pd-slug">Slug</label>
+            <input id="pd-slug" class="a-input" required autocomplete="off" placeholder="auto-generated from name" />
             <span class="a-hint">Leave blank to auto-generate.</span>
           </div>
-          <div class="a-field">
-            <label for="sub-sku">SKU / Series code</label>
-            <input id="sub-sku" class="a-input" autocomplete="off" placeholder="e.g. VPC-SERIES" />
+          <div class="a-field" id="field-sku">
+            <label for="pd-sku">SKU / Series code</label>
+            <input id="pd-sku" class="a-input" autocomplete="off" placeholder="e.g. VPC-SERIES" />
           </div>
           <div class="a-field a-field-full">
-            <label for="sub-image-picker">Main image</label>
-            <div id="sub-image-picker"></div>
+            <label for="pd-image-picker">Main image</label>
+            <div id="pd-image-picker"></div>
+          </div>
+          <div class="a-field a-field-full">
+            <label for="pd-description">Description</label>
+            <textarea id="pd-description" class="a-textarea" rows="3" placeholder="What this product / range is and where it is used"></textarea>
+          </div>
+          <div class="a-field a-field-full" id="field-short">
+            <label for="pd-short">Short description</label>
+            <textarea id="pd-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
+          </div>
+          <div class="a-field a-field-full" id="field-features">
+            <label for="pd-features">Features (one per line)</label>
+            <textarea id="pd-features" class="a-textarea" rows="3" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
+          </div>
+          <div class="a-field a-field-full" id="field-apps">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label>Applications</label>
+              <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add application</button>
+            </div>
+            <div id="apps-container"></div>
           </div>
           <div class="a-field">
-            <label for="sub-order">Display order</label>
-            <input id="sub-order" class="a-input" type="number" min="0" value="0" />
+            <label for="pd-order">Display order</label>
+            <input id="pd-order" class="a-input" type="number" min="0" value="0" />
             <span class="a-hint">Lower numbers appear first.</span>
           </div>
           <div class="a-field">
             <label>&nbsp;</label>
             <div style="display:flex;gap:20px;flex-wrap:wrap;">
-              <label class="a-check"><input type="checkbox" id="sub-active" checked /> Active</label>
-              <label class="a-check"><input type="checkbox" id="sub-featured" /> Featured on homepage</label>
+              <label class="a-check"><input type="checkbox" id="pd-active" checked /> Active</label>
+              <label class="a-check" id="field-featured"><input type="checkbox" id="pd-featured" /> Featured on homepage</label>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ======================= DESCRIPTION ======================= -->
-      <div class="a-tab-panel" id="tab-desc">
-        <div class="a-form-grid">
-          <div class="a-field a-field-full">
-            <label for="sub-short">Short description</label>
-            <textarea id="sub-short" class="a-textarea a-textarea-sm" rows="2" placeholder="1-2 sentence summary shown in listings"></textarea>
-          </div>
-          <div class="a-field a-field-full">
-            <label for="sub-desc">Full description</label>
-            <textarea id="sub-desc" class="a-textarea" rows="5" placeholder="Detailed product description"></textarea>
-          </div>
-          <div class="a-field a-field-full">
-            <label for="sub-features">Features (one per line)</label>
-            <textarea id="sub-features" class="a-textarea" rows="4" placeholder="Recyclable\nLightweight\nMoisture resistant"></textarea>
-          </div>
-          <div class="a-field a-field-full">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label for="apps-container">Applications</label>
-              <button type="button" class="a-btn a-btn-sm" id="add-app">+ Add application</button>
-            </div>
-            <div id="apps-container"></div>
           </div>
         </div>
       </div>
@@ -93,8 +89,8 @@ import { path } from '../../../lib/site';
       <!-- ======================= SIZES & COLOURS ======================= -->
       <div class="a-tab-panel" id="tab-variants">
         <div class="a-guide" style="margin-bottom:16px;">
-          <h4>Add the sizes, shapes and colours this range is made in</h4>
-          <p style="margin:0;">Each row is one model / size. On the website these are shown as a specification table, so customers can see every option at a glance.</p>
+          <h4>Add the sizes, shapes and colours this is made in</h4>
+          <p style="margin:0;">Each row is one model / size. These appear on the website as a specification table so customers can see every option at a glance.</p>
         </div>
         <div class="a-var-head">
           <span style="font-weight:600;font-size:0.9rem;">Sizes / Models</span>
@@ -108,11 +104,13 @@ import { path } from '../../../lib/site';
       <div class="a-tab-panel" id="tab-images">
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <span style="font-weight:600;font-size:0.9rem;">Gallery images</span>
+            <div>
+              <span style="font-weight:600;font-size:0.9rem;">Gallery images</span>
+              <p class="a-hint" style="margin:4px 0 0;" id="images-hint">The first image is the main photo. Attach any image to a specific size for the size photo strip.</p>
+            </div>
             <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
           </div>
           <div id="images-container"></div>
-          <p class="a-hint" style="margin-top:8px;">The first image is shown as the main image on the website. Reorder them as needed.</p>
         </div>
       </div>
     </div>
@@ -120,10 +118,10 @@ import { path } from '../../../lib/site';
     <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
     <div class="a-sticky-actions">
-      <span class="a-hint" id="save-helper">Details and sizes are saved together.</span>
+      <span class="a-hint" id="save-helper">Sizes, colours and images are saved together.</span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button type="submit" class="a-btn a-btn-primary" id="sub-submit">Save sub-category</button>
-        <a href={path('/admin/subcategories/')} class="a-btn">Cancel</a>
+        <button type="submit" class="a-btn a-btn-primary" id="pd-submit">Save</button>
+        <a href={path('/admin/products/')} class="a-btn">Cancel</a>
       </div>
     </div>
   </form>
@@ -141,38 +139,66 @@ import { path } from '../../../lib/site';
     const COMMON_COLORS = ['Blue', 'Green', 'Red', 'Yellow', 'White', 'Black', 'Grey', 'Orange'];
 
     const params = new URLSearchParams(window.location.search);
-    const editId = params.get('id');
-    const preCategory = params.get('category');
+    // Modes: category (edit/`new`) vs product (edit/`new`).
+    const editCategory = params.get('category');
+    const editProduct = params.get('product');
+    const mode: 'category' | 'product' = editCategory !== null ? 'category' : 'product';
+    const editId = mode === 'category' ? (editCategory !== 'new' ? editCategory : null) : (editProduct !== 'new' ? editProduct : null);
+    const preCategory = mode === 'product' ? params.get('category') : null;
 
-    const formEl = document.getElementById('sub-form') as HTMLFormElement;
+    const formEl = document.getElementById('pd-form') as HTMLFormElement;
     const loadingEl = document.getElementById('edit-loading')!;
     const titleEl = document.getElementById('page-title')!;
-    const catEl = document.getElementById('sub-category') as HTMLSelectElement;
-    const nameEl = document.getElementById('sub-name') as HTMLInputElement;
-    const slugEl = document.getElementById('sub-slug') as HTMLInputElement;
-    const skuEl = document.getElementById('sub-sku') as HTMLInputElement;
-    const shortEl = document.getElementById('sub-short') as HTMLTextAreaElement;
-    const descEl = document.getElementById('sub-desc') as HTMLTextAreaElement;
-    const featuresEl = document.getElementById('sub-features') as HTMLTextAreaElement;
-    const orderEl = document.getElementById('sub-order') as HTMLInputElement;
-    const activeEl = document.getElementById('sub-active') as HTMLInputElement;
-    const featuredEl = document.getElementById('sub-featured') as HTMLInputElement;
+    const modeEl = document.getElementById('pd-mode') as HTMLInputElement;
+    const idEl = document.getElementById('pd-id') as HTMLInputElement;
+    const catEl = document.getElementById('pd-category') as HTMLSelectElement;
+    const fieldCategory = document.getElementById('field-category') as HTMLElement;
+    const fieldSku = document.getElementById('field-sku') as HTMLElement;
+    const fieldShort = document.getElementById('field-short') as HTMLElement;
+    const fieldFeatures = document.getElementById('field-features') as HTMLElement;
+    const fieldApps = document.getElementById('field-apps') as HTMLElement;
+    const fieldFeatured = document.getElementById('field-featured') as HTMLElement;
+    const nameEl = document.getElementById('pd-name') as HTMLInputElement;
+    const slugEl = document.getElementById('pd-slug') as HTMLInputElement;
+    const skuEl = document.getElementById('pd-sku') as HTMLInputElement;
+    const shortEl = document.getElementById('pd-short') as HTMLTextAreaElement;
+    const descEl = document.getElementById('pd-description') as HTMLTextAreaElement;
+    const featuresEl = document.getElementById('pd-features') as HTMLTextAreaElement;
+    const orderEl = document.getElementById('pd-order') as HTMLInputElement;
+    const activeEl = document.getElementById('pd-active') as HTMLInputElement;
+    const featuredEl = document.getElementById('pd-featured') as HTMLInputElement;
     const appsEl = document.getElementById('apps-container')!;
     const variantsEl = document.getElementById('variants-container')!;
     const imagesEl = document.getElementById('images-container')!;
     const errorEl = document.getElementById('form-error');
-    const submitBtn = document.getElementById('sub-submit') as HTMLButtonElement;
-    const saveTopBtn = document.getElementById('sub-save-top') as HTMLButtonElement;
+    const submitBtn = document.getElementById('pd-submit') as HTMLButtonElement;
+    const saveTopBtn = document.getElementById('pd-save-top') as HTMLButtonElement;
 
-    const picker = createImagePicker(document.getElementById('sub-image-picker')!, {
-      hint: 'Choose a photo from your computer. This becomes the main image for the range.'
+    const picker = createImagePicker(document.getElementById('pd-image-picker')!, {
+      hint: 'Choose a photo from your computer. This is the main image shown across the website.'
     });
+
+    modeEl.value = mode;
+
+    if (mode === 'category') {
+      titleEl.textContent = editId ? 'Edit Category' : 'New Category';
+      if (editId) titleEl.textContent = 'Edit Category';
+      fieldSku.hidden = true;
+      fieldShort.hidden = true;
+      fieldFeatures.hidden = true;
+      fieldApps.hidden = true;
+      fieldFeatured.hidden = true;
+      fieldCategory.hidden = true;
+      document.getElementById('category-hint')!.textContent = 'Categories are the main ranges shown first on the Products page.';
+      document.getElementById('name-hint')!.textContent = 'e.g. Plastic Crates';
+    } else {
+      titleEl.textContent = editId ? 'Edit Product' : 'New Product';
+      if (editId) titleEl.textContent = 'Edit Product';
+    }
 
     function showError(msg: string) {
       if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; errorEl.scrollIntoView({ behavior: 'smooth' }); }
     }
-
-    if (editId) titleEl.textContent = 'Edit Sub-category';
 
     // ---- Tabs ----
     document.querySelectorAll<HTMLButtonElement>('.a-tab').forEach(tab => {
@@ -184,7 +210,6 @@ import { path } from '../../../lib/site';
       });
     });
 
-    // ---- Header save button mirrors the sticky submit ----
     saveTopBtn?.addEventListener('click', () => formEl.requestSubmit());
 
     // Slug auto-gen
@@ -194,7 +219,16 @@ import { path } from '../../../lib/site';
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
 
     // ================= GALLERY IMAGES =================
-    interface ImageEntry { id: string | null; url: string; file?: File; alt: string; order: number; deleted: boolean; preview?: string }
+    interface ImageEntry {
+      id: string | null;
+      url: string;
+      file?: File;
+      alt: string;
+      order: number;
+      deleted: boolean;
+      preview?: string;
+      variantKey: string | null; // key of the size this photo belongs to, or null = whole range
+    }
     let imagesState: ImageEntry[] = [];
 
     function renderImages() {
@@ -205,11 +239,16 @@ import { path } from '../../../lib/site';
       }
       imagesEl.innerHTML = active.map((img, idx) => {
         const preview = img.preview || (img.url ? publicUrl(img.url) : '');
+        const linkOpts = mode === 'category'
+          ? `<option value="" ${img.variantKey === null ? 'selected' : ''}>Whole range / general</option>` +
+            variantsState.map(v => v.name.trim() ? `<option value="${esc(v.key)}" ${img.variantKey === v.key ? 'selected' : ''}>${esc(v.name)}${v.size ? ` · ${esc(v.size)}` : ''}</option>` : '').join('')
+          : '';
         return `
           <div class="a-img-row" data-idx="${idx}">
             ${preview ? `<img src="${esc(preview)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>'}
             <div>
               <input type="text" class="a-input img-alt" data-idx="${idx}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
+              ${mode === 'category' ? `<select class="a-select img-variant" data-idx="${idx}" style="margin-top:6px;">${linkOpts}</select>` : ''}
             </div>
             <span style="font-size:0.78rem;color:var(--a-muted);text-align:center;">Order ${img.order}</span>
             <div class="a-row-tools">
@@ -225,6 +264,15 @@ import { path } from '../../../lib/site';
           imagesState.filter(x => !x.deleted)[i].alt = (e.target as HTMLInputElement).value;
         });
       });
+      if (mode === 'category') {
+        imagesEl.querySelectorAll<HTMLSelectElement>('.img-variant').forEach((el) => {
+          el.addEventListener('change', () => {
+            const i = Number(el.getAttribute('data-idx'));
+            const val = el.value;
+            imagesState.filter(x => !x.deleted)[i].variantKey = val === '' ? null : val;
+          });
+        });
+      }
       imagesEl.querySelectorAll<HTMLButtonElement>('[data-reorder]').forEach(btn => {
         btn.addEventListener('click', () => {
           const i = Number(btn.dataset.reorder);
@@ -251,14 +299,14 @@ import { path } from '../../../lib/site';
         const files = Array.from(input.files || []);
         for (const file of files) {
           const preview = await toBase64(file);
-          imagesState.push({ id: null, url: '', file, alt: '', order: imagesState.filter(x => !x.deleted).length, deleted: false, preview });
+          imagesState.push({ id: null, url: '', file, alt: '', order: imagesState.filter(x => !x.deleted).length, deleted: false, preview, variantKey: null });
         }
         renderImages();
       };
       input.click();
     });
 
-    // ================= APPLICATIONS =================
+    // ================= APPLICATIONS (product mode) =================
     interface AppRow { name: string; description: string }
     let appsState: AppRow[] = [];
 
@@ -272,7 +320,6 @@ import { path } from '../../../lib/site';
             <button type="button" data-app-del="${i}" title="Remove">&times;</button>
           </div>
         </div>`).join('');
-
       appsEl.querySelectorAll('.app-name').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].name = (e.target as HTMLInputElement).value; }));
       appsEl.querySelectorAll('.app-desc').forEach(el => el.addEventListener('change', (e) => { appsState[Number((e.target as HTMLElement).dataset.idx)].description = (e.target as HTMLInputElement).value; }));
       appsEl.querySelectorAll<HTMLButtonElement>('[data-app-del]').forEach(btn => btn.addEventListener('click', () => { appsState.splice(Number(btn.dataset.appDel), 1); renderApps(); }));
@@ -283,6 +330,7 @@ import { path } from '../../../lib/site';
     // ================= VARIANTS (sizes, shapes, colours) =================
     interface VariantRow {
       id: string | null;
+      key: string;               // stable client key (== id once saved)
       name: string; size: string; shape: string; color: string;
       weight: string; capacity: string; material: string; price: string;
       is_active: boolean; order: number;
@@ -290,12 +338,11 @@ import { path } from '../../../lib/site';
     let variantsState: VariantRow[] = [];
 
     function renderVariants() {
-      const active = variantsState; // keep all rows visible, order is manual
-      if (!active.length) {
+      if (!variantsState.length) {
         variantsEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No sizes added yet. Click "+ Add size" to start.</p>';
         return;
       }
-      variantsEl.innerHTML = active.map((v, idx) => `
+      variantsEl.innerHTML = variantsState.map((v, idx) => `
         <div class="a-var-card" data-idx="${idx}" data-variant-id="${v.id || ''}">
           <div class="a-var-top">
             <span class="a-var-label">Size #${idx + 1}</span>
@@ -344,7 +391,6 @@ import { path } from '../../../lib/site';
           </div>
         </div>`).join('');
 
-      // Fields
       variantsEl.querySelectorAll<HTMLInputElement>('.v-name').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].name = (e.target as HTMLInputElement).value; }));
       variantsEl.querySelectorAll<HTMLInputElement>('.v-size').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].size = (e.target as HTMLInputElement).value; }));
       variantsEl.querySelectorAll<HTMLInputElement>('.v-shape').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].shape = (e.target as HTMLInputElement).value; }));
@@ -359,7 +405,6 @@ import { path } from '../../../lib/site';
         card?.querySelectorAll('.a-color-swatch').forEach((sw: any) => sw.classList.toggle('is-selected', sw.dataset.color === variantsState[i].color));
       }));
 
-      // Swatches
       variantsEl.querySelectorAll<HTMLButtonElement>('[data-color]').forEach(sw => sw.addEventListener('click', () => {
         const i = Number(sw.dataset.idx);
         variantsState[i].color = sw.dataset.color!;
@@ -368,26 +413,26 @@ import { path } from '../../../lib/site';
         variantsEl.querySelectorAll<HTMLButtonElement>(`.a-var-card[data-idx="${i}"] [data-color]`).forEach(s2 => s2.classList.toggle('is-selected', s2.dataset.color === variantsState[i].color));
       }));
 
-      // Active toggle
       variantsEl.querySelectorAll<HTMLInputElement>('[data-active]').forEach(cb => cb.addEventListener('change', (e) => {
         const i = Number((e.target as HTMLElement).dataset.active);
         variantsState[i].is_active = (e.target as HTMLInputElement).checked;
       }));
 
-      // Move up / remove
       variantsEl.querySelectorAll<HTMLButtonElement>('[data-moveup]').forEach(btn => btn.addEventListener('click', () => {
         const i = Number(btn.dataset.moveup);
-        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); }
+        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); renderImages(); }
       }));
       variantsEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
         variantsState.splice(Number(btn.dataset.remove), 1);
         renderVariants();
+        renderImages();
       }));
     }
 
     document.getElementById('add-variant')?.addEventListener('click', () => {
-      variantsState.push({ id: null, name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length });
+      variantsState.push({ id: null, key: crypto.randomUUID(), name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length });
       renderVariants();
+      renderImages();
     });
 
     // ================= INIT =================
@@ -396,51 +441,82 @@ import { path } from '../../../lib/site';
 
       const { data: cats } = await supabase
         .from('categories')
-        .select('id, name')
-        .eq('is_active', true)
+        .select('id, name, slug')
         .order('display_order');
 
       if (cats?.length) {
         catEl.innerHTML = `<option value="">— Select category —</option>` +
           cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      } else if (mode === 'product') {
+        catEl.innerHTML = `<option value="">— No categories yet, create one first —</option>`;
       }
 
       if (editId) {
-        titleEl!.textContent = 'Edit Sub-category';
-        const { data: sub, error } = await supabase
-          .from('sub_categories')
-          .select('*, sub_category_images(*), sub_category_variants(*)')
-          .eq('id', editId)
-          .single();
-        if (error || !sub) { showError(error?.message || 'Sub-category not found'); loadingEl.remove(); formEl.style.display = ''; return; }
+        if (mode === 'category') {
+          const { data: cat, error } = await supabase
+            .from('categories')
+            .select('*, category_variants(*), category_images(*)')
+            .eq('id', editId)
+            .single();
+          if (error || !cat) { showError(error?.message || 'Category not found'); loadingEl.remove(); formEl.style.display = ''; return; }
 
-        catEl.value = sub.category_id;
-        nameEl.value = sub.name;
-        slugEl.value = sub.slug;
-        slugEl.setAttribute('data-manual', '1');
-        skuEl.value = (sub as any).product_code ?? '';
-        shortEl.value = (sub as any).short_description ?? '';
-        descEl.value = sub.description ?? '';
-        featuresEl.value = (Array.isArray(sub.features) ? sub.features : []).join('\n');
-        orderEl.value = String(sub.display_order);
-        activeEl.checked = sub.is_active;
-        featuredEl.checked = (sub as any).is_featured ?? false;
-        picker.setValue({ existing: sub.image_url ?? null, file: null });
+          idEl.value = cat.id;
+          nameEl.value = cat.name;
+          slugEl.value = cat.slug;
+          slugEl.setAttribute('data-manual', '1');
+          descEl.value = cat.description ?? '';
+          orderEl.value = String(cat.display_order);
+          activeEl.checked = cat.is_active;
+          picker.setValue({ existing: cat.image_url ?? null, file: null });
 
-        imagesState = ((sub as any).sub_category_images || []).map((img: any) => ({
-          id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false
-        })).sort((a: any, b: any) => a.order - b.order);
-        renderImages();
+          variantsState = ((cat as any).category_variants || []).map((v: any) => ({
+            id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
+            weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+            is_active: v.is_active, order: v.display_order
+          })).sort((a: any, b: any) => a.order - b.order);
+          renderVariants();
 
-        variantsState = ((sub as any).sub_category_variants || []).map((v: any) => ({
-          id: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
-          weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
-          is_active: v.is_active, order: v.display_order
-        })).sort((a: any, b: any) => a.order - b.order);
-        renderVariants();
+          imagesState = ((cat as any).category_images || []).map((img: any) => ({
+            id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false, variantKey: img.category_variant_id ?? null
+          })).sort((a: any, b: any) => a.order - b.order);
+          renderImages();
+        } else {
+          const { data: prod, error } = await supabase
+            .from('sub_categories')
+            .select('*, sub_category_images(*), sub_category_variants(*)')
+            .eq('id', editId)
+            .single();
+          if (error || !prod) { showError(error?.message || 'Product not found'); loadingEl.remove(); formEl.style.display = ''; return; }
 
-        appsState = Array.isArray(sub.applications) ? [...(sub.applications as unknown as AppRow[])] : [];
-        renderApps();
+          idEl.value = prod.id;
+          catEl.value = prod.category_id;
+          nameEl.value = prod.name;
+          slugEl.value = prod.slug;
+          slugEl.setAttribute('data-manual', '1');
+          skuEl.value = (prod as any).product_code ?? '';
+          shortEl.value = (prod as any).short_description ?? '';
+          descEl.value = prod.description ?? '';
+          featuresEl.value = (Array.isArray(prod.features) ? prod.features : []).join('\n');
+          orderEl.value = String(prod.display_order);
+          activeEl.checked = prod.is_active;
+          featuredEl.checked = (prod as any).is_featured ?? false;
+          picker.setValue({ existing: prod.image_url ?? null, file: null });
+
+          imagesState = ((prod as any).sub_category_images || []).map((img: any) => ({
+            id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false, variantKey: null
+          })).sort((a: any, b: any) => a.order - b.order);
+          renderImages();
+
+          variantsState = ((prod as any).sub_category_variants || []).map((v: any) => ({
+            id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
+            weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+            is_active: v.is_active, order: v.display_order
+          })).sort((a: any, b: any) => a.order - b.order);
+          renderVariants();
+
+          appsState = Array.isArray(prod.applications) ? [...(prod.applications as unknown as AppRow[])] : [];
+          renderApps();
+        }
       } else if (preCategory) {
         catEl.value = preCategory;
       }
@@ -456,61 +532,45 @@ import { path } from '../../../lib/site';
       if (errorEl) errorEl.style.display = 'none';
 
       const name = nameEl.value.trim();
-      const categoryId = catEl.value;
-      if (!categoryId) { showError('Please select a parent category.'); return; }
-      if (!name) { showError('Sub-category name is required.'); return; }
-
-      const validVariants = variantsState.filter(v => v.name.trim());
-      if (!editId && !validVariants.length) {
-        showError('Please add at least one size in the "Sizes & Colours" tab.');
-        return;
+      if (!name) { showError('A name is required.'); return; }
+      let categoryId: string | null = null;
+      if (mode === 'product') {
+        categoryId = catEl.value;
+        if (!categoryId) { showError('Please select a category.'); return; }
       }
 
       submitBtn?.setAttribute('disabled', '');
       submitBtn.textContent = 'Saving…';
       saveTopBtn?.setAttribute('disabled', '');
 
+      const resetBtn = () => {
+        submitBtn?.removeAttribute('disabled');
+        submitBtn!.textContent = 'Save';
+        saveTopBtn?.removeAttribute('disabled');
+      };
+
       const slug = slugEl.value.trim() || slugify(name);
       const pickerValue = picker.getValue();
       let imageUrl: string | null = pickerValue.existing;
       const previousImage = pickerValue.existing;
-      const subCategoryId = editId || crypto.randomUUID();
+      const id = editId || crypto.randomUUID();
 
       if (pickerValue.file) {
-        const result = await picker.upload(`media/sub-categories/${slug}-${Date.now()}`);
+        const result = await picker.upload(`media/${mode === 'category' ? 'categories' : 'sub-categories'}/${slug}-${Date.now()}`);
         if ('error' in result) { resetBtn(); showError(result.error); return; }
         imageUrl = result.url;
       }
 
-      const payload: Record<string, unknown> = {
-        id: editId || subCategoryId,
-        category_id: categoryId,
-        name,
-        slug,
-        product_code: skuEl.value.trim() || null,
-        short_description: shortEl.value.trim() || null,
-        description: descEl.value.trim() || null,
-        image_url: imageUrl,
-        features: featuresEl.value.split('\n').map(l => l.trim()).filter(Boolean),
-        applications: appsState.filter(a => a.name.trim()),
-        display_order: Number(orderEl.value) || 0,
-        is_active: activeEl.checked,
-        is_featured: featuredEl.checked,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: subErr } = await supabase.from('sub_categories').upsert(payload as never, { onConflict: 'id' });
-      if (subErr) { resetBtn(); showError(subErr.message); return; }
-
-      // If the main image was replaced, remove the old stored file (best-effort).
-      if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
-
-      // ---- Variants (sizes & colours) ----
-      const variantRows = variantsState
-        .filter(v => v.name.trim())
-        .map((v, i) => ({
-          id: v.id || crypto.randomUUID(),
-          sub_category_id: subCategoryId,
+      // ---- Build the valid variant rows (with mapped ids for image linking) ----
+      const validVariants: Record<string, unknown>[] = [];
+      const variantIdByKey = new Map<string, string>();
+      variantsState.forEach((v) => {
+        if (!v.name.trim()) return;
+        const vid = v.id || crypto.randomUUID();
+        const shared = {
+          id: vid,
+          is_active: v.is_active,
+          display_order: validVariants.length,
           name: v.name.trim(),
           size: v.size.trim() || null,
           shape: v.shape.trim() || null,
@@ -519,38 +579,100 @@ import { path } from '../../../lib/site';
           capacity: v.capacity.trim() || null,
           material: v.material.trim() || null,
           price: v.price.trim() || null,
-          is_active: v.is_active,
-          display_order: i,
           updated_at: new Date().toISOString()
-        }));
+        };
+        if (mode === 'category') {
+          validVariants.push({ ...shared, category_id: id });
+        } else {
+          validVariants.push({ ...shared, sub_category_id: id });
+        }
+        variantIdByKey.set(v.key, vid);
+      });
+
+      // ---- Save the record ----
+      let parentPayload: Record<string, unknown>;
+      if (mode === 'category') {
+        parentPayload = {
+          id,
+          name,
+          slug,
+          description: descEl.value.trim() || null,
+          image_url: imageUrl,
+          display_order: Number(orderEl.value) || 0,
+          is_active: activeEl.checked,
+          updated_at: new Date().toISOString()
+        };
+      } else {
+        parentPayload = {
+          id,
+          category_id: categoryId,
+          name,
+          slug,
+          product_code: skuEl.value.trim() || null,
+          short_description: shortEl.value.trim() || null,
+          description: descEl.value.trim() || null,
+          image_url: imageUrl,
+          features: featuresEl.value.split('\n').map(l => l.trim()).filter(Boolean),
+          applications: appsState.filter(a => a.name.trim()),
+          display_order: Number(orderEl.value) || 0,
+          is_active: activeEl.checked,
+          is_featured: featuredEl.checked,
+          updated_at: new Date().toISOString()
+        };
+      }
+
+      const { error: parentErr } = await supabase.from(mode === 'category' ? 'categories' : 'sub_categories').upsert(parentPayload as never, { onConflict: 'id' });
+      if (parentErr) { resetBtn(); showError(parentErr.message); return; }
+      if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
+
+      // ---- Variants ----
+      const variantTable = mode === 'category' ? 'category_variants' : 'sub_category_variants';
+      const parentCol = mode === 'category' ? 'category_id' : 'sub_category_id';
       if (editId) {
-        const { error: delVErr } = await supabase.from('sub_category_variants').delete().eq('sub_category_id', subCategoryId);
+        const { error: delVErr } = await (supabase.from(variantTable as any) as any).delete().eq(parentCol as string, id);
         if (delVErr) { resetBtn(); showError(`Failed to update sizes: ${delVErr.message}`); return; }
       }
-      if (variantRows.length) {
-        const { error: insVErr } = await supabase.from('sub_category_variants').insert(variantRows as never);
+      if (validVariants.length) {
+        const { error: insVErr } = await supabase.from(variantTable).insert(validVariants as never);
         if (insVErr) { resetBtn(); showError(`Failed to save sizes: ${insVErr.message}`); return; }
       }
 
-      // ---- Gallery images ----
+      // ---- Images ----
+      const imageTable = mode === 'category' ? 'category_images' : 'sub_category_images';
       const uploadErrors: string[] = [];
-      for (let i = 0; i < imagesState.length; i++) {
-        const entry = imagesState[i];
+      const activeImages = imagesState.filter(i => !i.deleted);
+      for (let i = 0; i < activeImages.length; i++) {
+        const entry = activeImages[i];
         if (entry.deleted && entry.id) {
-          const { error: delImgErr } = await supabase.from('sub_category_images').delete().eq('id', entry.id);
+          const { error: delImgErr } = await supabase.from(imageTable).delete().eq('id', entry.id);
           if (delImgErr) uploadErrors.push(`Delete image error: ${delImgErr.message}`);
           else if (entry.url) await deleteFile(entry.url);
           continue;
         }
+
+        const variantId = mode === 'category' && entry.variantKey !== null
+          ? (variantIdByKey.get(entry.variantKey) ?? null)
+          : null;
+
         if (entry.file) {
-          const result = await uploadFile(entry.file, `sub-categories/${subCategoryId}/${Date.now()}-${i}`);
+          const result = await uploadFile(entry.file, `${mode === 'category' ? 'categories' : 'sub-categories'}/${id}/${Date.now()}-${i}`);
           if ('error' in result) { uploadErrors.push(`Upload failed (${entry.file.name}): ${result.error}`); continue; }
-          const { error: insImgErr } = await supabase.from('sub_category_images').insert({ sub_category_id: subCategoryId, image_url: result.path, alt_text: entry.alt || null, display_order: i });
+          const imgPayload: Record<string, unknown> = { image_url: result.path, alt_text: entry.alt || null, display_order: i };
+          if (mode === 'category') {
+            imgPayload.category_id = id;
+            imgPayload.category_variant_id = variantId;
+          } else {
+            imgPayload.sub_category_id = id;
+          }
+          const { error: insImgErr } = await supabase.from(imageTable).insert(imgPayload as never);
           if (insImgErr) uploadErrors.push(`Save image error: ${insImgErr.message}`);
           continue;
         }
+
         if (entry.id) {
-          const { error: updErr } = await supabase.from('sub_category_images').update({ display_order: i, alt_text: entry.alt || null }).eq('id', entry.id);
+          const updPayload: Record<string, unknown> = { display_order: i, alt_text: entry.alt || null };
+          if (mode === 'category') updPayload.category_variant_id = variantId;
+          const { error: updErr } = await (supabase.from(imageTable as any) as any).update(updPayload).eq('id', entry.id);
           if (updErr) uploadErrors.push(`Update image order error: ${updErr.message}`);
         }
       }
@@ -560,15 +682,9 @@ import { path } from '../../../lib/site';
       if (uploadErrors.length) {
         toast(`Saved, but some image operations failed: ${uploadErrors[0]}`, 'error');
       } else {
-        toast(editId ? 'Sub-category updated.' : 'Sub-category created.', 'success');
+        toast(editId ? 'Saved.' : 'Created.', 'success');
       }
-      window.location.href = href('admin/subcategories/');
+      window.location.href = href('admin/products/');
     });
-
-    function resetBtn() {
-      submitBtn?.removeAttribute('disabled');
-      submitBtn!.textContent = 'Save sub-category';
-      saveTopBtn?.removeAttribute('disabled');
-    }
   </script>
 </AdminLayout>

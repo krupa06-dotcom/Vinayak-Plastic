@@ -1302,76 +1302,6 @@ button {
   line-height: 1.6
 }
 
-/* ===== PRODUCT CARDS ===== */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px
-}
-
-.product-card {
-  background: var(--white);
-  border-radius: 14px;
-  padding: 32px 28px;
-  border: 1px solid rgba(18, 42, 78, 0.06);
-  transition: all 0.35s ease;
-  position: relative;
-  overflow: hidden
-}
-
-.product-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='18' height='18' rx='3' fill='%23E8630C' opacity='0'/%3E%3Crect x='22' y='0' width='18' height='18' rx='3' fill='%23E8630C' opacity='0'/%3E%3Crect x='0' y='22' width='18' height='18' rx='3' fill='%23E8630C' opacity='0'/%3E%3Crect x='22' y='22' width='18' height='18' rx='3' fill='%23E8630C' opacity='0'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  opacity: 0;
-  transition: opacity 0.4s
-}
-
-.product-card:hover::before {
-  opacity: 1
-}
-
-.product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 48px rgba(18, 42, 78, 0.1);
-  border-color: rgba(232, 99, 12, 0.15)
-}
-
-.product-icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 20px;
-  color: var(--orange)
-}
-
-.product-icon svg {
-  width: 100%;
-  height: 100%
-}
-
-.product-card h3 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.3rem;
-  text-transform: uppercase;
-  color: var(--deep-navy);
-  margin-bottom: 10px;
-  letter-spacing: -0.01em
-}
-
-.product-card p {
-  font-size: 0.9rem;
-  color: var(--steel);
-  line-height: 1.6;
-  margin-bottom: 20px
-}
-
-.product-card .btn-ghost {
-  font-size: 0.85rem
-}
-
 /* ===== CTA BANNER ===== */
 .cta-banner {
   background: var(--deep-navy);
@@ -1830,207 +1760,6 @@ button {
   z-index: 2
 }
 
-/* ===== PRODUCTS PAGE ===== */
-.cat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px
-}
-
-.cat-card {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  aspect-ratio: 4/3;
-  display: flex;
-  align-items: flex-end;
-  cursor: pointer
-}
-
-.cat-card img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease
-}
-
-.cat-card:hover img {
-  transform: scale(1.05)
-}
-
-.cat-card .cat-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, rgba(10, 26, 51, 0.85) 0%, rgba(10, 26, 51, 0.2) 60%, transparent 100%)
-}
-
-.cat-card .cat-content {
-  position: relative;
-  padding: 32px;
-  z-index: 1
-}
-
-.cat-card h2 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  color: var(--white);
-  margin-bottom: 4px
-}
-
-.cat-card p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.88rem;
-  margin-bottom: 12px
-}
-
-.cat-card .cat-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #C84E08;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--white);
-  font-size: 1.1rem;
-  transition: all 0.3s
-}
-
-.cat-card:hover .cat-arrow {
-  background: var(--orange-light);
-  transform: translateX(4px)
-}
-
-/* ===== MAIN CATEGORIES (Products page) ===== */
-.mc-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px
-}
-
-.mc-card {
-  display: block;
-  background: var(--white);
-  border: 1px solid rgba(18, 42, 78, 0.08);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease
-}
-
-.mc-card:hover,
-.mc-card:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(18, 42, 78, 0.10);
-  border-color: rgba(232, 99, 12, 0.35)
-}
-
-.mc-card__img {
-  position: relative;
-  aspect-ratio: 4/3;
-  padding: 24px;
-  overflow: hidden;
-  background: var(--warm-off-white)
-}
-
-.mc-card__img img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  display: block
-}
-
-.mc-card__body {
-  padding: 24px 24px 20px
-}
-
-.mc-card__body h3 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.4rem;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  color: var(--deep-navy);
-  margin-bottom: 8px;
-  line-height: 1.05
-}
-
-.mc-card__body p {
-  color: var(--steel);
-  font-size: 0.88rem;
-  line-height: 1.6;
-  margin-bottom: 18px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden
-}
-
-.mc-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid rgba(18, 42, 78, 0.08);
-  padding-top: 14px
-}
-
-.mc-card__count {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--steel);
-  background: rgba(18, 42, 78, 0.04);
-  padding: 5px 10px;
-  border-radius: 2px
-}
-
-.mc-card__cta {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--orange-deep);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: gap 0.2s ease, color 0.2s ease
-}
-
-.mc-card__cta span {
-  transition: transform 0.2s ease
-}
-
-.mc-card:hover .mc-card__cta {
-  color: var(--orange)
-}
-
-.mc-card:hover .mc-card__cta span {
-  transform: translateX(3px)
-}
-
-.mc-card__placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  color: rgba(18, 42, 78, 0.3);
-  background:
-    linear-gradient(rgba(232, 99, 12, 0.04), rgba(232, 99, 12, 0.04)),
-    var(--warm-off-white)
-}
-
 /* ===== SUB CATEGORIES (Products page) ===== */
 .sc-grid {
   display: grid;
@@ -2177,13 +1906,6 @@ button {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
   background: var(--deep-navy)
-}
-
-/* ===== RESULT GRID (Search / Filter) ===== */
-.res-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px
 }
 
 /* ===== EMPTY STATE ===== */
@@ -2567,10 +2289,6 @@ html.js .reveal.visible {
     gap: 40px
   }
 
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr)
-  }
-
   .about-who__grid,
   .pd-intro,
   .contact-grid {
@@ -2591,10 +2309,6 @@ html.js .reveal.visible {
 
   .about-stats-grid {
     grid-template-columns: repeat(2, 1fr)
-  }
-
-  .cat-grid {
-    grid-template-columns: 1fr
   }
 
   .app-grid {
@@ -2802,14 +2516,6 @@ html.js .reveal.visible {
     margin-bottom: 40px
   }
 
-  .product-grid {
-    gap: 16px
-  }
-
-  .product-card {
-    padding: 24px 20px
-  }
-
   .page-hero {
     padding: 56px 0
   }
@@ -2861,14 +2567,6 @@ html.js .reveal.visible {
 
   .contact-info-card,
   .contact-form-card {
-    padding: 24px
-  }
-
-  .cat-card h2 {
-    font-size: 1.2rem
-  }
-
-  .cat-card .cat-content {
     padding: 24px
   }
 }
@@ -3040,22 +2738,6 @@ html.js .reveal.visible {
     font-size: 0.9rem
   }
 
-  .product-grid {
-    gap: 12px
-  }
-
-  .product-card {
-    padding: 20px 16px
-  }
-
-  .product-card h3 {
-    font-size: 1.1rem
-  }
-
-  .product-card p {
-    font-size: 0.82rem
-  }
-
   .page-hero {
     padding: 40px 0
   }
@@ -3149,14 +2831,6 @@ html.js .reveal.visible {
     font-size: clamp(1.2rem, 5vw, 1.6rem)
   }
 
-  .cat-card .cat-content {
-    padding: 20px
-  }
-
-  .cat-card p {
-    font-size: 0.82rem
-  }
-
   .contact-grid {
     padding: 32px 0;
     gap: 24px
@@ -3207,10 +2881,6 @@ html.js .reveal.visible {
     font-size: 0.7rem
   }
 
-  .product-grid {
-    grid-template-columns: 1fr
-  }
-
   .about-stats-grid {
     grid-template-columns: 1fr;
     gap: 16px
@@ -3219,28 +2889,19 @@ html.js .reveal.visible {
 
 /* ===== CATALOGUE RESPONSIVE ===== */
 @media(max-width:1024px) {
-  .mc-grid,
-  .sc-grid,
-  .res-grid {
+  .sc-grid {
     grid-template-columns: repeat(2, 1fr)
   }
 }
 
 @media(max-width:560px) {
-  .mc-grid,
-  .sc-grid,
-  .res-grid {
+  .sc-grid {
     grid-template-columns: 1fr;
     gap: 20px
   }
 
-  .mc-card__body,
   .sc-card__body {
     padding: 20px 18px 16px
-  }
-
-  .mc-card__body h3 {
-    font-size: 1.2rem
   }
 
   .sc-card__body h3 {
