@@ -418,6 +418,100 @@ button {
   width: 290px
 }
 
+.nav-search {
+  position: relative
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 260px;
+  padding: 10px 0 6px;
+  background: var(--deep-navy);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 2px solid var(--orange);
+  border-radius: 4px;
+  box-shadow: 0 18px 40px rgba(5, 12, 26, 0.45);
+  z-index: 110
+}
+
+.search-suggestions[hidden] {
+  display: none
+}
+
+.search-suggestions__label {
+  display: block;
+  padding: 0 14px 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange-light)
+}
+
+.search-suggestions__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto
+}
+
+.search-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, padding-left 0.15s
+}
+
+.search-suggestion.is-active,
+.search-suggestion:hover,
+.search-suggestion:focus-visible {
+  background: rgba(232, 99, 12, 0.14);
+  color: var(--white);
+  padding-left: 18px;
+  outline: none
+}
+
+.search-suggestion mark {
+  background: none;
+  color: var(--orange-light);
+  font-weight: 600
+}
+
+.search-suggestion__hint {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4)
+}
+
+.search-suggestions__empty {
+  margin: 0;
+  padding: 10px 14px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.82rem
+}
+
+@media(max-width:1024px) {
+  .search-suggestions {
+    left: 0;
+    right: 0;
+    min-width: 0
+  }
+}
+
 .nav-phone {
   font-family: var(--font-mono);
   font-size: 0.82rem;
@@ -2574,16 +2668,30 @@ html.js .reveal.visible {
     padding: 20px 32px
   }
 
+  .trustbar {
+    padding: 36px 0
+  }
+
   .trustbar__grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: min(100%, 380px);
+    margin: 0 auto;
     gap: 0
   }
 
-  .trustbar__item {
-    padding: 0 20px
+  .trustbar__divider {
+    display: none
   }
 
-  .trustbar__divider {
-    height: 32px
+  .trustbar__item {
+    width: 100%;
+    padding: 18px 0
+  }
+
+  .trustbar__item + .trustbar__item {
+    border-top: 1px solid rgba(255, 255, 255, 0.1)
   }
 
   .about-home {
@@ -2766,18 +2874,20 @@ html.js .reveal.visible {
     font-size: 0.8rem
   }
 
-  .trustbar__grid {
-    flex-direction: column;
-    gap: 20px
+  .trustbar {
+    padding: 32px 0
   }
 
-  .trustbar__divider {
-    width: 48px;
-    height: 1px
+  .trustbar {
+    padding: 32px 0
   }
 
   .trustbar__item {
-    padding: 0
+    padding: 16px 0
+  }
+
+  .trustbar__num {
+    font-size: 1.5rem
   }
 
   .about-home {
