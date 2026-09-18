@@ -69,6 +69,13 @@ const slides = [
 
   <div class="hero__overlay" aria-hidden="true"></div>
 
+  <button type="button" class="hero__arrow hero__arrow--prev" data-prev aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+  </button>
+  <button type="button" class="hero__arrow hero__arrow--next" data-next aria-label="Next slide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+  </button>
+
   <div class="hero__content">
     <div class="hero__text">
       {slides.map((s, i) => (
@@ -166,6 +173,31 @@ const slides = [
     dot.addEventListener('click', function () {
       go(parseInt(dot.getAttribute('data-slide'), 10));
     });
+  });
+
+  var prevBtn = root.querySelector('[data-prev]');
+  var nextBtn = root.querySelector('[data-next]');
+  if (prevBtn) prevBtn.addEventListener('click', function () { go(current - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', function () { go(current + 1); });
+
+  // Manual swipe / drag — horizontal drag across the hero moves the slide.
+  var dragStart = null;
+  root.addEventListener('pointerdown', function (e) {
+    dragStart = e.clientX;
+    root.classList.add('is-dragging');
+  });
+  root.addEventListener('pointerup', function (e) {
+    if (dragStart === null) return;
+    var dx = e.clientX - dragStart;
+    dragStart = null;
+    root.classList.remove('is-dragging');
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) go(current + 1);
+    else go(current - 1);
+  });
+  root.addEventListener('pointercancel', function () {
+    dragStart = null;
+    root.classList.remove('is-dragging');
   });
 
   root.addEventListener('mouseenter', stop);

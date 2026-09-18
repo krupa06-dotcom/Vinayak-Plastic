@@ -828,6 +828,78 @@ button {
   background: rgba(255, 255, 255, 0.3)
 }
 
+/* arrows */
+.hero__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s
+}
+
+.hero__arrow:hover,
+.hero__arrow:focus-visible {
+  background: var(--orange);
+  border-color: var(--orange);
+  outline: none
+}
+
+.hero__arrow svg {
+  width: 22px;
+  height: 22px
+}
+
+.hero__arrow--prev {
+  left: 24px
+}
+
+.hero__arrow--next {
+  right: 24px
+}
+
+/* Allow horizontal drag — keep native vertical scrolling on touch */
+.hero {
+  touch-action: pan-y
+}
+
+.hero.is-dragging {
+  cursor: grabbing
+}
+
+.hero__arrow:active {
+  transform: translateY(-50%) scale(0.92)
+}
+
+@media(max-width:768px) {
+  .hero__arrow {
+    width: 38px;
+    height: 38px
+  }
+
+  .hero__arrow svg {
+    width: 18px;
+    height: 18px
+  }
+
+  .hero__arrow--prev {
+    left: 14px
+  }
+
+  .hero__arrow--next {
+    right: 14px
+  }
+}
+
 /* counter */
 .hero__counter {
   font-family: var(--font-mono);
@@ -2669,15 +2741,13 @@ html.js .reveal.visible {
   }
 
   .trustbar {
-    padding: 36px 0
+    padding: 28px 0
   }
 
   .trustbar__grid {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    width: min(100%, 380px);
-    margin: 0 auto;
+    align-items: center;
+    justify-content: center;
     gap: 0
   }
 
@@ -2686,12 +2756,14 @@ html.js .reveal.visible {
   }
 
   .trustbar__item {
-    width: 100%;
-    padding: 18px 0
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 4px
   }
 
-  .trustbar__item + .trustbar__item {
-    border-top: 1px solid rgba(255, 255, 255, 0.1)
+  .trustbar__num {
+    font-size: clamp(0.85rem, 3.4vw, 1.5rem);
+    letter-spacing: 0
   }
 
   .about-home {
@@ -2879,15 +2951,17 @@ html.js .reveal.visible {
   }
 
   .trustbar {
-    padding: 32px 0
+    padding: 24px 0
   }
 
   .trustbar__item {
-    padding: 16px 0
+    padding: 0 2px;
+    gap: 4px
   }
 
-  .trustbar__num {
-    font-size: 1.5rem
+  .trustbar__label {
+    font-size: 0.5rem;
+    letter-spacing: 0.06em
   }
 
   .about-home {
