@@ -4,12 +4,6 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Hero from '../components/Hero.astro';
 import { Image } from 'astro:assets';
-import plasticCrates from '../assets/images/plastic-crates.webp';
-import plasticPallets from '../assets/images/plastic-pallets.webp';
-import plasticWastebins from '../assets/images/plastic-wastebins.webp';
-import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
-import lidCrates from '../assets/images/lid-crates.jpeg';
-import dustbin from '../assets/images/dustbin.jpeg';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
@@ -17,24 +11,56 @@ import { getCatalogueData, resolveImageUrl } from '../lib/db';
 
 const catalogue = await getCatalogueData();
 
-// Map a homepage card to its sub-category record so admin image updates
-// (sub_categories.image_url / sub_category_images) surface on the homepage.
-// Falls back to the bundled asset when there is no usable DB image.
-const subCatBySlug = new Map(catalogue.subCategories.map(s => [s.slug, s]));
+// "What We Make": 6 cards, all data from the database — the first 4 are the
+// categories (by display order) and the last 2 are the top products
+// (sub-categories flagged as featured in the admin panel). Images are the
+// admin-controlled DB image URLs (sub_categories.image_url / categories.image_url).
+const activeCategories = catalogue.categories
+  .filter(c => c.is_active !== false)
+  .sort((a, b) => a.display_order - b.display_order);
 
-function dbImageFor(lookup?: { subcategory?: string }): string | null {
-  if (!lookup) return null;
-  return resolveImageUrl(subCatBySlug.get(lookup.subcategory ?? '')?.image_url ?? null);
+const categoryCards = activeCategories.slice(0, 4).map((cat) => ({
+  name: cat.name,
+  desc: cat.description ?? '',
+  slug: `/categories/${cat.slug}`,
+  alt: cat.name,
+  image: cat.image_url
+}));
+
+const categoryNames = new Set(categoryCards.map(c => c.name.toLowerCase()).filter(Boolean));
+
+const topProducts = catalogue.subCategories
+  .filter(s => s.is_active !== false && s.is_featured && s.category_slug && !categoryNames.has((s.name || '').toLowerCase()))
+  .sort((a, b) => a.display_order - b.display_order)
+  .slice(0, 2)
+  .map((p) => ({
+    name: p.name,
+    desc: p.short_description ?? p.description ?? '',
+    slug: `/categories/${p.category_slug}/${p.slug}`,
+    alt: p.name,
+    image: p.image_url
+  }));
+
+// Top up to 2 products with the earliest sub-categories when the admin has not
+// flagged enough products as featured, so the section still fills to six cards.
+if (topProducts.length < 2) {
+  const used = new Set([...categoryCards.map(c => c.slug), ...topProducts.map(p => p.slug)]);
+  for (const s of catalogue.subCategories) {
+    if (topProducts.length >= 2) break;
+    const slug = s.category_slug ? `/categories/${s.category_slug}/${s.slug}` : '';
+    if (!slug || used.has(slug) || s.is_active === false) continue;
+    used.add(slug);
+    topProducts.push({
+      name: s.name,
+      desc: s.short_description ?? s.description ?? '',
+      slug,
+      alt: s.name,
+      image: s.image_url
+    });
+  }
 }
 
-const products = [
-  { name: 'Plastic Crates', desc: 'Stackable & nestable crates for dairy, bakery, warehouse storage and material handling.', slug: '/categories/plastic-crates/standard-crates', src: plasticCrates, alt: 'Plastic crates stacked in warehouse', lookup: { subcategory: 'standard-crates' } },
-  { name: 'Lid Crates', desc: 'Lidded crates for secure, dust-free transport and storage of goods in transit and warehouse.', slug: '/categories/plastic-crates/lid-crates', src: lidCrates, alt: 'Lidded plastic crates for secure storage', lookup: { subcategory: 'lid-crates' } },
-  { name: 'Plastic Pallets', desc: 'Heavy-duty pallets for warehouse racking and logistics — single-face, double-face and nestable.', slug: '/categories/plastic-pallets/standard-pallets', src: plasticPallets, alt: 'Industrial plastic pallets stacked', lookup: { subcategory: 'standard-pallets' } },
-  { name: 'Waste Bins', desc: 'Industrial dustbins and waste containers for municipal, commercial and factory use.', slug: '/categories/waste-bins/standard-bins', src: plasticWastebins, alt: 'Industrial waste bins and dustbins', lookup: { subcategory: 'standard-bins' } },
-  { name: 'Dustbins', desc: 'Robust, UV-stabilised dustbins for municipal, commercial and factory waste collection.', slug: '/categories/waste-bins', src: dustbin, alt: 'Industrial plastic dustbin for waste management', lookup: { subcategory: 'standard-bins' } },
-  { name: 'Hand Pallet Trucks', desc: 'Manual pallet jacks for warehouse loading and unloading — 2.5T and 3T capacities.', slug: '/categories/hand-pallet-trucks/standard-trucks', src: handPalletTruck, alt: 'Hand pallet truck in warehouse', lookup: { subcategory: 'standard-trucks' } }
-];
+const products = [...categoryCards, ...topProducts];
 
 const applications = [
   { name: 'Warehousing', desc: 'Storage, racking and internal material movement — crates, pallets and pallet trucks.', icon: 'warehouse' },
@@ -121,7 +147,7 @@ const reasons = [
 
       <div class="products-home__grid">
         {products.map((p) => {
-          const dbImg = dbImageFor(p.lookup);
+          const dbImg = resolveImageUrl(p.image);
           return (
           <article class="ph-card reveal">
             <a href={path(p.slug)} class="ph-card__link">
@@ -129,7 +155,7 @@ const reasons = [
                 {dbImg ? (
                   <img src={dbImg} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
                 ) : (
-                  <Image src={p.src} alt={p.alt} width={600} height={450} widths={[300, 420]} sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" />
+                  <span class="ph-card__placeholder">{p.name}</span>
                 )}
               </div>
               <div class="ph-card__body">
@@ -222,3 +248,21 @@ const reasons = [
   </main>
   <Footer />
 </Layout>
+
+<style>
+  .ph-card__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(18, 42, 78, 0.25);
+    background: var(--warm-off-white);
+  }
+</style>

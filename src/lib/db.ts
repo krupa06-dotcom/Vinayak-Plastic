@@ -1,5 +1,10 @@
 import { supabase, hasSupabase } from './supabase';
 import { path } from './site';
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public');
 
 // ============================================================
 // Types
@@ -368,7 +373,7 @@ interface FallbackDetail {
   slug: string;
   description: string;
   short_description: string;
-  image_url: string;
+  image_url: string | null;
   product_code: string;
   features: string[];
   applications: { name: string; description: string }[];
@@ -376,10 +381,10 @@ interface FallbackDetail {
 }
 
 const FALLBACK_CATEGORIES: Category[] = [
-  { id: 'c-plastic-crates', name: 'Plastic Crates', slug: 'plastic-crates', description: 'Durable, lightweight and stackable crates for dairy, bakery, warehouse and material handling.', image_url: '/images/products/plastic-crates.webp', display_order: 1, is_active: true },
-  { id: 'c-plastic-pallets', name: 'Plastic Pallets', slug: 'plastic-pallets', description: 'Heavy-duty industrial pallets for warehouse racking, logistics and export applications.', image_url: '/images/products/plastic-pallets.webp', display_order: 2, is_active: true },
-  { id: 'c-waste-bins', name: 'Waste Bins', slug: 'waste-bins', description: 'Industrial waste bins and dustbins for municipal, commercial and factory use.', image_url: '/images/products/waste-bins.webp', display_order: 3, is_active: true },
-  { id: 'c-hand-pallet-trucks', name: 'Hand Pallet Trucks', slug: 'hand-pallet-trucks', description: 'Manual material handling equipment for warehouse loading and unloading.', image_url: '/images/products/hand-pallet-truck.webp', display_order: 4, is_active: true }
+  { id: 'c-plastic-crates', name: 'Plastic Crates', slug: 'plastic-crates', description: 'Durable, lightweight and stackable crates for dairy, bakery, warehouse and material handling.', image_url: null, display_order: 1, is_active: true },
+  { id: 'c-plastic-pallets', name: 'Plastic Pallets', slug: 'plastic-pallets', description: 'Heavy-duty industrial pallets for warehouse racking, logistics and export applications.', image_url: null, display_order: 2, is_active: true },
+  { id: 'c-waste-bins', name: 'Waste Bins', slug: 'waste-bins', description: 'Industrial waste bins and dustbins for municipal, commercial and factory use.', image_url: null, display_order: 3, is_active: true },
+  { id: 'c-hand-pallet-trucks', name: 'Hand Pallet Trucks', slug: 'hand-pallet-trucks', description: 'Manual material handling equipment for warehouse loading and unloading.', image_url: null, display_order: 4, is_active: true }
 ];
 
 const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
@@ -388,7 +393,7 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
     slug: 'standard-crates',
     description: 'Our plastic crates are manufactured using high-grade HDPE and PP materials, designed for heavy-duty material handling in dairy, bakery, cold storage, and warehouse environments. Available in multiple sizes and colors.',
     short_description: 'Durable, lightweight & stackable crates for dairy, bakery, warehouse and material handling.',
-    image_url: '/images/products/plastic-crates.webp',
+    image_url: null,
     product_code: 'VPC-SERIES',
     features: [
       'HDPE / PP grade — impact & UV resistant',
@@ -416,7 +421,7 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
     slug: 'standard-pallets',
     description: 'Industrial-grade plastic pallets manufactured from high-strength HDPE for warehouse racking, logistics, and export applications. Available in single-face, double-face, and nestable configurations.',
     short_description: 'Heavy-duty industrial pallets for warehouse racking, logistics, and export applications.',
-    image_url: '/images/products/plastic-pallets.webp',
+    image_url: null,
     product_code: 'VPP-SERIES',
     features: [
       'HDPE construction for maximum load capacity',
@@ -443,7 +448,7 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
     slug: 'standard-bins',
     description: 'Industrial-grade waste bins and dustbins for municipal, commercial, and factory applications. Available in multiple capacities with wheeled, lidded, and color-coded options for waste segregation.',
     short_description: 'Municipal & commercial waste solutions for industrial applications.',
-    image_url: '/images/products/waste-bins.webp',
+    image_url: null,
     product_code: 'VWB-SERIES',
     features: [
       'HDPE construction for weather resistance',
@@ -470,7 +475,7 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
     slug: 'standard-trucks',
     description: 'Heavy-duty hand pallet trucks (pallet jacks) for warehouse loading, unloading, and material transport. Available in 2.5T and 3T capacities with nylon or polyurethane wheel options.',
     short_description: 'Manual material handling equipment for warehouse loading and unloading.',
-    image_url: '/images/products/hand-pallet-truck.webp',
+    image_url: null,
     product_code: 'VPT-SERIES',
     features: [
       '2.5T and 3T load capacity options',
@@ -530,7 +535,7 @@ function buildFallbackSub(detail: FallbackDetail, category: Category, order: num
     is_featured: true,
     display_order: order,
     is_active: true,
-    images: [{ id: `i-${category.slug}`, sub_category_id: `s-${category.slug}`, image_url: detail.image_url, alt_text: `${detail.name} — Vinayak Plastics`, display_order: 0 }],
+    images: [],
     specifications,
     variants,
     category_name: category.name,
@@ -574,7 +579,7 @@ function getFallbackCatalogueData(): CatalogueData {
         name: 'Lid Crates',
         slug: 'lid-crates',
         description: 'Lidded crates for secure, dust-free transport and storage.',
-        image_url: '/images/products/lid-crates.jpeg',
+        image_url: null,
         product_code: null,
         short_description: 'Lidded crates for secure, dust-free transport and storage of goods in transit and warehouse.',
         features: [],
@@ -596,7 +601,7 @@ function getFallbackCatalogueData(): CatalogueData {
       variants_count: subs.reduce((sum, s) => sum + s.variants_count, 0),
       sub_categories: subs,
       variants: buildFallbackCategoryVariants(detail, cat),
-      images: [{ id: `ci-${cat.slug}`, category_id: cat.id, category_variant_id: null, image_url: cat.image_url ?? '', alt_text: `${cat.name} — Vinayak Plastics`, display_order: 0 }]
+      images: []
     };
   });
 
@@ -615,7 +620,13 @@ function getFallbackCatalogueData(): CatalogueData {
 export function resolveImageUrl(image: string | null): string | null {
   if (!image) return null;
   if (/^https?:\/\//i.test(image)) return image;
-  if (image.startsWith('/')) return path(image);
+  if (image.startsWith('/')) {
+    // Root-relative DB values (legacy "/images/..." entries) only resolve when
+    // the file actually exists locally — otherwise fall back to null so pages
+    // render a placeholder instead of a broken image.
+    const localFile = join(PUBLIC_DIR, image.slice(1));
+    return existsSync(localFile) ? path(image) : null;
+  }
   return getProductImageUrl(image);
 }
 

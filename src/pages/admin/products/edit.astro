@@ -19,7 +19,6 @@ import { path } from '../../../lib/site';
       <div class="a-tabs" role="tablist">
         <button type="button" class="a-tab is-active" data-tab="tab-basics" role="tab">Basics</button>
         <button type="button" class="a-tab" data-tab="tab-variants" role="tab">Sizes &amp; Colours</button>
-        <button type="button" class="a-tab" data-tab="tab-images" role="tab">Images</button>
       </div>
 
       <!-- ======================= BASICS ======================= -->
@@ -90,7 +89,7 @@ import { path } from '../../../lib/site';
       <div class="a-tab-panel" id="tab-variants">
         <div class="a-guide" style="margin-bottom:16px;">
           <h4>Add the sizes, shapes and colours this is made in</h4>
-          <p style="margin:0;">Each row is one model / size. These appear on the website as a specification table so customers can see every option at a glance.</p>
+          <p style="margin:0;">Each row is one model / size with its own photo. These appear on the website as a specification table so customers can see every option at a glance.</p>
         </div>
         <div class="a-var-head">
           <span style="font-weight:600;font-size:0.9rem;">Sizes / Models</span>
@@ -99,26 +98,12 @@ import { path } from '../../../lib/site';
         <div id="variants-container"></div>
         <p class="a-hint" style="margin-top:6px;">Add at least one size so customers can see what is available. Leave a field empty if not applicable.</p>
       </div>
-
-      <!-- ======================= IMAGES ======================= -->
-      <div class="a-tab-panel" id="tab-images">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <div>
-              <span style="font-weight:600;font-size:0.9rem;">Gallery images</span>
-              <p class="a-hint" style="margin:4px 0 0;" id="images-hint">The first image is the main photo. Attach any image to a specific size for the size photo strip.</p>
-            </div>
-            <button type="button" class="a-btn a-btn-sm" id="add-image">+ Add image</button>
-          </div>
-          <div id="images-container"></div>
-        </div>
-      </div>
     </div>
 
     <div id="form-error" class="a-tip a-tip-error" style="margin-top:16px;display:none;" role="alert"></div>
 
     <div class="a-sticky-actions">
-      <span class="a-hint" id="save-helper">Sizes, colours and images are saved together.</span>
+      <span class="a-hint" id="save-helper">Sizes, colours and photos are saved together.</span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="a-btn a-btn-primary" id="pd-submit">Save</button>
         <a href={path('/admin/products/')} class="a-btn">Cancel</a>
@@ -169,7 +154,6 @@ import { path } from '../../../lib/site';
     const featuredEl = document.getElementById('pd-featured') as HTMLInputElement;
     const appsEl = document.getElementById('apps-container')!;
     const variantsEl = document.getElementById('variants-container')!;
-    const imagesEl = document.getElementById('images-container')!;
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('pd-submit') as HTMLButtonElement;
     const saveTopBtn = document.getElementById('pd-save-top') as HTMLButtonElement;
@@ -218,94 +202,6 @@ import { path } from '../../../lib/site';
     });
     slugEl?.addEventListener('input', () => { slugEl.setAttribute('data-manual', '1'); });
 
-    // ================= GALLERY IMAGES =================
-    interface ImageEntry {
-      id: string | null;
-      url: string;
-      file?: File;
-      alt: string;
-      order: number;
-      deleted: boolean;
-      preview?: string;
-      variantKey: string | null; // key of the size this photo belongs to, or null = whole range
-    }
-    let imagesState: ImageEntry[] = [];
-
-    function renderImages() {
-      const active = imagesState.filter(i => !i.deleted);
-      if (!active.length) {
-        imagesEl.innerHTML = '<p style="color:var(--a-faint);font-size:0.85rem;margin:0;">No images added yet.</p>';
-        return;
-      }
-      imagesEl.innerHTML = active.map((img, idx) => {
-        const preview = img.preview || (img.url ? publicUrl(img.url) : '');
-        const linkOpts = mode === 'category'
-          ? `<option value="" ${img.variantKey === null ? 'selected' : ''}>Whole range / general</option>` +
-            variantsState.map(v => v.name.trim() ? `<option value="${esc(v.key)}" ${img.variantKey === v.key ? 'selected' : ''}>${esc(v.name)}${v.size ? ` · ${esc(v.size)}` : ''}</option>` : '').join('')
-          : '';
-        return `
-          <div class="a-img-row" data-idx="${idx}">
-            ${preview ? `<img src="${esc(preview)}" alt="" class="a-thumb" loading="lazy" />` : '<div class="a-thumb" style="display:flex;align-items:center;justify-content:center;color:#ccc;">🖼️</div>'}
-            <div>
-              <input type="text" class="a-input img-alt" data-idx="${idx}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
-              ${mode === 'category' ? `<select class="a-select img-variant" data-idx="${idx}" style="margin-top:6px;">${linkOpts}</select>` : ''}
-            </div>
-            <span style="font-size:0.78rem;color:var(--a-muted);text-align:center;">Order ${img.order}</span>
-            <div class="a-row-tools">
-              <button type="button" data-reorder="${idx}" title="Move up">&uarr;</button>
-              <button type="button" data-remove="${idx}" title="Remove" style="color:var(--a-danger);">&times;</button>
-            </div>
-          </div>`;
-      }).join('');
-
-      imagesEl.querySelectorAll('.img-alt').forEach((el) => {
-        el.addEventListener('change', (e) => {
-          const i = Number((e.target as HTMLElement).getAttribute('data-idx'));
-          imagesState.filter(x => !x.deleted)[i].alt = (e.target as HTMLInputElement).value;
-        });
-      });
-      if (mode === 'category') {
-        imagesEl.querySelectorAll<HTMLSelectElement>('.img-variant').forEach((el) => {
-          el.addEventListener('change', () => {
-            const i = Number(el.getAttribute('data-idx'));
-            const val = el.value;
-            imagesState.filter(x => !x.deleted)[i].variantKey = val === '' ? null : val;
-          });
-        });
-      }
-      imagesEl.querySelectorAll<HTMLButtonElement>('[data-reorder]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const i = Number(btn.dataset.reorder);
-          const arr = imagesState.filter(x => !x.deleted);
-          if (i > 0) { const tmp = arr[i]; arr[i] = arr[i-1]; arr[i-1] = tmp; arr.forEach((x,j) => x.order = j); renderImages(); }
-        });
-      });
-      imagesEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const i = Number(btn.dataset.remove);
-          const entry = imagesState.filter(x => !x.deleted)[i];
-          entry.deleted = true;
-          renderImages();
-        });
-      });
-    }
-
-    document.getElementById('add-image')?.addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.multiple = true;
-      input.onchange = async () => {
-        const files = Array.from(input.files || []);
-        for (const file of files) {
-          const preview = await toBase64(file);
-          imagesState.push({ id: null, url: '', file, alt: '', order: imagesState.filter(x => !x.deleted).length, deleted: false, preview, variantKey: null });
-        }
-        renderImages();
-      };
-      input.click();
-    });
-
     // ================= APPLICATIONS (product mode) =================
     interface AppRow { name: string; description: string }
     let appsState: AppRow[] = [];
@@ -328,12 +224,21 @@ import { path } from '../../../lib/site';
     document.getElementById('add-app')?.addEventListener('click', () => { appsState.push({ name: '', description: '' }); renderApps(); });
 
     // ================= VARIANTS (sizes, shapes, colours) =================
+    interface VariantImage {
+      id: string | null;
+      url: string;
+      alt: string;
+      order: number;
+      file?: File;
+      preview?: string;
+    }
     interface VariantRow {
       id: string | null;
       key: string;               // stable client key (== id once saved)
       name: string; size: string; shape: string; color: string;
       weight: string; capacity: string; material: string; price: string;
       is_active: boolean; order: number;
+      image: VariantImage | null;
     }
     let variantsState: VariantRow[] = [];
 
@@ -389,6 +294,7 @@ import { path } from '../../../lib/site';
               </div>
             </div>
           </div>
+          ${variantPhotoHtml(v, idx)}
         </div>`).join('');
 
       variantsEl.querySelectorAll<HTMLInputElement>('.v-name').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].name = (e.target as HTMLInputElement).value; }));
@@ -420,19 +326,76 @@ import { path } from '../../../lib/site';
 
       variantsEl.querySelectorAll<HTMLButtonElement>('[data-moveup]').forEach(btn => btn.addEventListener('click', () => {
         const i = Number(btn.dataset.moveup);
-        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); renderImages(); }
+        if (i > 0) { const tmp = variantsState[i]; variantsState[i] = variantsState[i-1]; variantsState[i-1] = tmp; renderVariants(); }
       }));
       variantsEl.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
-        variantsState.splice(Number(btn.dataset.remove), 1);
+        const i = Number(btn.dataset.remove);
+        const img = variantsState[i].image;
+        if (img && img.id) removedImages.push({ id: img.id, url: img.url });
+        variantsState.splice(i, 1);
         renderVariants();
-        renderImages();
+      }));
+
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-photopick]').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.photopick);
+        variantsEl.querySelector<HTMLInputElement>(`.a-var-card[data-idx="${i}"] .v-photo-input`)?.click();
+      }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-photo-input').forEach(input => input.addEventListener('change', async () => {
+        const i = Number(input.dataset.idx);
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
+        if (file.size > 10 * 1024 * 1024) { toast('Image must be 10 MB or smaller.', 'error'); return; }
+        const preview = await toBase64(file);
+        variantsState[i].image = { ...(variantsState[i].image || { id: null, url: '', alt: '', order: variantsState[i].order }), file, preview, order: variantsState[i].order };
+        renderVariants();
+      }));
+      variantsEl.querySelectorAll<HTMLButtonElement>('[data-photoclear]').forEach(btn => btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.photoclear);
+        const img = variantsState[i].image;
+        if (img && img.id) removedImages.push({ id: img.id, url: img.url });
+        variantsState[i].image = null;
+        renderVariants();
+      }));
+      variantsEl.querySelectorAll<HTMLInputElement>('.v-photo-alt').forEach(el => el.addEventListener('input', (e) => {
+        const i = Number((e.target as HTMLElement).dataset.idx);
+        const img = variantsState[i].image;
+        if (img) img.alt = (e.target as HTMLInputElement).value;
       }));
     }
 
+    const removedImages: { id: string; url: string }[] = [];
+
+    function variantPhotoHtml(v: VariantRow, idx: number): string {
+      const img = v.image;
+      const preview = img?.preview || (img?.url ? publicUrl(img.url) : '');
+      const hasImage = Boolean(preview);
+      return `
+        <div class="a-var-photo">
+          <label class="a-var-photo-label">Photo for this size</label>
+          <div class="a-var-row">
+            <div class="a-var-photo-box">
+              ${hasImage
+                ? `<img src="${esc(preview)}" alt="" loading="lazy" />`
+                : `<span class="a-var-photo-empty">No photo</span>`}
+            </div>
+            <div class="a-var-photo-actions">
+              <input type="file" class="a-input v-photo-input" data-idx="${idx}" accept="image/*" hidden />
+              <button type="button" class="a-btn a-btn-sm" data-photopick="${idx}">${hasImage ? 'Change photo' : 'Add photo'}</button>
+              ${hasImage
+                ? `<button type="button" class="a-btn a-btn-sm a-btn-danger" data-photoclear="${idx}">Remove</button>`
+                : ''}
+              <input type="text" class="a-input v-photo-alt" data-idx="${idx}" value="${esc(img?.alt || '')}" placeholder="Alt text (optional)" />
+            </div>
+          </div>
+          <p class="a-hint" style="margin-top:4px;">This photo appears with the ${esc(v.name || ('size ' + (idx + 1)))} row on the website.</p>
+        </div>`;
+    }
+
     document.getElementById('add-variant')?.addEventListener('click', () => {
-      variantsState.push({ id: null, key: crypto.randomUUID(), name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length });
+      variantsState.push({ id: null, key: crypto.randomUUID(), name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length, image: null });
       renderVariants();
-      renderImages();
     });
 
     // ================= INIT =================
@@ -472,14 +435,14 @@ import { path } from '../../../lib/site';
           variantsState = ((cat as any).category_variants || []).map((v: any) => ({
             id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
             weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
-            is_active: v.is_active, order: v.display_order
+            is_active: v.is_active, order: v.display_order,
+            image: null
           })).sort((a: any, b: any) => a.order - b.order);
+          for (const img of ((cat as any).category_images || []) as any[]) {
+            const v = variantsState.find(x => x.id === img.category_variant_id);
+            if (v) v.image = { id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order };
+          }
           renderVariants();
-
-          imagesState = ((cat as any).category_images || []).map((img: any) => ({
-            id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false, variantKey: img.category_variant_id ?? null
-          })).sort((a: any, b: any) => a.order - b.order);
-          renderImages();
         } else {
           const { data: prod, error } = await supabase
             .from('sub_categories')
@@ -502,16 +465,16 @@ import { path } from '../../../lib/site';
           featuredEl.checked = (prod as any).is_featured ?? false;
           picker.setValue({ existing: prod.image_url ?? null, file: null });
 
-          imagesState = ((prod as any).sub_category_images || []).map((img: any) => ({
-            id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order, deleted: false, variantKey: null
-          })).sort((a: any, b: any) => a.order - b.order);
-          renderImages();
-
           variantsState = ((prod as any).sub_category_variants || []).map((v: any) => ({
             id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
             weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
-            is_active: v.is_active, order: v.display_order
+            is_active: v.is_active, order: v.display_order,
+            image: null
           })).sort((a: any, b: any) => a.order - b.order);
+          for (const img of ((prod as any).sub_category_images || []) as any[]) {
+            const v = variantsState.find(x => x.id === img.sub_category_variant_id);
+            if (v) v.image = { id: img.id, url: img.image_url, alt: img.alt_text ?? '', order: img.display_order };
+          }
           renderVariants();
 
           appsState = Array.isArray(prod.applications) ? [...(prod.applications as unknown as AppRow[])] : [];
@@ -628,52 +591,72 @@ import { path } from '../../../lib/site';
       // ---- Variants ----
       const variantTable = mode === 'category' ? 'category_variants' : 'sub_category_variants';
       const parentCol = mode === 'category' ? 'category_id' : 'sub_category_id';
-      if (editId) {
-        const { error: delVErr } = await (supabase.from(variantTable as any) as any).delete().eq(parentCol as string, id);
-        if (delVErr) { resetBtn(); showError(`Failed to update sizes: ${delVErr.message}`); return; }
+      const savedIds = validVariants.map(v => v.id as string);
+      {
+        const { data: existingVariants } = await supabase
+          .from(variantTable as any)
+          .select('id')
+          .eq(parentCol as string, id);
+        const toDelete = ((existingVariants as any[]) || []).map(r => r.id).filter((rid: string) => !savedIds.includes(rid));
+        if (toDelete.length) {
+          const { error: delVErr } = await supabase
+            .from(variantTable as any)
+            .delete()
+            .in('id', toDelete);
+          if (delVErr) { resetBtn(); showError(`Failed to update sizes: ${delVErr.message}`); return; }
+        }
       }
       if (validVariants.length) {
-        const { error: insVErr } = await supabase.from(variantTable).insert(validVariants as never);
+        const { error: insVErr } = await (supabase.from(variantTable as any) as any).upsert(validVariants as never, { onConflict: 'id' });
         if (insVErr) { resetBtn(); showError(`Failed to save sizes: ${insVErr.message}`); return; }
       }
 
-      // ---- Images ----
+      // ---- Images (one per size) ----
       const imageTable = mode === 'category' ? 'category_images' : 'sub_category_images';
       const uploadErrors: string[] = [];
-      const activeImages = imagesState.filter(i => !i.deleted);
-      for (let i = 0; i < activeImages.length; i++) {
-        const entry = activeImages[i];
-        if (entry.deleted && entry.id) {
-          const { error: delImgErr } = await supabase.from(imageTable).delete().eq('id', entry.id);
-          if (delImgErr) uploadErrors.push(`Delete image error: ${delImgErr.message}`);
-          else if (entry.url) await deleteFile(entry.url);
-          continue;
+      const folderBase = mode === 'category' ? 'categories' : 'sub-categories';
+
+      // Remove images that were detached (photo cleared or size row removed).
+      for (const gone of removedImages) {
+        if (gone.id) {
+          const { error: delErr } = await supabase.from(imageTable).delete().eq('id', gone.id);
+          if (delErr) uploadErrors.push(`Delete image error: ${delErr.message}`);
+        }
+        if (gone.url) await deleteFile(gone.url);
+      }
+
+      // Persist each size's photo against its variant id.
+      for (let i = 0; i < validVariants.length; i++) {
+        const vid = savedIds[i];
+        const source = variantsState.find(v => variantIdByKey.get(v.key) === vid);
+        const image = source?.image;
+        if (!image) continue;
+
+        let imageUrl = image.url;
+        if (image.file) {
+          const result = await uploadFile(image.file, `${folderBase}/${id}/${vid}-${Date.now()}`);
+          if ('error' in result) { uploadErrors.push(`Upload failed (${image.file.name}): ${result.error}`); continue; }
+          if (image.url && image.url !== result.path) await deleteFile(image.url);
+          imageUrl = result.path;
         }
 
-        const variantId = mode === 'category' && entry.variantKey !== null
-          ? (variantIdByKey.get(entry.variantKey) ?? null)
-          : null;
+        if (!imageUrl) continue;
 
-        if (entry.file) {
-          const result = await uploadFile(entry.file, `${mode === 'category' ? 'categories' : 'sub-categories'}/${id}/${Date.now()}-${i}`);
-          if ('error' in result) { uploadErrors.push(`Upload failed (${entry.file.name}): ${result.error}`); continue; }
-          const imgPayload: Record<string, unknown> = { image_url: result.path, alt_text: entry.alt || null, display_order: i };
-          if (mode === 'category') {
-            imgPayload.category_id = id;
-            imgPayload.category_variant_id = variantId;
-          } else {
-            imgPayload.sub_category_id = id;
-          }
+        const imgPayload: Record<string, unknown> = {
+          image_url: imageUrl,
+          alt_text: image.alt || null,
+          display_order: i,
+          [parentCol]: id
+        };
+        if (mode === 'category') imgPayload.category_variant_id = vid;
+        else imgPayload.sub_category_variant_id = vid;
+
+        if (image.id) {
+          const { error: updErr } = await (supabase.from(imageTable as any) as any).upsert({ ...imgPayload, id: image.id } as never, { onConflict: 'id' });
+          if (updErr) uploadErrors.push(`Update image error: ${updErr.message}`);
+        } else {
           const { error: insImgErr } = await supabase.from(imageTable).insert(imgPayload as never);
           if (insImgErr) uploadErrors.push(`Save image error: ${insImgErr.message}`);
-          continue;
-        }
-
-        if (entry.id) {
-          const updPayload: Record<string, unknown> = { display_order: i, alt_text: entry.alt || null };
-          if (mode === 'category') updPayload.category_variant_id = variantId;
-          const { error: updErr } = await (supabase.from(imageTable as any) as any).update(updPayload).eq('id', entry.id);
-          if (updErr) uploadErrors.push(`Update image order error: ${updErr.message}`);
         }
       }
 

@@ -111,6 +111,7 @@ export interface Database {
         Row: {
           id: string;
           sub_category_id: string;
+          sub_category_variant_id: string | null;
           image_url: string;
           alt_text: string | null;
           display_order: number;
@@ -119,6 +120,7 @@ export interface Database {
         Insert: {
           id?: string;
           sub_category_id: string;
+          sub_category_variant_id?: string | null;
           image_url: string;
           alt_text?: string | null;
           display_order?: number;
@@ -127,6 +129,7 @@ export interface Database {
         Update: {
           id?: string;
           sub_category_id?: string;
+          sub_category_variant_id?: string | null;
           image_url?: string;
           alt_text?: string | null;
           display_order?: number;
@@ -138,6 +141,13 @@ export interface Database {
             columns: ["sub_category_id"],
             isOneToOne: false,
             referencedRelation: "sub_categories",
+            referencedColumns: ["id"],
+          },
+          {
+            foreignKeyName: "sub_category_images_sub_category_variant_id_fkey",
+            columns: ["sub_category_variant_id"],
+            isOneToOne: false,
+            referencedRelation: "sub_category_variants",
             referencedColumns: ["id"],
           },
         ];

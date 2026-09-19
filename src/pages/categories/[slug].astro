@@ -223,34 +223,6 @@ function sizeCountLabel(count: number): string {
   </section>
   )}
 
-  <!-- ===== PER-SIZE PHOTOS ===== -->
-  {categorySizes.filter(v => category.images.some(i => i.category_variant_id === v.id)).length > 0 && (
-  <section class="section" id="size-photos">
-    <div class="container">
-      <div class="section-header reveal">
-        <p class="sec-index">Photos</p>
-        <h2 class="display-700">Each size, in detail</h2>
-        <p>Close-up photos of every {category.name.toLowerCase()} model.</p>
-      </div>
-      <div class="size-strips reveal">
-        {categorySizes.filter(v => category.images.some(i => i.category_variant_id === v.id)).map(v => {
-          const vImages = category.images.filter(i => i.category_variant_id === v.id);
-          return (
-            <div class="size-strip">
-              <h3>{v.name || v.size}</h3>
-              <div class="size-strip__grid">
-                {vImages.map(img => (
-                  <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${category.name} ${v.name}`} loading="lazy" decoding="async" />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  </section>
-  )}
-
   <!-- ===== PRODUCTS IN THIS RANGE ===== -->
   <section class="section section-warm" id="products">
     <div class="container">
@@ -431,60 +403,6 @@ function sizeCountLabel(count: number): string {
     background: var(--orange);
     border-color: var(--orange);
     color: var(--white);
-  }
-
-  /* Per-size photo strips */
-  .size-strips {
-    display: grid;
-    gap: 34px;
-  }
-
-  .size-strip h3 {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.2rem;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--deep-navy);
-    margin-bottom: 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding-bottom: 8px;
-    position: relative;
-  }
-  .size-strip h3::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 30px;
-    height: 2px;
-    background: var(--orange);
-  }
-
-  .size-strip__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  .size-strip__grid img {
-    width: 100%;
-    aspect-ratio: 4/3;
-    object-fit: contain;
-    background: var(--white);
-    border: 1px solid rgba(18, 42, 78, 0.08);
-    border-radius: var(--radius-sm);
-    padding: 14px;
-  }
-
-  @media (max-width: 900px) {
-    .cat-detail {
-      grid-template-columns: 1fr;
-      gap: 32px;
-      padding: 48px 0 72px;
-    }
   }
 
   /* Range: size/model cards */

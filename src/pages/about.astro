@@ -4,12 +4,11 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
-import plasticCrates from '../assets/images/plastic-crates.webp';
-import plasticPallets from '../assets/images/plastic-pallets.webp';
-import plasticWastebins from '../assets/images/plastic-wastebins.webp';
-import handPalletTruck from '../assets/images/hand-pallet-truck.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
+import { getCatalogueData, resolveImageUrl } from '../lib/db';
+
+const catalogue = await getCatalogueData();
 
 const stats = [
   { num: '25+', label: 'Years in Business' },
@@ -37,12 +36,19 @@ const values = [
   }
 ];
 
-const products = [
-  { img: plasticCrates, alt: 'Plastic crates stacked in warehouse', name: 'Plastic Crates' },
-  { img: plasticPallets, alt: 'Industrial plastic pallets stacked', name: 'Plastic Pallets' },
-  { img: plasticWastebins, alt: 'Industrial waste bins and dustbins', name: 'Waste Bins / Dustbins' },
-  { img: handPalletTruck, alt: 'Hand pallet truck in warehouse', name: 'Hand Pallet Trucks' }
-];
+// Product range cards use images managed by the admin in the database
+// (categories.image_url / category_images). No project-folder photos.
+const aboutRanges = ['plastic-crates', 'plastic-pallets', 'waste-bins', 'hand-pallet-trucks'];
+const products = aboutRanges.map(slug => {
+  const cat = catalogue.categories.find(c => c.slug === slug);
+  const image = resolveImageUrl(cat?.images[0]?.image_url ?? cat?.image_url ?? null);
+  return {
+    img: image,
+    alt: cat ? `${cat.name} — Vinayak Plastics` : '',
+    name: cat?.name ?? slug.replace(/-/g, ' '),
+    href: cat ? path(`/categories/${cat.slug}`) : path('/products')
+  };
+});
 
 const process = [
   { step: '01', title: 'Enquire', text: 'Call or WhatsApp with your product, quantity, and specification requirements.' },
@@ -143,10 +149,14 @@ const process = [
         <p>From plastic crates for dairy and bakery storage to industrial pallets for warehouse racking — we cover the full spectrum of material handling needs.</p>
       </div>
       <div class="about-range__grid">
-        {products.map((p, i) => (
-          <a href={path(`/categories/${['plastic-crates','plastic-pallets','waste-bins','hand-pallet-trucks'][i]}`)} class="about-range__card reveal">
+        {products.map((p) => (
+          <a href={p.href} class="about-range__card reveal">
             <div class="about-range__img">
-              <Image src={p.img} alt={p.alt} width={600} height={450} widths={[360, 520]} sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" />
+              {p.img ? (
+                <img src={p.img} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
+              ) : (
+                <span class="about-range__placeholder">{p.name}</span>
+              )}
             </div>
             <div class="about-range__body">
               <h3>{p.name}</h3>
@@ -194,3 +204,21 @@ const process = [
   </main>
   <Footer />
 </Layout>
+
+<style>
+  .about-range__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(18, 42, 78, 0.25);
+    background: var(--warm-off-white);
+  }
+</style>
