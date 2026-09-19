@@ -252,7 +252,7 @@ const schema = `{
           <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card">
             <div class="sc-card__img">
               {resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url) ? (
-                <img src={resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url)!} alt={sub.name} width="480" height="300" loading="lazy" decoding="async" />
+                <img src={resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url)!} alt={sub.name} width="480" height="300" loading="lazy" decoding="async" />
               ) : (
                 <span class="sc-card__placeholder">{sub.name}</span>
               )}

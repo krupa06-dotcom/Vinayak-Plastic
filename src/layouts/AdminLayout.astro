@@ -55,6 +55,10 @@ const isCurrent = (key: string) => key === current;
         </a>
 
         <div class="admin-nav-section">Catalogue</div>
+        <a href={path('/admin/categories/')} class:list={['admin-nav-link', isCurrent('categories') && 'is-active']}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+          Categories
+        </a>
         <a href={path('/admin/products/')} class:list={['admin-nav-link', isCurrent('products') && 'is-active']}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
           Products

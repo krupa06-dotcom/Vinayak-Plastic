@@ -28,7 +28,7 @@ const categoryCards = categories.map((cat, i) => ({
   name: cat.name,
   slug: cat.slug,
   description: cat.description,
-  image: resolveImageUrl(cat.images[0]?.image_url ?? cat.image_url),
+  image: resolveImageUrl(cat.image_url ?? cat.images[0]?.image_url),
   sizes: cat.variants,
   colors: colorCount(cat.variants),
   count: cat.variants.length,
@@ -43,7 +43,7 @@ const productCards = subCategories.map(sub => ({
   categoryName: sub.category_name,
   categorySlug: sub.category_slug,
   description: sub.short_description || sub.description,
-  image: resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url),
+  image: resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url),
   sizes: sub.variants.length,
   colors: colorCount(sub.variants),
   href: path(`/categories/${sub.category_slug}/${sub.slug}`)
@@ -84,6 +84,13 @@ const productSearch = productCards.map(p =>
           {categoryCards.map(card => (
             <a href={card.href} class="pl-cat reveal" data-cat={card.slug} aria-label={`Browse ${card.name}`}>
               <div class="pl-cat__index" aria-hidden="true">{card.index}</div>
+              <div class="pl-cat__img">
+                {card.image ? (
+                  <img src={card.image} alt={`${card.name} — Vinayak Plastics`} width="480" height="360" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="pl-cat__img-empty">{card.name}</span>
+                )}
+              </div>
               <div class="pl-cat__body">
                 <h3>{card.name}</h3>
                 {card.description && <p>{card.description}</p>}
@@ -96,13 +103,6 @@ const productSearch = productCards.map(p =>
                   {card.sizes.length > 3 && <span class="pl-chip pl-chip-outline">+{card.sizes.length - 3} more</span>}
                 </div>
               </div>
-              {card.image ? (
-                <div class="pl-cat__img">
-                  <img src={card.image} alt={`${card.name} — Vinayak Plastics`} width="480" height="360" loading="lazy" decoding="async" />
-                </div>
-              ) : (
-                <div class="pl-cat__img pl-cat__img-empty">{card.name}</div>
-              )}
               <span class="pl-cat__arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
               </span>
@@ -233,64 +233,65 @@ const productSearch = productCards.map(p =>
     margin: 0;
   }
 
-  /* ---------- Category index cards ---------- */
+  /* ---------- Category index cards (photo-forward) ---------- */
   .pl-cat-list {
     display: grid;
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
   }
 
   .pl-cat {
     position: relative;
-    display: grid;
-    grid-template-columns: 84px minmax(0, 1fr) minmax(0, 300px) 44px;
-    align-items: center;
-    gap: 26px;
+    display: flex;
+    flex-direction: column;
     background: var(--white);
     border: 1px solid rgba(18, 42, 78, 0.08);
-    border-left: 4px solid var(--orange);
-    border-radius: var(--radius-md);
+    border-top: 3px solid var(--orange);
+    border-radius: var(--radius-sm);
     box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
-    padding: 26px 28px;
-    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     overflow: hidden;
-  }
-
-  .pl-cat::after {
-    content: '';
-    position: absolute;
-    inset-inline-end: -54px;
-    bottom: -54px;
-    width: 170px;
-    height: 170px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(232, 99, 12, 0.08), transparent 68%);
-    opacity: 0;
-    transition: opacity 0.28s ease;
-    pointer-events: none;
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
   }
 
   .pl-cat:hover,
   .pl-cat:focus-visible {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
     box-shadow: 0 18px 44px rgba(18, 42, 78, 0.12);
-    border-left-color: var(--orange-deep);
   }
-  .pl-cat:hover::after { opacity: 1; }
 
   .pl-cat__index {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: #fff;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 2.6rem;
+    font-size: 1rem;
     line-height: 1;
-    color: rgba(18, 42, 78, 0.14);
-    text-align: center;
+    box-shadow: 0 4px 14px rgba(18, 42, 78, 0.22);
     user-select: none;
+  }
+
+  .pl-cat__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 22px 18px;
   }
 
   .pl-cat__body h3 {
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    font-size: 1.35rem;
     text-transform: uppercase;
     letter-spacing: -0.01em;
     color: var(--deep-navy);
@@ -299,17 +300,22 @@ const productSearch = productCards.map(p =>
 
   .pl-cat__body p {
     color: var(--steel);
-    font-size: 0.94rem;
-    line-height: 1.6;
+    font-size: 0.9rem;
+    line-height: 1.55;
     margin-bottom: 14px;
-    max-width: 520px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .pl-cat__meta {
+    margin-top: auto;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    padding-right: 6px;
   }
 
   .pl-chip {
@@ -331,28 +337,40 @@ const productSearch = productCards.map(p =>
   }
 
   .pl-cat__img {
-    aspect-ratio: 4 / 3;
-    border-radius: var(--radius-sm);
+    position: relative;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     background: var(--warm-off-white);
+    border-bottom: 1px solid rgba(18, 42, 78, 0.06);
   }
   .pl-cat__img img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    padding: 14px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .pl-cat:hover .pl-cat__img img {
+    transform: scale(1.035);
   }
   .pl-cat__img-empty {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 160px;
+    padding: 20px;
     font-family: var(--font-display);
     font-weight: 800;
+    font-size: 1.1rem;
     text-transform: uppercase;
+    text-align: center;
     color: rgba(18, 42, 78, 0.25);
   }
 
   .pl-cat__arrow {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -360,7 +378,8 @@ const productSearch = productCards.map(p =>
     height: 42px;
     border-radius: 50%;
     color: var(--orange-deep);
-    background: rgba(232, 99, 12, 0.12);
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(18, 42, 78, 0.18);
     transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
   }
   .pl-cat__arrow svg { width: 20px; height: 20px; }
@@ -619,28 +638,15 @@ const productSearch = productCards.map(p =>
   /* ---------- Responsive ---------- */
   @media (max-width: 1024px) {
     .pl-grid { grid-template-columns: repeat(2, 1fr); }
-    .pl-cat { grid-template-columns: 64px minmax(0, 1fr) 40px; }
-    .pl-cat__img { display: none; }
+    .pl-cat-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (max-width: 640px) {
     .pl-grid { grid-template-columns: 1fr; }
-    .pl-cat {
-      grid-template-columns: 1fr;
-      gap: 14px;
-      padding: 22px 20px;
-    }
-    .pl-cat__index {
-      text-align: left;
-      font-size: 1.8rem;
-    }
-    .pl-cat__arrow {
-      position: absolute;
-      top: 18px;
-      right: 16px;
-      width: 34px;
-      height: 34px;
-    }
+    .pl-cat-list { grid-template-columns: 1fr; }
+    .pl-cat__body { padding: 16px 16px 14px; }
+    .pl-cat__index { width: 40px; height: 40px; font-size: 0.9rem; }
+    .pl-cat__arrow { width: 36px; height: 36px; }
   }
 </style>
 

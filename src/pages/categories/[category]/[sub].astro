@@ -49,7 +49,7 @@ const gallery = subCategory.images.length > 0
   : subCategory.image_url
     ? [{ id: 'main', sub_category_id: subCategory.id, image_url: subCategory.image_url, alt_text: null, display_order: 0 }]
     : [];
-const mainImage = resolveImageUrl(gallery[0]?.image_url ?? subCategory.image_url);
+const mainImage = resolveImageUrl(subCategory.image_url ?? gallery[0]?.image_url);
 
 // Known CSS colours used to render colour swatches in the spec table.
 const COLOR_HEX: Record<string, string> = {

@@ -8,13 +8,13 @@ import { path } from '../../../lib/site';
     <h2>Products</h2>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <a href={path('/admin/products/edit/')} class="a-btn a-btn-primary">+ Product</a>
-      <a href={path('/admin/products/edit/?category=new')} class="a-btn">+ Category</a>
+      <a href={path('/admin/categories/')} class="a-btn">+ Category</a>
     </div>
   </div>
 
   <div class="a-card">
     <div class="a-toolbar" style="flex-wrap:wrap;">
-      <input type="search" id="prod-search" class="a-input" placeholder="Search products &amp; categories…" />
+      <input type="search" id="prod-search" class="a-input" placeholder="Search products…" />
       <span style="flex:1"></span>
       <span id="prod-count" style="font-size:0.84rem;color:var(--a-muted);"></span>
     </div>
@@ -29,64 +29,36 @@ import { path } from '../../../lib/site';
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
 
-    interface CatRow { id: string; name: string; slug: string; is_active: boolean; image_url?: string | null; display_order: number }
+    interface CatRow { id: string; name: string }
     interface ProdRow { id: string; category_id: string; name: string; slug: string; is_active: boolean; image_url?: string | null }
-    interface VarRow { sub_category_id: string; is_active: boolean }
-    interface CatVarRow { category_id: string; is_active: boolean }
 
-    let cats: CatRow[] = [];
     let products: ProdRow[] = [];
+    let catName = new Map<string, string>();
 
     async function load() {
       const listEl = document.getElementById('prod-list');
       if (!listEl) return;
 
-      const [catsRes, prodsRes, subVarsRes, catVarsRes] = await Promise.all([
-        supabase.from('categories').select('id, name, slug, is_active, display_order, image_url').order('display_order'),
+      const [catsRes, prodsRes, varsRes] = await Promise.all([
+        supabase.from('categories').select('id, name').order('display_order'),
         supabase.from('sub_categories').select('id, category_id, name, slug, is_active, image_url').order('display_order'),
-        supabase.from('sub_category_variants').select('sub_category_id, is_active'),
-        supabase.from('category_variants').select('category_id, is_active')
+        supabase.from('sub_category_variants').select('sub_category_id, is_active')
       ]);
 
       if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
       if (prodsRes.error) { showError(listEl, prodsRes.error.message); return; }
-      if (subVarsRes.error) { showError(listEl, subVarsRes.error.message); return; }
-      if (catVarsRes.error) { showError(listEl, catVarsRes.error.message); return; }
+      if (varsRes.error) { showError(listEl, varsRes.error.message); return; }
 
-      cats = (catsRes.data || []) as CatRow[];
+      const cats = (catsRes.data || []) as CatRow[];
+      catName = new Map(cats.map(c => [c.id, c.name]));
       products = (prodsRes.data || []) as ProdRow[];
-      const subVars = (subVarsRes.data || []) as VarRow[];
-      const catVars = (catVarsRes.data || []) as CatVarRow[];
+      const vars = (varsRes.data || []) as Array<{ sub_category_id: string; is_active: boolean }>;
+      const sizeCount = (id: string) => vars.filter(v => v.sub_category_id === id && v.is_active).length;
 
-      const subSizeCount = (id: string) => subVars.filter(v => v.sub_category_id === id && v.is_active).length;
-      const catSizeCount = (id: string) => catVars.filter(v => v.category_id === id && v.is_active).length;
-      const orphans = products.filter(p => !p.category_id || !cats.some(c => c.id === p.category_id));
-      let orphanRowsHtml = '';
-      if (orphans.length) {
-        const rows = orphans.map(p => `
-      <tr data-name="${esc((p.name + ' ' + p.slug).toLowerCase())}">
-        <td></td>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px;">
-            ${p.image_url ? `<img src="${esc(publicUrl(p.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;" loading="lazy" />` : ''}
-            <strong>${esc(p.name)}</strong>
-          </div>
-        </td>
-        <td><span class="a-chip a-chip-warn">No category</span></td>
-        <td><span class="a-chip ${subSizeCount(p.id) ? 'a-chip-ok' : ''}">${subSizeCount(p.id)}</span></td>
-        <td>${activeBadge(p.is_active)}</td>
-        <td class="a-actions">
-          <a href="${href(`admin/products/edit/?product=${p.id}`)}" class="a-btn a-btn-sm">Edit</a>
-          <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-prod="${p.id}">Delete</button>
-        </td>
-      </tr>`);
-        orphanRowsHtml = `<tr class="a-tree-orphan"><td colspan="6"><strong style="opacity:0.85;">Uncategorised</strong> <span class="a-chip a-chip-warn">${orphans.length} product${orphans.length === 1 ? '' : 's'} without a category</span></td></tr>
-      ${rows.join('')}`;
-      }
-
-      if (!cats.length && !products.length) {
-        showEmpty(listEl, 'No products yet', 'Categories group your products. Start by creating a category — sizes and colours live with each product.',
-          `<a href="${href('admin/products/edit/?category=new')}" class="a-btn a-btn-primary">+ New Category</a>`);
+      if (!products.length) {
+        showEmpty(listEl, 'No products yet', 'Products are the individual ranges sold under a category. Create a category first, then add products to it.',
+          `<a href="${href('admin/categories/')}" class="a-btn a-btn-primary">+ New Category</a>
+           <a href="${href('admin/products/edit/')}" class="a-btn">+ Product</a>`);
         return;
       }
 
@@ -94,90 +66,36 @@ import { path } from '../../../lib/site';
         <div class="a-table-wrap">
           <table class="a-table">
             <thead><tr>
-              <th style="width:34px"></th><th>Product / Category</th><th>Contents</th><th style="width:150px">Sizes &amp; Models</th><th style="width:110px">Status</th><th style="width:230px">Actions</th>
+              <th>Product</th><th>Category</th><th style="width:150px">Sizes &amp; Models</th><th style="width:110px">Status</th><th style="width:230px">Actions</th>
             </tr></thead>
             <tbody>
-              ${cats.map(c => {
-                const catProds = products.filter(p => p.category_id === c.id);
-                const catSizeTotal = catSizeCount(c.id) + catProds.reduce((n, p) => n + subSizeCount(p.id), 0);
-                return `
-                  <tr class="a-tree-parent" data-cat="${c.id}" data-name="${esc((c.name + ' ' + c.slug).toLowerCase())}">
-                    <td><button type="button" class="a-tree-toggle" data-toggle="${c.id}" aria-label="Toggle">${catProds.length ? '▶' : '·'}</button></td>
-                    <td>
-                      <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
-                        ${c.image_url ? `<img src="${esc(publicUrl(c.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
-                        <div>
-                          <strong>${esc(c.name)}</strong>
-                          <div style="font-size:0.72rem;color:var(--a-faint);">Category · ${esc(c.slug)}</div>
-                        </div>
+              ${products.map(p => `
+                <tr data-name="${esc((p.name + ' ' + p.slug + ' ' + (catName.get(p.category_id) || '')).toLowerCase())}">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
+                      ${p.image_url ? `<img src="${esc(publicUrl(p.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
+                      <div>
+                        <strong>${esc(p.name)}</strong>
+                        <div style="font-size:0.72rem;color:var(--a-faint);">${esc(p.slug)}</div>
                       </div>
-                    </td>
-                    <td>
-                      <span class="a-chip">${catProds.length} product${catProds.length === 1 ? '' : 's'}</span>
-                      ${catSizeCount(c.id) ? `<span class="a-chip a-chip-ok">${catSizeCount(c.id)} own model${catSizeCount(c.id) === 1 ? '' : 's'}</span>` : ''}
-                    </td>
-                    <td><span class="a-chip ${catSizeTotal ? 'a-chip-ok' : ''}">${catSizeTotal}</span></td>
-                    <td>${activeBadge(c.is_active)}</td>
-                    <td class="a-actions">
-                      <a href="${href(`admin/products/edit/?category=${c.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                      <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-cat="${c.id}">Delete</button>
-                    </td>
-                  </tr>
-                  ${catProds.map(p => `
-                    <tr class="a-tree-child" data-parent="${c.id}" data-name="${esc((p.name + ' ' + p.slug).toLowerCase())}" style="display:none;">
-                      <td></td>
-                      <td style="padding-left:34px;">
-                        <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
-                          ${p.image_url ? `<img src="${esc(publicUrl(p.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
-                          <div>
-                            <span style="color:var(--a-faint)">↳</span> <strong>${esc(p.name)}</strong>
-                            <div style="font-size:0.72rem;color:var(--a-faint);padding-left:14px;">${esc(p.slug)}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td><span class="a-chip ${subSizeCount(p.id) ? 'a-chip-ok' : ''}">${subSizeCount(p.id)} size${subSizeCount(p.id) === 1 ? '' : 's'}</span></td>
-                      <td colspan="2">${activeBadge(p.is_active)}</td>
-                      <td class="a-actions">
-                        <a href="${href(`admin/products/edit/?product=${p.id}`)}" class="a-btn a-btn-sm">Edit</a>
-                        <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-prod="${p.id}">Delete</button>
-                      </td>
-                    </tr>`).join('')}
-                `;
-              }).join('')}
-              ${orphanRowsHtml}
+                    </div>
+                  </td>
+                  <td>${p.category_id && catName.has(p.category_id)
+                    ? `<a href="${href(`admin/categories/`)}" style="color:var(--a-link, inherit);">${esc(catName.get(p.category_id)!)}</a>`
+                    : '<span class="a-chip a-chip-warn">No category</span>'}</td>
+                  <td><span class="a-chip ${sizeCount(p.id) ? 'a-chip-ok' : ''}">${sizeCount(p.id)}</span></td>
+                  <td>${activeBadge(p.is_active)}</td>
+                  <td class="a-actions">
+                    <a href="${href(`admin/products/edit/?product=${p.id}`)}" class="a-btn a-btn-sm">Edit</a>
+                    <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-prod="${p.id}">Delete</button>
+                  </td>
+                </tr>`).join('')}
             </tbody>
           </table>
         </div>`;
 
       const countEl = document.getElementById('prod-count');
-      if (countEl) countEl.textContent = `${products.length} product${products.length === 1 ? '' : 's'} · ${cats.length} categor${cats.length === 1 ? 'y' : 'ies'}`;
-
-      listEl.querySelectorAll<HTMLButtonElement>('[data-toggle]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.toggle!;
-          const children = listEl.querySelectorAll<HTMLTableRowElement>(`tr[data-parent="${id}"]`);
-          const open = btn.textContent?.trim() === '▶';
-          children.forEach(ch => { ch.style.display = open ? '' : 'none'; });
-          if (open) { btn.textContent = '▼'; }
-          else { btn.textContent = catProdsOf(id) ? '▶' : '·'; }
-        });
-      });
-
-      function catProdsOf(id: string): number { return products.filter(p => p.category_id === id).length; }
-
-      listEl.querySelectorAll<HTMLButtonElement>('[data-delete-cat]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.deleteCat!;
-          const cat = cats.find(c => c.id === id);
-          const ok = await confirmDialog(`Delete "${cat?.name ?? 'category'}"?`,
-            'This permanently deletes the category, all of its products, sizes and images. This cannot be undone.');
-          if (!ok) return;
-          const { error } = await supabase.from('categories').delete().eq('id', id);
-          if (error) { toast(error.message, 'error'); return; }
-          toast('Category deleted.', 'success');
-          await load();
-        });
-      });
+      if (countEl) countEl.textContent = `${products.length} product${products.length === 1 ? '' : 's'}`;
 
       listEl.querySelectorAll<HTMLButtonElement>('[data-delete-prod]').forEach(btn => {
         btn.addEventListener('click', async () => {

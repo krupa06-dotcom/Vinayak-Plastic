@@ -7,7 +7,7 @@ import { path } from '../../../lib/site';
   <div class="a-page-head">
     <h2 id="page-title">New Product</h2>
     <div style="display:flex;gap:10px;">
-      <a href={path('/admin/products/')} class="a-btn a-btn-sm">&larr; Back to products</a>
+      <a href={path('/admin/products/')} class="a-btn a-btn-sm" id="back-link">&larr; Back to products</a>
       <button type="button" class="a-btn a-btn-primary" id="pd-save-top" style="display:none;">Save</button>
     </div>
   </div>
@@ -106,7 +106,7 @@ import { path } from '../../../lib/site';
       <span class="a-hint" id="save-helper">Sizes, colours and photos are saved together.</span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="submit" class="a-btn a-btn-primary" id="pd-submit">Save</button>
-        <a href={path('/admin/products/')} class="a-btn">Cancel</a>
+        <a href={path('/admin/products/')} class="a-btn" id="cancel-link">Cancel</a>
       </div>
     </div>
   </form>
@@ -167,6 +167,8 @@ import { path } from '../../../lib/site';
     if (mode === 'category') {
       titleEl.textContent = editId ? 'Edit Category' : 'New Category';
       if (editId) titleEl.textContent = 'Edit Category';
+      document.getElementById('back-link')?.setAttribute('href', href('admin/categories/'));
+      document.getElementById('cancel-link')?.setAttribute('href', href('admin/categories/'));
       fieldSku.hidden = true;
       fieldShort.hidden = true;
       fieldFeatures.hidden = true;
@@ -667,7 +669,7 @@ import { path } from '../../../lib/site';
       } else {
         toast(editId ? 'Saved.' : 'Created.', 'success');
       }
-      window.location.href = href('admin/products/');
+      window.location.href = href(mode === 'category' ? 'admin/categories/' : 'admin/products/');
     });
   </script>
 </AdminLayout>

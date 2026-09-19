@@ -237,9 +237,9 @@ function sizeCountLabel(count: number): string {
           {products.map(sub => (
             <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card reveal">
               <div class="sc-card__img">
-                {resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url) ? (
+                {resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url) ? (
                   <img
-                    src={resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url)!}
+                    src={resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url)!}
                     alt={`${sub.name}`}
                     width="480"
                     height="300"
