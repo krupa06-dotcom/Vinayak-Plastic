@@ -44,73 +44,76 @@ const slides = [
 <section class="hero" id="hero" aria-roledescription="carousel" aria-label="Vinayak Plastics overview">
   <h1 class="sr-only">Vinayak Plastics — Engineered Plastic Products for Industry</h1>
 
-  <div class="hero__slides">
-    {slides.map((s, i) => (
-      <article
-        class:list={['hero__slide', i === 0 && 'is-active']}
-        aria-roledescription="slide"
-        aria-label={`${i + 1} of ${slides.length}: ${s.tag}`}
-        aria-hidden={i !== 0}
-      >
-        <div class="hero__img-wrap">
-          <Image
-            class="hero__img"
-            src={s.img}
-            alt={s.alt}
-            widths={[640, 1024, 1536]}
-            sizes="100vw"
-            quality={65}
-            priority={i === 0}
-          />
-        </div>
-      </article>
-    ))}
-  </div>
-
-  <div class="hero__overlay" aria-hidden="true"></div>
-
-  <button type="button" class="hero__arrow hero__arrow--prev" data-prev aria-label="Previous slide">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
-  </button>
-  <button type="button" class="hero__arrow hero__arrow--next" data-next aria-label="Next slide">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
-  </button>
-
-  <div class="hero__content">
-    <div class="hero__text">
-      {slides.map((s, i) => (
-        <div class:list={['hero__slide-text', i === 0 && 'is-active']} data-text={i}>
-          <span class="hero__tag">{s.tag}</span>
-          <h2 class="hero__title">{s.title}</h2>
-          <p class="hero__sub">{s.sub}</p>
-          <div class="hero__actions">
-            <a href={path('/products/')} class="btn btn-primary">Explore Products</a>
-            <a href={path('/contact/')} class="btn btn-secondary">Get a Quote</a>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <div class="hero__bottom">
-      <div class="hero__dots" role="tablist" aria-label="Slide navigation">
+  <div class="container">
+    <div class="hero__grid">
+      <div class="hero__text">
         {slides.map((s, i) => (
-          <button
-            type="button"
-            class:list={['hero__dot', i === 0 && 'is-active']}
-            role="tab"
-            aria-selected={i === 0}
-            aria-label={`${s.tag}`}
-            data-slide={i}
-          >
-            <span class="hero__dot-fill"></span>
-          </button>
+          <div class:list={['hero__slide-text', i === 0 && 'is-active']} data-text={i}>
+            <span class="hero__tag">{s.tag}</span>
+            <h2 class="hero__title">{s.title}</h2>
+            <p class="hero__sub">{s.sub}</p>
+            <div class="hero__actions">
+              <a href={path('/products/')} class="btn btn-primary">Explore Products</a>
+              <a href={path('/contact/')} class="btn btn-secondary">Get a Quote</a>
+            </div>
+          </div>
         ))}
       </div>
-      <div class="hero__counter" aria-hidden="true">
-        <span class="hero__counter-cur">01</span>
-        <span class="hero__counter-sep">/</span>
-        <span class="hero__counter-total">04</span>
+
+      <div class="hero__media">
+        <div class="hero__media-frame">
+          <div class="hero__slides">
+            {slides.map((s, i) => (
+              <article
+                class:list={['hero__slide', i === 0 && 'is-active']}
+                aria-roledescription="slide"
+                aria-label={`${i + 1} of ${slides.length}: ${s.tag}`}
+                aria-hidden={i !== 0}
+              >
+                <div class="hero__img-wrap">
+                  <Image
+                    class="hero__img"
+                    src={s.img}
+                    alt={s.alt}
+                    widths={[480, 720, 960]}
+                    sizes="(max-width: 768px) 92vw, 44vw"
+                    quality={70}
+                    priority={i === 0}
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
+          <button type="button" class="hero__arrow hero__arrow--prev" data-prev aria-label="Previous slide">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+          </button>
+          <button type="button" class="hero__arrow hero__arrow--next" data-next aria-label="Next slide">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <div class="hero__bottom">
+    <div class="hero__dots" role="tablist" aria-label="Slide navigation">
+      {slides.map((s, i) => (
+        <button
+          type="button"
+          class:list={['hero__dot', i === 0 && 'is-active']}
+          role="tab"
+          aria-selected={i === 0}
+          aria-label={`${s.tag}`}
+          data-slide={i}
+        >
+          <span class="hero__dot-fill"></span>
+        </button>
+      ))}
+    </div>
+    <div class="hero__counter" aria-hidden="true">
+      <span class="hero__counter-cur">01</span>
+      <span class="hero__counter-sep">/</span>
+      <span class="hero__counter-total">04</span>
     </div>
   </div>
 </section>

@@ -72,12 +72,29 @@ function colorHex(color: string | null): string | null {
   return HEX_MAP[color.trim().toLowerCase()] || null;
 }
 
-function colorSwatch(color: string | null): string {
-  if (!color) return '';
-  const key = color.trim().toLowerCase();
-  const hex = HEX_MAP[key] || null;
-  return `<span class="v-color-chip"${hex ? ` style="--chip:${hex}"` : ''}>${color.trim()}</span>`;
-}
+// Model catalogue data for the combined sizes & models spec sheet:
+// every variant gets its own resolved image, link and blueprint figure number.
+const modelImages = new Map(
+  (subCategory.images || [])
+    .filter(i => i.sub_category_variant_id && i.image_url)
+    .map(i => [i.sub_category_variant_id, i.image_url])
+);
+const catalogueModels = variants.map((v, i) => {
+  const img = resolveFirstImage(modelImages.get(v.id), mainImage);
+  const isLinkable = categoryVariantNames.has((v.name || '').trim());
+  const hex = (v.color || '').trim();
+  return {
+    v,
+    img,
+    name: v.name || v.size || 'Model',
+    href: isLinkable
+      ? path(`/categories/${subCategory.category_slug}/variant/${variantSlug(v.name || v.size || 'size')}`)
+      : path('/contact'),
+    hex,
+    hexCss: colorHex(hex) || '',
+    fig: `FIG/${String(i + 1).padStart(2, '0')}`
+  };
+});
 
 function sizeCountLabel(count: number): string {
   return `${count} ${count === 1 ? 'Size / Model' : 'Sizes / Models'}`;
@@ -189,70 +206,19 @@ const productSchema = `{
     </div>
   </section>
 
-  <!-- ===== RANGE: SIZES AS CARDS ===== -->
-  {linkableVariants.length > 0 && (
+  <!-- ===== MODEL CATALOGUE: SIZES, MODELS & SPECS ===== -->
+  {(hasVariants || specificationModels.length > 0) && (
   <section class="section-warm" id="range">
     <div class="container">
       <div class="section-header reveal">
-        <p class="sec-index">Range</p>
+        <p class="sec-index">Model Catalogue</p>
         <h2 class="display-700">Available sizes &amp; models</h2>
-        <p>Each {subCategory.name.toLowerCase()} model below opens its own detail page with full specifications.</p>
+        <p>Click any model image to view it enlarged — or click a model name to open its full detail page.</p>
       </div>
-      <div class="vr-grid reveal">
-        {variants.map(v => {
-          const vImg = resolveFirstImage(
-            subCategory.images.find(i => i.sub_category_variant_id === v.id)?.image_url,
-            mainImage
-          );
-          const hex = (v.color || '').trim();
-          const hexCss = colorHex(hex);
-          const chipStyle = hexCss ? `--vr-chip:${hexCss}` : '';
-          const isLinkable = categoryVariantNames.has((v.name || '').trim());
-          const vSlug = variantSlug(v.name || v.size || 'size');
-          const vHref = isLinkable
-            ? path(`/categories/${subCategory.category_slug}/variant/${vSlug}`)
-            : path('/contact');
-          return (
-            <a href={vHref} class="vr-card reveal">
-              <div class="vr-card__img">
-                {vImg ? (
-                  <img src={vImg} alt={`${v.name || v.size} — ${subCategory.name}`} width="480" height="300" loading="lazy" decoding="async" />
-                ) : (
-                  <span class="sc-card__placeholder">{v.name || v.size}</span>
-                )}
-              </div>
-              <div class="vr-card__body">
-                <h3>{v.name}</h3>
-                {v.size && <p class="vr-card__size">{v.size}</p>}
-                <div class="vr-card__meta">
-                  {hex ? (
-                    <span class="vr-chip" style={chipStyle}>{hex}</span>
-                  ) : (
-                    <span class="vr-chip-noc">Model</span>
-                  )}
-                  <span class="vr-card__cta">{isLinkable ? 'View Size' : 'Enquire'} <span aria-hidden="true">→</span></span>
-                </div>
-              </div>
-            </a>
-          );
-        })}
-      </div>
-    </div>
-  </section>
-  )}
 
-  <!-- ===== SIZES & SPECIFICATIONS ===== -->
-  {(hasVariants || specificationModels.length > 0) && (
-  <section class="section-warm" id="sizes">
-    <div class="container">
-      <div class="section-header reveal">
-        <p class="sec-index">Sizes &amp; Colours</p>
-        <h2 class="display-700">{subCategory.name}: standard sizes</h2>
-        <p>Common {subCategory.name.toLowerCase()} models produced by our unit. Custom sizes available on request.</p>
-      </div>
-      <div class="specs-table-wrap reveal">
-        {hasVariants ? (
-          <table class="specs-table">
+      {hasVariants ? (
+        <div class="specs-table-wrap reveal">
+          <table class="specs-table spec-table-models">
             <thead>
               <tr>
                 {variantCols.map(k => (
@@ -261,18 +227,27 @@ const productSchema = `{
               </tr>
             </thead>
             <tbody>
-              {variants.map(v => (
-                <tr>
+              {catalogueModels.map(m => (
+                <tr class="spec-row" data-spec-href={m.href}>
                   {variantCols.map(k => (
-                    <td>
+                    <td class={k === 'name' ? 'spec-td-model' : ''}>
                       {k === 'name' ? (
-                        categoryVariantNames.has((v.name || '').trim()) ? (
-                          <a href={path(`/categories/${subCategory.category_slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="specs-model">{v[k] || '—'}</a>
-                        ) : (
-                          v[k] || '—'
-                        )
+                        <div class="spec-model">
+                          {m.img && (
+                            <button type="button" class="spec-model__thumb-btn"
+                              data-lightbox-src={m.img}
+                              data-lightbox-name={m.name}
+                              data-lightbox-fig={m.fig}
+                              aria-label={`Preview ${m.name} image`}>
+                              <img class="spec-model__thumb" src={m.img} alt="" width="108" height="84" loading="lazy" decoding="async" />
+                            </button>
+                          )}
+                          <a href={m.href} class="specs-model spec-model__link">{m.v[k] || '—'}</a>
+                        </div>
+                      ) : k === 'color' ? (
+                        <span class="spec-swatch" style={`--chip:${m.hexCss || '#cccccc'}`}>{m.v[k] || '—'}</span>
                       ) : (
-                        k === 'color' ? <span set:html={colorSwatch(v.color)} /> : (v[k] || '—')
+                        m.v[k] || '—'
                       )}
                     </td>
                   ))}
@@ -280,7 +255,9 @@ const productSchema = `{
               ))}
             </tbody>
           </table>
-        ) : (
+        </div>
+      ) : (
+        <div class="specs-table-wrap reveal">
           <table class="specs-table">
             <thead>
               <tr>
@@ -303,8 +280,25 @@ const productSchema = `{
               ))}
             </tbody>
           </table>
-        )}
+        </div>
+      )}
+
+      {hasVariants && (
+      <div class="lightbox" role="dialog" aria-modal="true" aria-label="Model image preview">
+        <div class="lightbox__backdrop" data-lightbox-close></div>
+        <figure class="lightbox__panel">
+          <button type="button" class="lightbox__close" data-lightbox-close aria-label="Close preview">&times;</button>
+          <div class="lightbox__imgwrap">
+            <img id="lightbox-img" src="" alt="" />
+          </div>
+          <figcaption class="lightbox__foot">
+            <span class="lightbox__fig" id="lightbox-fig">FIG/01</span>
+            <span class="lightbox__name" id="lightbox-name"></span>
+          </figcaption>
+        </figure>
       </div>
+      )}
+
       <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
         <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
       </div>
@@ -403,6 +397,67 @@ const productSchema = `{
   </section>
 
   </main>
+
+  <script is:inline>
+    // Model catalogue lightbox: clicking a thumbnail in the spec sheet
+    // opens the full-size model image in a modal. Pure progressive enhancement.
+    (function () {
+      var overlay = document.querySelector('.lightbox');
+      if (!overlay) return;
+
+      var imgEl = overlay.querySelector('#lightbox-img');
+      var figEl = overlay.querySelector('#lightbox-fig');
+      var nameEl = overlay.querySelector('#lightbox-name');
+      var closeBtn = overlay.querySelector('.lightbox__close');
+      var lastFocused = null;
+
+      function open(src, name, fig) {
+        lastFocused = document.activeElement;
+        imgEl.src = src;
+        imgEl.alt = name;
+        if (nameEl) nameEl.textContent = name;
+        if (figEl) figEl.textContent = fig;
+        overlay.classList.add('lightbox--open');
+        document.body.style.overflow = 'hidden';
+        if (closeBtn) closeBtn.focus();
+      }
+
+      function close() {
+        overlay.classList.remove('lightbox--open');
+        document.body.style.overflow = '';
+        if (lastFocused) lastFocused.focus();
+      }
+
+      document.querySelectorAll('[data-lightbox-src]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          open(
+            btn.getAttribute('data-lightbox-src'),
+            btn.getAttribute('data-lightbox-name') || 'Model',
+            btn.getAttribute('data-lightbox-fig') || ''
+          );
+        });
+      });
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target.closest('[data-lightbox-close]')) close();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('lightbox--open')) close();
+      });
+
+      document.querySelectorAll('.spec-row[data-spec-href]').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+          if (e.target.closest('a') || e.target.closest('button')) return;
+          var href = row.getAttribute('data-spec-href');
+          if (href) window.location.href = href;
+        });
+      });
+    })();
+  </script>
+
   <Footer />
 </Layout>
 
@@ -571,131 +626,60 @@ const productSchema = `{
     background: var(--orange);
   }
 
-  /* Range: size/model cards */
-  .vr-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 22px;
+  <!-- ===== MODEL CATALOGUE SPEC SHEET ===== -->
+  .spec-table-models {
+    min-width: 720px;
   }
 
-  .vr-card {
+  .spec-table-models th:first-child {
+    min-width: 210px;
+  }
+
+  .spec-row {
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .spec-row:hover {
+    background: rgba(232, 99, 12, 0.04);
+  }
+
+  .spec-model {
     display: flex;
-    flex-direction: column;
-    background: var(--white);
-    border: 1px solid rgba(18, 42, 78, 0.08);
-    border-top: 3px solid var(--orange);
-    border-radius: var(--radius-sm);
+    align-items: center;
+    gap: 12px;
+    min-width: 190px;
+  }
+
+  .spec-model__thumb-btn {
+    flex: 0 0 auto;
+    width: 54px;
+    height: 42px;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    cursor: zoom-in;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  .vr-card:hover,
-  .vr-card:focus-visible {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(18, 42, 78, 0.12);
-  }
-
-  .vr-card__img {
-    position: relative;
-    aspect-ratio: 16/10;
-    padding: 24px;
-    overflow: hidden;
-    background: var(--deep-navy);
-    border-bottom: 1px solid rgba(18, 42, 78, 0.08);
-  }
-
-  .vr-card__img img {
+  .spec-model__thumb {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: center;
-    display: block;
+    padding: 4px;
+    border-radius: 4px;
+    background: var(--warm-off-white);
+    border: 1px solid rgba(18, 42, 78, 0.1);
+    transition: border-color 0.2s ease, transform 0.2s ease;
   }
 
-  .vr-card__body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 18px 18px 16px;
+  .spec-model__thumb-btn:hover .spec-model__thumb,
+  .spec-model__thumb-btn:focus-visible .spec-model__thumb {
+    border-color: var(--orange);
+    transform: scale(1.08);
   }
-
-  .vr-card__body h3 {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.15rem;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--deep-navy);
-    margin-bottom: 4px;
-  }
-
-  .vr-card__size {
-    color: var(--steel);
-    font-size: 0.84rem;
-    line-height: 1.5;
-    margin-bottom: 12px;
-  }
-
-  .vr-card__meta {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    border-top: 1px solid rgba(18, 42, 78, 0.08);
-    padding-top: 12px;
-  }
-
-  .vr-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--steel);
-    background: rgba(18, 42, 78, 0.04);
-    padding: 5px 10px;
-    border-radius: 2px;
-  }
-
-  .vr-chip::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--vr-chip, #ccc);
-    border: 1px solid rgba(18, 42, 78, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-  }
-
-  .vr-chip-noc {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--steel);
-    background: rgba(18, 42, 78, 0.04);
-    padding: 5px 10px;
-    border-radius: 2px;
-  }
-
-  .vr-card__cta {
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--orange-deep);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-  .vr-card__cta span { transition: transform 0.2s ease; }
-  .vr-card:hover .vr-card__cta { color: var(--orange); }
-  .vr-card:hover .vr-card__cta span { transform: translateX(3px); }
 
   .specs-model {
     color: var(--orange-deep);
@@ -704,25 +688,134 @@ const productSchema = `{
     border-bottom: 1px dashed rgba(232, 99, 12, 0.4);
     transition: color 0.2s ease, border-color 0.2s ease;
   }
+
   .specs-model:hover {
     color: var(--orange);
     border-bottom-color: var(--orange);
   }
 
-  .v-color-chip {
+  .spec-swatch {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 0.85rem;
   }
 
-  .v-color-chip::before {
+  .spec-swatch::before {
     content: '';
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: var(--chip, #ccc);
     border: 1px solid rgba(18, 42, 78, 0.18);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+
+  /* Simple image lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .lightbox--open {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 26, 51, 0.92);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .lightbox__panel {
+    position: relative;
+    z-index: 1;
+    max-width: min(920px, 92vw);
+    max-height: 88vh;
+    margin: 0;
+    background: var(--deep-navy);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  }
+
+  .lightbox__imgwrap {
+    padding: 20px;
+  }
+
+  .lightbox__imgwrap img {
+    display: block;
+    max-width: 100%;
+    max-height: 62vh;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+  }
+
+  .lightbox__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: var(--deep-navy);
+    color: var(--white);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lightbox__close:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    transform: scale(1.08);
+  }
+
+  .lightbox__foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px 16px;
+    color: var(--white);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .lightbox__fig {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--orange-light);
+  }
+
+  .lightbox__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 </style>

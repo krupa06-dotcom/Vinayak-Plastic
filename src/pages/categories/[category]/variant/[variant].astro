@@ -22,6 +22,14 @@ const parent = catalogue.categories.find(c => c.slug === size.category_slug) ?? 
 const relatedSizes = (parent?.variants || []).filter(v => v.id !== size.id);
 const relatedProducts = (parent?.sub_categories || []).filter(s => s.is_active);
 
+// Prev / next navigation within the same size range.
+const variantOrder = parent?.variants || [];
+const currentIndex = variantOrder.findIndex(v => v.id === size.id);
+const prevVariant = currentIndex > 0 ? variantOrder[currentIndex - 1] : null;
+const nextVariant = (currentIndex >= 0 && currentIndex < variantOrder.length - 1) ? variantOrder[currentIndex + 1] : null;
+const backHref = path(`/categories/${size.category_slug}`);
+const variantHref = (catVariant) => path(`/categories/${size.category_slug}/variant/${variantSlug(catVariant.name || catVariant.size || 'size')}`);
+
 const sizeImages = size.images;
 const mainImage = resolveFirstImage(...sizeImages.map(i => i.image_url), size.category_image_url);
 const resolvableSizeImages = sizeImages.filter(i => resolveImageUrl(i.image_url));
@@ -77,9 +85,13 @@ const schema = `{
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
+      <a href={backHref} class="btn-back">
+        <span class="btn-back__ico" aria-hidden="true">←</span>
+        Back to {size.category_name}
+      </a>
       <p class="breadcrumb">
         <a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> /
-        <a href={path(`/categories/${size.category_slug}`)}>{size.category_name}</a> / {size.name}
+        <a href={backHref}>{size.category_name}</a> / {size.name}
       </p>
       <h1 class="display-800">{size.name}</h1>
       <p>{size.size || size.category_name}</p>
@@ -93,6 +105,7 @@ const schema = `{
         <div class="cat-detail__media reveal">
           {mainImage ? (
             <img
+              class="pd-main-img"
               src={mainImage}
               alt={`${size.name} — ${size.category_name}`}
               width="800"
@@ -139,39 +152,41 @@ const schema = `{
             </dl>
           )}
 
-          <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
+          <div class="cat-detail__actions">
+            <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
+            <a href={backHref} class="btn btn-back btn-back--ghost">
+              <span class="btn-back__ico" aria-hidden="true">←</span>
+              All {size.category_name}
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ===== TECHNICAL DETAILS ===== -->
-  {specs.length > 0 && (
-  <section class="section-warm" id="technical-details">
-    <div class="container">
-      <div class="section-header reveal">
-        <p class="sec-index">Technical Details</p>
-        <h2 class="display-700">{size.name} specifications</h2>
-        <p>Dimensions, colour and build details for this size / model.</p>
-      </div>
-      <div class="specs-table-wrap reveal">
-        <table class="specs-table specs-table--compact">
-          <tbody>
-            {specs.map(s => (
-              <tr>
-                <th>{s.label}</th>
-                <td>{s.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div class="reveal" style="margin-top:16px;font-size:0.85rem;color:var(--steel);text-align:center">
-        <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
-      </div>
+      {(prevVariant || nextVariant) && (
+        <nav class="vpager" aria-label="Other sizes in this range">
+          {prevVariant ? (
+            <a class="vpager__link vpager__link--prev" href={variantHref(prevVariant)}>
+              <span aria-hidden="true">←</span> {prevVariant.name || prevVariant.size}
+            </a>
+          ) : (
+            <span class="vpager__spacer" aria-hidden="true"></span>
+          )}
+          <span class="vpager__count">{currentIndex >= 0 ? `Size ${currentIndex + 1} of ${variantOrder.length}` : ''}</span>
+          {nextVariant ? (
+            <a class="vpager__link vpager__link--next" href={variantHref(nextVariant)}>
+              {nextVariant.name || nextVariant.size} <span aria-hidden="true">→</span>
+            </a>
+          ) : (
+            <span class="vpager__spacer" aria-hidden="true"></span>
+          )}
+        </nav>
+      )}
+
+      <p class="vd-note reveal">
+        Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.
+      </p>
     </div>
   </section>
-  )}
 
   <!-- ===== APPLICATIONS ===== -->
   {familyApplications.length > 0 && (
@@ -282,10 +297,32 @@ const schema = `{
         <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
         <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
+      <p class="cta-back">
+        <a href={backHref} class="btn-back">
+          <span class="btn-back__ico" aria-hidden="true">←</span>
+          Back to all {size.category_name} sizes
+        </a>
+      </p>
     </div>
   </section>
 
   </main>
+
+  (mainImage && (
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged model image">
+    <div class="lightbox__backdrop" data-lightbox-close></div>
+    <figure class="lightbox__panel">
+      <button type="button" class="lightbox__close" data-lightbox-close aria-label="Close preview">&times;</button>
+      <div class="lightbox__imgwrap">
+        <img id="lightbox-img" src="" alt="" />
+      </div>
+      <figcaption class="lightbox__foot">
+        <span class="lightbox__fig">{size.category_name} · Size / Model</span>
+        <span class="lightbox__name">{size.name}</span>
+      </figcaption>
+    </figure>
+  </div>
+  ))
   <Footer />
 </Layout>
 
@@ -319,7 +356,185 @@ const schema = `{
     color: var(--deep-navy);
   }
 
-  .specs-table--compact td { white-space: normal; }
+  /* ===== SIZE DETAIL LAYOUT ===== */
+  .cat-detail {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 56px;
+    align-items: start;
+    padding: 32px 0 40px;
+  }
+
+  .cat-detail__media {
+    position: sticky;
+    top: calc(var(--nav-height) + 24px);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--warm-off-white);
+  }
+
+  .cat-detail__media img.pd-main-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    object-position: center;
+    padding: 24px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+  }
+
+  .cat-detail__media img.pd-main-img:hover {
+    transform: scale(1.015);
+  }
+
+  .cat-detail__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4/3;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    color: rgba(18, 42, 78, 0.3);
+    background: var(--warm-off-white);
+  }
+
+  .cat-detail__body .sec-index { margin-bottom: 12px; }
+  .cat-detail__body h2 { margin-bottom: 14px; }
+  .cat-detail__body > p { color: var(--steel); line-height: 1.7; margin-bottom: 20px; }
+
+  .cat-detail__types {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .cat-detail__types-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .cat-detail__chip {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--deep-navy);
+    background: rgba(18, 42, 78, 0.05);
+    border: 1px solid rgba(18, 42, 78, 0.1);
+    border-radius: 100px;
+    padding: 6px 14px;
+  }
+
+  .cat-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* ===== BACK BUTTON ===== */
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--white);
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 100px;
+    padding: 7px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .btn-back:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white);
+    transform: translateX(-2px);
+  }
+
+  .btn-back__ico { font-size: 1.05rem; line-height: 1; }
+
+  .page-hero .btn-back { margin-bottom: 28px; }
+
+  .btn-back--ghost {
+    color: var(--deep-navy);
+    border-color: rgba(18, 42, 78, 0.18);
+    background: var(--white);
+  }
+
+  .btn-back--ghost:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white);
+  }
+
+  .cta-back { margin-top: 26px; }
+
+  /* ===== PREV / NEXT SIZE PAGER ===== */
+  .vpager {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 18px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(18, 42, 78, 0.08);
+  }
+
+  .vpager__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--deep-navy);
+    text-decoration: none;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.12);
+    border-radius: 100px;
+    padding: 9px 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .vpager__link--prev { justify-self: start; }
+  .vpager__link--next { justify-self: end; }
+  .vpager__link:hover { border-color: var(--orange); color: var(--orange-deep); }
+  .vpager__link--prev:hover { transform: translateX(-2px); }
+  .vpager__link--next:hover { transform: translateX(2px); }
+
+  .vpager__count {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--steel);
+    white-space: nowrap;
+  }
+
+  .vpager__spacer { width: 60px; }
+
+  .vd-note {
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: var(--steel);
+    text-align: center;
+  }
 
   .pd-thumbs {
     display: flex;
@@ -384,15 +599,143 @@ const schema = `{
     border: 1px solid rgba(18, 42, 78, 0.18);
   }
 
+  /* ===== IMAGE LIGHTBOX ===== */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .lightbox--open {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 26, 51, 0.92);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .lightbox__panel {
+    position: relative;
+    z-index: 1;
+    max-width: min(920px, 92vw);
+    max-height: 88vh;
+    margin: 0;
+    background: var(--deep-navy);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  }
+
+  .lightbox__imgwrap {
+    padding: 20px;
+  }
+
+  .lightbox__imgwrap img {
+    display: block;
+    max-width: 100%;
+    max-height: 62vh;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+  }
+
+  .lightbox__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: var(--deep-navy);
+    color: var(--white);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lightbox__close:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    transform: scale(1.08);
+  }
+
+  .lightbox__foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px 16px;
+    color: var(--white);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .lightbox__fig {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--orange-light);
+  }
+
+  .lightbox__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 960px) {
+    .cat-detail {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .cat-detail__media {
+      position: static;
+    }
+  }
+
   @media (max-width: 640px) {
     .vd-specs { grid-template-columns: 1fr; }
     .vd-spec:nth-child(n+3) { border-bottom: 1px solid rgba(18, 42, 78, 0.06); }
     .vd-spec:last-child { border-bottom: none; }
+
+    .vpager {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .vpager__link { font-size: 0.68rem; padding: 8px 12px; }
+    .vpager__count { grid-column: 1 / -1; justify-self: center; order: -1; }
   }
 </style>
 
 <script is:inline>
 (function () {
+  // Main image thumbnail switcher
   var main = document.querySelector('.cat-detail__media img');
   if (!main) return;
   var thumbs = Array.prototype.slice.call(document.querySelectorAll('.pd-thumb'));
@@ -403,6 +746,42 @@ const schema = `{
       thumbs.forEach(function (t) { t.classList.remove('is-active'); });
       btn.classList.add('is-active');
     });
+  });
+})();
+
+(function () {
+  // Click main image to open enlarged lightbox
+  var overlay = document.querySelector('.lightbox');
+  var main = document.querySelector('.pd-main-img');
+  if (!overlay || !main) return;
+
+  var imgEl = overlay.querySelector('#lightbox-img');
+  var closeBtn = overlay.querySelector('.lightbox__close');
+  var lastFocused = null;
+
+  function open(src) {
+    lastFocused = document.activeElement;
+    imgEl.src = src;
+    imgEl.alt = main.alt || '';
+    overlay.classList.add('lightbox--open');
+    document.body.style.overflow = 'hidden';
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function close() {
+    overlay.classList.remove('lightbox--open');
+    document.body.style.overflow = '';
+    if (lastFocused) lastFocused.focus();
+  }
+
+  main.addEventListener('click', function () { open(main.getAttribute('src')); });
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target.closest('[data-lightbox-close]')) close();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('lightbox--open')) close();
   });
 })();
 </script>
