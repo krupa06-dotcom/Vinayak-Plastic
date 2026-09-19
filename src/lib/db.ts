@@ -34,6 +34,7 @@ export interface SubCategory {
 export interface SubCategoryImage {
   id: string;
   sub_category_id: string;
+  sub_category_variant_id: string | null;
   image_url: string;
   alt_text: string | null;
   display_order: number;
@@ -628,6 +629,19 @@ export function resolveImageUrl(image: string | null): string | null {
     return existsSync(localFile) ? path(image) : null;
   }
   return getProductImageUrl(image);
+}
+
+/**
+ * Resolve the first candidate that produces a usable URL, trying them in order.
+ * Each candidate "wins" only if it actually resolves, so a broken legacy
+ * image never blocks a working one further down the chain.
+ */
+export function resolveFirstImage(...candidates: (string | null | undefined)[]): string | null {
+  for (const candidate of candidates) {
+    const url = resolveImageUrl(candidate ?? null);
+    if (url) return url;
+  }
+  return null;
 }
 
 function getProductImageUrl(path: string): string {

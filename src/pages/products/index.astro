@@ -4,7 +4,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
-import { getCatalogueData, resolveImageUrl } from '../../lib/db';
+import { getCatalogueData, resolveFirstImage } from '../../lib/db';
 
 const catalogue = await getCatalogueData();
 const { categories, subCategories } = catalogue;
@@ -28,13 +28,16 @@ const categoryCards = categories.map((cat, i) => ({
   name: cat.name,
   slug: cat.slug,
   description: cat.description,
-  image: resolveImageUrl(cat.image_url ?? cat.images[0]?.image_url),
+  image: resolveFirstImage(cat.image_url, cat.images[0]?.image_url),
   sizes: cat.variants,
   colors: colorCount(cat.variants),
   count: cat.variants.length,
   subCount: cat.sub_categories.length,
   href: path(`/categories/${cat.slug}`)
 }));
+
+// Category main images — used as a last-resort fallback for product cards.
+const categoryImageBySlug = new Map(categories.map(cat => [cat.slug, cat.image_url]));
 
 // Product cards — every actual product across all categories.
 const productCards = subCategories.map(sub => ({
@@ -43,7 +46,7 @@ const productCards = subCategories.map(sub => ({
   categoryName: sub.category_name,
   categorySlug: sub.category_slug,
   description: sub.short_description || sub.description,
-  image: resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url),
+  image: resolveFirstImage(sub.image_url, sub.images[0]?.image_url, categoryImageBySlug.get(sub.category_slug)),
   sizes: sub.variants.length,
   colors: colorCount(sub.variants),
   href: path(`/categories/${sub.category_slug}/${sub.slug}`)

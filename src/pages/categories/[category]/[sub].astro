@@ -4,18 +4,26 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import { path, SITE_URL } from '../../../lib/site';
 import { CONTACT } from '../../../lib/contact';
-import { getSubCategoryPaths, getSubCategoryBySlug, resolveImageUrl } from '../../../lib/db';
+import {
+  getSubCategoryPaths, getCatalogueData, resolveFirstImage, variantSlug
+} from '../../../lib/db';
 
 export async function getStaticPaths() {
   return await getSubCategoryPaths();
 }
 
 const { category, sub } = Astro.params;
-const subCategory = await getSubCategoryBySlug(category || '', sub || '');
+const catalogue = await getCatalogueData();
+const subCategory = catalogue.subCategories.find(s => s.slug === sub && s.category_slug === category) ?? null;
 
 if (!subCategory) {
   return Astro.redirect('/products');
 }
+
+const categoryData = catalogue.categories.find(c => c.slug === category) ?? null;
+const siblingProducts = (categoryData?.sub_categories ?? []).filter(s => s.slug !== subCategory.slug);
+const categoryVariantNames = new Set((categoryData?.variants ?? []).map(v => (v.name || '').trim()).filter(Boolean));
+const linkableVariants = subCategory.variants.filter(v => categoryVariantNames.has((v.name || '').trim()));
 
 const variants = subCategory.variants;
 const hasVariants = variants.length > 0;
@@ -47,23 +55,43 @@ const applications = (subCategory.applications || []).filter(a => a.name);
 const gallery = subCategory.images.length > 0
   ? subCategory.images
   : subCategory.image_url
-    ? [{ id: 'main', sub_category_id: subCategory.id, image_url: subCategory.image_url, alt_text: null, display_order: 0 }]
+    ? [{ id: 'main', sub_category_id: subCategory.id, sub_category_variant_id: null, image_url: subCategory.image_url, alt_text: null, display_order: 0 }]
     : [];
-const mainImage = resolveImageUrl(subCategory.image_url ?? gallery[0]?.image_url);
+const mainImage = resolveFirstImage(subCategory.image_url, ...gallery.map(g => g.image_url));
 
-// Known CSS colours used to render colour swatches in the spec table.
-const COLOR_HEX: Record<string, string> = {
+const colors = Array.from(new Set(variants.map(v => (v.color || '').trim()).filter(Boolean)));
+
+// Known CSS colours used to render colour swatches on size cards.
+const HEX_MAP: Record<string, string> = {
   blue: '#2563eb', green: '#16a34a', red: '#dc2626', yellow: '#eab308',
   white: '#f8fafc', black: '#111827', grey: '#6b7280', gray: '#6b7280',
   orange: '#ea580c', brown: '#92400e', pink: '#ec4899', purple: '#7c3aed'
 };
+function colorHex(color: string | null): string | null {
+  if (!color) return null;
+  return HEX_MAP[color.trim().toLowerCase()] || null;
+}
 
 function colorSwatch(color: string | null): string {
   if (!color) return '';
   const key = color.trim().toLowerCase();
-  const hex = COLOR_HEX[key] || null;
+  const hex = HEX_MAP[key] || null;
   return `<span class="v-color-chip"${hex ? ` style="--chip:${hex}"` : ''}>${color.trim()}</span>`;
 }
+
+function sizeCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'Size / Model' : 'Sizes / Models'}`;
+}
+
+const statCards = [
+  {
+    value: String(hasVariants ? variants.length : specificationModels.length),
+    label: sizeCountLabel(hasVariants ? variants.length : specificationModels.length)
+  },
+  ...(applications.length > 0
+    ? [{ value: String(applications.length), label: applications.length === 1 ? 'Application' : 'Applications' }]
+    : [])
+];
 
 const subtitle = subCategory.short_description || subCategory.description || subCategory.name;
 const pageTitle = `${subCategory.name} | Vinayak Plastics`;
@@ -97,43 +125,56 @@ const productSchema = `{
     </div>
   </section>
 
-  <!-- ===== PRODUCT INTRO ===== -->
-  <section class="section">
+  <!-- ===== PRODUCT DETAIL ===== -->
+  <section class="section" id="range-detail">
     <div class="container">
-      <div class="pd-intro">
-        <div class="pd-image reveal">
-          {mainImage ? (
-            <img
-              src={mainImage}
-              alt={`${subCategory.name} — ${subCategory.category_name}`}
-              width={800}
-              height={600}
-              loading="lazy"
-              decoding="async"
-              class="pd-image__main"
-            />
-          ) : (
-            <span class="cat-detail__placeholder">{subCategory.name}</span>
-          )}
-          {gallery.length > 1 && (
-            <div class="pd-thumbs" role="group" aria-label="Product images">
-              {gallery.map((img, i) => (
-                <button type="button" class:list={['pd-thumb', i === 0 && 'is-active']} data-src={resolveImageUrl(img.image_url)} aria-label={`View image ${i + 1}`}>
-                  <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${subCategory.name} image ${i + 1}`} width="120" height="90" loading="lazy" decoding="async" />
-                </button>
+      <div class="cat-detail">
+        <div class="cat-detail__media-wrap reveal">
+          <div class="cat-detail__media">
+            {mainImage ? (
+              <img
+                src={mainImage}
+                alt={`${subCategory.name} — ${subCategory.category_name}`}
+                width="800"
+                height="600"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span class="cat-detail__placeholder">{subCategory.name}</span>
+            )}
+          </div>
+        </div>
+        <div class="cat-detail__body reveal">
+          <span class="sec-index">Product · {subCategory.category_name}</span>
+          <h2 class="display-700">{subCategory.name}</h2>
+          <p>{subCategory.description}</p>
+          {statCards.length > 0 && (
+            <div class="cat-detail__stats">
+              {statCards.map(stat => (
+                <div class="cat-detail__stat">
+                  <strong>{stat.value}</strong>
+                  <span>{stat.label}</span>
+                </div>
               ))}
             </div>
           )}
-        </div>
-        <div class="pd-summary reveal">
-          <h2>{subtitle}</h2>
-          <p>{subCategory.description}</p>
-          {features.length > 0 && (
-            <ul class="pd-features">
-              {features.map(feature => (
-                <li>{feature}</li>
+          {colors.length > 0 && (
+            <div class="cat-detail__types">
+              <span class="cat-detail__types-label">Colours available:</span>
+              {colors.map(color => (
+                <span class="cat-detail__chip">{color}</span>
               ))}
-            </ul>
+            </div>
+          )}
+          {linkableVariants.length > 0 && (
+            <div class="cat-detail__types">
+              <span class="cat-detail__types-label">Models:</span>
+              {linkableVariants.slice(0, 6).map(v => (
+                <a href={path(`/categories/${subCategory.category_slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="cat-detail__chip">{v.name || v.size}</a>
+              ))}
+              {linkableVariants.length > 6 && <span class="cat-detail__types-label">+{linkableVariants.length - 6} more</span>}
+            </div>
           )}
           {
             subCategory.product_code && (
@@ -148,13 +189,66 @@ const productSchema = `{
     </div>
   </section>
 
-  <!-- ===== SPECS TABLE ===== -->
-  {(hasVariants || specificationModels.length > 0) && (
-  <section class="section-warm">
+  <!-- ===== RANGE: SIZES AS CARDS ===== -->
+  {linkableVariants.length > 0 && (
+  <section class="section-warm" id="range">
     <div class="container">
       <div class="section-header reveal">
-        <h2 class="display-700">{hasVariants ? 'Sizes & Specifications' : 'Standard Specifications'}</h2>
-        <p>Common {subCategory.name.toLowerCase()} dimensions produced by our unit. Custom sizes available on request.</p>
+        <p class="sec-index">Range</p>
+        <h2 class="display-700">Available sizes &amp; models</h2>
+        <p>Each {subCategory.name.toLowerCase()} model below opens its own detail page with full specifications.</p>
+      </div>
+      <div class="vr-grid reveal">
+        {variants.map(v => {
+          const vImg = resolveFirstImage(
+            subCategory.images.find(i => i.sub_category_variant_id === v.id)?.image_url,
+            mainImage
+          );
+          const hex = (v.color || '').trim();
+          const hexCss = colorHex(hex);
+          const chipStyle = hexCss ? `--vr-chip:${hexCss}` : '';
+          const isLinkable = categoryVariantNames.has((v.name || '').trim());
+          const vSlug = variantSlug(v.name || v.size || 'size');
+          const vHref = isLinkable
+            ? path(`/categories/${subCategory.category_slug}/variant/${vSlug}`)
+            : path('/contact');
+          return (
+            <a href={vHref} class="vr-card reveal">
+              <div class="vr-card__img">
+                {vImg ? (
+                  <img src={vImg} alt={`${v.name || v.size} — ${subCategory.name}`} width="480" height="300" loading="lazy" decoding="async" />
+                ) : (
+                  <span class="sc-card__placeholder">{v.name || v.size}</span>
+                )}
+              </div>
+              <div class="vr-card__body">
+                <h3>{v.name}</h3>
+                {v.size && <p class="vr-card__size">{v.size}</p>}
+                <div class="vr-card__meta">
+                  {hex ? (
+                    <span class="vr-chip" style={chipStyle}>{hex}</span>
+                  ) : (
+                    <span class="vr-chip-noc">Model</span>
+                  )}
+                  <span class="vr-card__cta">{isLinkable ? 'View Size' : 'Enquire'} <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+  )}
+
+  <!-- ===== SIZES & SPECIFICATIONS ===== -->
+  {(hasVariants || specificationModels.length > 0) && (
+  <section class="section-warm" id="sizes">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">Sizes &amp; Colours</p>
+        <h2 class="display-700">{subCategory.name}: standard sizes</h2>
+        <p>Common {subCategory.name.toLowerCase()} models produced by our unit. Custom sizes available on request.</p>
       </div>
       <div class="specs-table-wrap reveal">
         {hasVariants ? (
@@ -170,7 +264,17 @@ const productSchema = `{
               {variants.map(v => (
                 <tr>
                   {variantCols.map(k => (
-                    <td>{k === 'color' ? <span set:html={colorSwatch(v.color)} /> : (v[k] || '—')}</td>
+                    <td>
+                      {k === 'name' ? (
+                        categoryVariantNames.has((v.name || '').trim()) ? (
+                          <a href={path(`/categories/${subCategory.category_slug}/variant/${variantSlug(v.name || v.size || 'size')}`)} class="specs-model">{v[k] || '—'}</a>
+                        ) : (
+                          v[k] || '—'
+                        )
+                      ) : (
+                        k === 'color' ? <span set:html={colorSwatch(v.color)} /> : (v[k] || '—')
+                      )}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -208,24 +312,83 @@ const productSchema = `{
   </section>
   )}
 
-  <!-- ===== APPLICATIONS ===== -->
-  {applications.length > 0 && (
-  <section class="section">
-    <div class="container-sm">
+  <!-- ===== FEATURES & APPLICATIONS ===== -->
+  {(features.length > 0 || applications.length > 0) && (
+  <section class="section-warm" id="features">
+    <div class="container">
       <div class="section-header reveal">
-        <h2 class="display-700">Common Applications</h2>
+        <p class="sec-index">Features &amp; Applications</p>
+        <h2 class="display-700">Why choose {subCategory.name}</h2>
+        <p>Key product features and the sectors where {subCategory.name.toLowerCase()} is used every day.</p>
       </div>
-      <div class="app-grid reveal">
-        {applications.map(app => (
-          <div class="app-card">
-            <h3>{app.name}</h3>
-            <p>{app.description}</p>
+      <div class="feat-app">
+        {features.length > 0 && (
+          <ul class="pd-features reveal">
+            {features.map(feature => (
+              <li>{feature}</li>
+            ))}
+          </ul>
+        )}
+        {applications.length > 0 && (
+          <div class="app-grid reveal">
+            {applications.map(app => (
+              <div class="app-card">
+                <h3>{app.name}</h3>
+                <p>{app.description}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   </section>
   )}
+
+  <!-- ===== MORE IN THIS RANGE ===== -->
+  <section class="section section-warm" id="products">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="sec-index">More from this range</p>
+        <h2 class="display-700">More {subCategory.category_name} products</h2>
+        <p>Specific product types within the {subCategory.category_name.toLowerCase()} family — choose one to see full specifications.</p>
+      </div>
+      {siblingProducts.length > 0 ? (
+        <div class="sc-grid reveal">
+          {siblingProducts.map(p => (
+            <a href={path(`/categories/${p.category_slug}/${p.slug}`)} class="sc-card reveal">
+              <div class="sc-card__img">
+                {resolveFirstImage(p.image_url, p.images[0]?.image_url, categoryData?.image_url) ? (
+                  <img
+                    src={resolveFirstImage(p.image_url, p.images[0]?.image_url, categoryData?.image_url)!}
+                    alt={p.name}
+                    width="480"
+                    height="300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="sc-card__placeholder">{p.name}</span>
+                )}
+              </div>
+              <div class="sc-card__body">
+                <h3>{p.name}</h3>
+                {p.short_description && <p>{p.short_description}</p>}
+                <div class="sc-card__meta">
+                  <span class="sc-card__count">{sizeCountLabel(p.variants_count)}</span>
+                  <span class="sc-card__cta">View Details <span aria-hidden="true">→</span></span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state reveal">
+          <h3>More {subCategory.category_name.toLowerCase()} products are coming soon</h3>
+          <p>We are adding detailed product breakdowns. <a href={path('/contact')}>Contact us</a> for the full {subCategory.category_name.toLowerCase()} range.</p>
+        </div>
+      )}
+    </div>
+  </section>
 
   <!-- ===== CTA ===== -->
   <section class="cta-banner" aria-label={`Enquire about ${subCategory.name.toLowerCase()}`}>
@@ -244,41 +407,307 @@ const productSchema = `{
 </Layout>
 
 <style>
-  .pd-image__main {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+  .cat-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    padding: 72px 0 96px;
+  }
+
+  .cat-detail__media-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .cat-detail__media {
+    position: relative;
+    aspect-ratio: 4/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
     background: var(--warm-off-white);
   }
 
-  .pd-thumbs {
+  .cat-detail__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    padding: 24px;
+  }
+
+  .cat-detail__placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    color: rgba(18, 42, 78, 0.3);
+    background:
+      linear-gradient(rgba(232, 99, 12, 0.04), rgba(232, 99, 12, 0.04)),
+      var(--warm-off-white);
+  }
+
+  .cat-detail__body .sec-index {
+    margin-bottom: 12px;
+  }
+
+  .cat-detail__body h2 {
+    margin-bottom: 14px;
+  }
+
+  .cat-detail__body p {
+    color: var(--steel);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .cat-detail__stats {
+    display: flex;
+    gap: 40px;
+    border-top: 1px solid rgba(18, 42, 78, 0.08);
+    border-bottom: 1px solid rgba(18, 42, 78, 0.08);
+    padding: 20px 0;
+    margin-bottom: 24px;
+  }
+
+  .cat-detail__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cat-detail__stat strong {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--orange-deep);
+    line-height: 1;
+  }
+
+  .cat-detail__stat span {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .cat-detail__types {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 14px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
   }
 
-  .pd-thumb {
-    width: 84px;
-    height: 64px;
-    padding: 0;
-    border: 2px solid rgba(18, 42, 78, 0.1);
+  .cat-detail__types-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .cat-detail__chip {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--deep-navy);
+    background: rgba(18, 42, 78, 0.05);
+    border: 1px solid rgba(18, 42, 78, 0.1);
+    border-radius: 100px;
+    padding: 6px 14px;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  a.cat-detail__chip:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--white);
+  }
+
+  .pd-features {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    margin: 0 0 20px;
+  }
+
+  .feat-app {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 40px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .feat-app {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+  }
+
+  .pd-features li {
+    position: relative;
+    padding-left: 20px;
+    color: var(--deep-navy);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .pd-features li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: var(--orange);
+  }
+
+  /* Range: size/model cards */
+  .vr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px;
+  }
+
+  .vr-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid rgba(18, 42, 78, 0.08);
+    border-top: 3px solid var(--orange);
     border-radius: var(--radius-sm);
-    background: var(--warm-off-white);
-    cursor: pointer;
     overflow: hidden;
-    transition: border-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  .pd-thumb img {
+  .vr-card:hover,
+  .vr-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(18, 42, 78, 0.12);
+  }
+
+  .vr-card__img {
+    position: relative;
+    aspect-ratio: 16/10;
+    padding: 24px;
+    overflow: hidden;
+    background: var(--deep-navy);
+    border-bottom: 1px solid rgba(18, 42, 78, 0.08);
+  }
+
+  .vr-card__img img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    padding: 6px;
+    object-position: center;
+    display: block;
   }
 
-  .pd-thumb:hover { transform: translateY(-2px); }
-  .pd-thumb.is-active { border-color: var(--orange); }
+  .vr-card__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 18px 16px;
+  }
+
+  .vr-card__body h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--deep-navy);
+    margin-bottom: 4px;
+  }
+
+  .vr-card__size {
+    color: var(--steel);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .vr-card__meta {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid rgba(18, 42, 78, 0.08);
+    padding-top: 12px;
+  }
+
+  .vr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.04);
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+
+  .vr-chip::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--vr-chip, #ccc);
+    border: 1px solid rgba(18, 42, 78, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+
+  .vr-chip-noc {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: rgba(18, 42, 78, 0.04);
+    padding: 5px 10px;
+    border-radius: 2px;
+  }
+
+  .vr-card__cta {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--orange-deep);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .vr-card__cta span { transition: transform 0.2s ease; }
+  .vr-card:hover .vr-card__cta { color: var(--orange); }
+  .vr-card:hover .vr-card__cta span { transform: translateX(3px); }
+
+  .specs-model {
+    color: var(--orange-deep);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(232, 99, 12, 0.4);
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .specs-model:hover {
+    color: var(--orange);
+    border-bottom-color: var(--orange);
+  }
 
   .v-color-chip {
     display: inline-flex;
@@ -297,19 +726,3 @@ const productSchema = `{
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   }
 </style>
-
-<script is:inline>
-(function () {
-  var main = document.querySelector('.pd-image__main');
-  if (!main) return;
-  var thumbs = Array.prototype.slice.call(document.querySelectorAll('.pd-thumb'));
-  thumbs.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var src = btn.getAttribute('data-src');
-      if (src) main.setAttribute('src', src);
-      thumbs.forEach(function (t) { t.classList.remove('is-active'); });
-      btn.classList.add('is-active');
-    });
-  });
-})();
-</script>

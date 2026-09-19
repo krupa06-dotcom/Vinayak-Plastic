@@ -4,7 +4,7 @@ import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
 import { path } from '../../../../lib/site';
 import { CONTACT } from '../../../../lib/contact';
-import { getCategoryVariantPaths, getCategoryVariantBySlug, getCatalogueData, variantSlug, resolveImageUrl } from '../../../../lib/db';
+import { getCategoryVariantPaths, getCategoryVariantBySlug, getCatalogueData, variantSlug, resolveImageUrl, resolveFirstImage } from '../../../../lib/db';
 
 export async function getStaticPaths() {
   return await getCategoryVariantPaths();
@@ -23,7 +23,8 @@ const relatedSizes = (parent?.variants || []).filter(v => v.id !== size.id);
 const relatedProducts = (parent?.sub_categories || []).filter(s => s.is_active);
 
 const sizeImages = size.images;
-const mainImage = resolveImageUrl(sizeImages.length > 0 ? sizeImages[0].image_url : size.category_image_url);
+const mainImage = resolveFirstImage(...sizeImages.map(i => i.image_url), size.category_image_url);
+const resolvableSizeImages = sizeImages.filter(i => resolveImageUrl(i.image_url));
 
 // Known CSS colours used to render colour swatches.
 const COLOR_HEX: Record<string, string> = {
@@ -102,9 +103,9 @@ const schema = `{
           ) : (
             <span class="cat-detail__placeholder">{size.name}</span>
           )}
-          {sizeImages.length > 1 && (
+          {resolvableSizeImages.length > 1 && (
             <div class="pd-thumbs" role="group" aria-label="Size images">
-              {sizeImages.map((img, i) => (
+              {resolvableSizeImages.map((img, i) => (
                 <button type="button" class:list={['pd-thumb', i === 0 && 'is-active']} data-src={resolveImageUrl(img.image_url)} aria-label={`View image ${i + 1}`}>
                   <img src={resolveImageUrl(img.image_url)!} alt={img.alt_text || `${size.name} image ${i + 1}`} width="120" height="90" loading="lazy" decoding="async" />
                 </button>
@@ -205,7 +206,7 @@ const schema = `{
       <div class="sc-grid reveal">
         {relatedSizes.map(v => {
           const vImage = parent?.images.find(i => i.category_variant_id === v.id);
-          const img = resolveImageUrl(vImage?.image_url ?? size.category_image_url);
+          const img = resolveFirstImage(vImage?.image_url, size.category_image_url);
           const hex = (v.color || '').trim();
           const hexCss = COLOR_HEX[hex.toLowerCase()] || null;
           const chipStyle = hexCss ? `--chip:${hexCss}` : '';
@@ -251,8 +252,8 @@ const schema = `{
         {relatedProducts.map(sub => (
           <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card">
             <div class="sc-card__img">
-              {resolveImageUrl(sub.images[0]?.image_url ?? sub.image_url) ? (
-                <img src={resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url)!} alt={sub.name} width="480" height="300" loading="lazy" decoding="async" />
+              {resolveFirstImage(sub.image_url, sub.images[0]?.image_url, size.category_image_url) ? (
+                <img src={resolveFirstImage(sub.image_url, sub.images[0]?.image_url, size.category_image_url)!} alt={sub.name} width="480" height="300" loading="lazy" decoding="async" />
               ) : (
                 <span class="sc-card__placeholder">{sub.name}</span>
               )}

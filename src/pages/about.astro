@@ -6,7 +6,7 @@ import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
-import { getCatalogueData, resolveImageUrl } from '../lib/db';
+import { getCatalogueData, resolveFirstImage } from '../lib/db';
 
 const catalogue = await getCatalogueData();
 
@@ -41,7 +41,7 @@ const values = [
 const aboutRanges = ['plastic-crates', 'plastic-pallets', 'waste-bins', 'hand-pallet-trucks'];
 const products = aboutRanges.map(slug => {
   const cat = catalogue.categories.find(c => c.slug === slug);
-  const image = resolveImageUrl(cat?.images[0]?.image_url ?? cat?.image_url ?? null);
+  const image = resolveFirstImage(cat?.image_url, cat?.images[0]?.image_url);
   return {
     img: image,
     alt: cat ? `${cat.name} — Vinayak Plastics` : '',

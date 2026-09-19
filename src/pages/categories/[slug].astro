@@ -4,7 +4,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { path, SITE_URL } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
-import { getCatalogueData, resolveImageUrl, variantSlug } from '../../lib/db';
+import { getCatalogueData, resolveImageUrl, resolveFirstImage, variantSlug } from '../../lib/db';
 
 // Build the list of category pages (from Supabase, or the static fallback).
 export async function getStaticPaths() {
@@ -148,7 +148,7 @@ function sizeCountLabel(count: number): string {
       <div class="vr-grid reveal">
         {categorySizes.map(v => {
           const vImg = category.images.find(i => i.category_variant_id === v.id);
-          const img = resolveImageUrl(vImg?.image_url ?? category.image_url);
+          const img = resolveFirstImage(vImg?.image_url, category.image_url);
           const hex = (v.color || '').trim();
           const hexCss = colorHex(hex);
           const chipStyle = hexCss ? `--vr-chip:${hexCss}` : '';
@@ -237,9 +237,9 @@ function sizeCountLabel(count: number): string {
           {products.map(sub => (
             <a href={path(`/categories/${sub.category_slug}/${sub.slug}`)} class="sc-card reveal">
               <div class="sc-card__img">
-                {resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url) ? (
+                {resolveFirstImage(sub.image_url, sub.images[0]?.image_url, category.image_url) ? (
                   <img
-                    src={resolveImageUrl(sub.image_url ?? sub.images[0]?.image_url)!}
+                    src={resolveFirstImage(sub.image_url, sub.images[0]?.image_url, category.image_url)!}
                     alt={`${sub.name}`}
                     width="480"
                     height="300"

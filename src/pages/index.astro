@@ -7,7 +7,7 @@ import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
-import { getCatalogueData, resolveImageUrl } from '../lib/db';
+import { getCatalogueData, resolveFirstImage } from '../lib/db';
 
 const catalogue = await getCatalogueData();
 
@@ -24,8 +24,11 @@ const categoryCards = activeCategories.slice(0, 4).map((cat) => ({
   desc: cat.description ?? '',
   slug: `/categories/${cat.slug}`,
   alt: cat.name,
-  image: cat.image_url
+  image: resolveFirstImage(cat.image_url, cat.images[0]?.image_url)
 }));
+
+// Category main images — fallback for product cards that have no own image.
+const categoryImageBySlug = new Map(activeCategories.map(cat => [cat.slug, cat.image_url]));
 
 const categoryNames = new Set(categoryCards.map(c => c.name.toLowerCase()).filter(Boolean));
 
@@ -38,7 +41,7 @@ const topProducts = catalogue.subCategories
     desc: p.short_description ?? p.description ?? '',
     slug: `/categories/${p.category_slug}/${p.slug}`,
     alt: p.name,
-    image: p.image_url
+    image: resolveFirstImage(p.image_url, p.images[0]?.image_url, categoryImageBySlug.get(p.category_slug))
   }));
 
 // Top up to 2 products with the earliest sub-categories when the admin has not
@@ -55,7 +58,7 @@ if (topProducts.length < 2) {
       desc: s.short_description ?? s.description ?? '',
       slug,
       alt: s.name,
-      image: s.image_url
+      image: resolveFirstImage(s.image_url, s.images[0]?.image_url, categoryImageBySlug.get(s.category_slug))
     });
   }
 }
@@ -147,7 +150,7 @@ const reasons = [
 
       <div class="products-home__grid">
         {products.map((p) => {
-          const dbImg = resolveImageUrl(p.image);
+          const dbImg = p.image;
           return (
           <article class="ph-card reveal">
             <a href={path(p.slug)} class="ph-card__link">
