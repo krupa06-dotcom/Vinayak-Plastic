@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import BackButton from '../components/BackButton.astro';
 import EnquiryForm from '../components/EnquiryForm.astro';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
@@ -27,7 +28,10 @@ const emailHref = `mailto:${contactSetting?.email || CONTACT.email}`;
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
-      <p class="breadcrumb"><a href={path('/')}>Home</a> / Contact Us</p>
+      <div class="hero-top">
+        <p class="breadcrumb"><a href={path('/')}>Home</a> / Contact Us</p>
+        <BackButton href={path('/')} />
+      </div>
       <h1 class="display-800">Get in Touch</h1>
       <p>Call, WhatsApp, or email us directly for pricing, product specifications, and dispatch information.</p>
     </div>

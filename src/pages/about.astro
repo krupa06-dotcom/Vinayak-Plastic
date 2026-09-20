@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import BackButton from '../components/BackButton.astro';
 import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
@@ -68,7 +69,10 @@ const process = [
   <!-- ===== PAGE HERO ===== -->
   <section class="about-hero">
     <div class="container">
-      <p class="breadcrumb"><a href={path('/')}>Home</a> / About Us</p>
+      <div class="hero-top">
+        <p class="breadcrumb"><a href={path('/')}>Home</a> / About Us</p>
+        <BackButton href={path('/')} />
+      </div>
       <h1 class="about-hero__title">Industrial materials, handled <span class="text-orange">right.</span></h1>
       <p class="about-hero__sub">Vinayak Plastics supplies material handling and packaging products that keep warehouses, dairy plants, and municipalities running — durable, dependable, and backed by direct service.</p>
       <div class="about-hero__actions">

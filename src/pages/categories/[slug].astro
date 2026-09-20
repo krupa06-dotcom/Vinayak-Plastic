@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import BackButton from '../../components/BackButton.astro';
 import { path, SITE_URL } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
 import { getCatalogueData, resolveImageUrl, resolveFirstImage, variantSlug } from '../../lib/db';
@@ -99,7 +100,10 @@ function sizeCountLabel(count: number): string {
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
-      <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / {category.name}</p>
+      <div class="hero-top">
+        <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / {category.name}</p>
+        <BackButton href={path('/products')} />
+      </div>
       <h1 class="display-800">{category.name}</h1>
       <p>{category.description}</p>
     </div>
@@ -665,5 +669,36 @@ function sizeCountLabel(count: number): string {
     font-size: 1.05rem;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+  }
+  @media (max-width: 960px) {
+    .cat-detail {
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .cat-detail { gap: 30px; padding: 16px 0 24px; }
+
+    .cat-detail__stats { gap: 18px 24px; flex-wrap: wrap; }
+    .cat-detail__stat strong { font-size: 1.6rem; }
+
+    .cat-detail__types { row-gap: 2px; }
+    .cat-detail__types-label { flex-basis: 160px; }
+  }
+
+  @media (max-width: 480px) {
+    .cat-detail { gap: 26px; padding: 12px 0 22px; }
+
+    .cat-detail__media img { padding: 12px; }
+    .cat-detail__placeholder { font-size: 0.82rem; }
+
+    .cat-detail__stats {
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px 28px;
+    }
+    .cat-detail__types-label { flex-basis: auto; }
   }
 </style>

@@ -2,6 +2,7 @@
 import Layout from '../../../../layouts/Layout.astro';
 import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
+import BackButton from '../../../../components/BackButton.astro';
 import { path } from '../../../../lib/site';
 import { CONTACT } from '../../../../lib/contact';
 import { getCategoryVariantPaths, getCategoryVariantBySlug, getCatalogueData, variantSlug, resolveImageUrl, resolveFirstImage } from '../../../../lib/db';
@@ -85,14 +86,13 @@ const schema = `{
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
-      <a href={backHref} class="btn-back">
-        <span class="btn-back__ico" aria-hidden="true">←</span>
-        Back to {size.category_name}
-      </a>
-      <p class="breadcrumb">
-        <a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> /
-        <a href={backHref}>{size.category_name}</a> / {size.name}
-      </p>
+      <div class="hero-top">
+        <p class="breadcrumb">
+          <a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> /
+          <a href={backHref}>{size.category_name}</a> / {size.name}
+        </p>
+        <BackButton href={backHref} />
+      </div>
       <h1 class="display-800">{size.name}</h1>
       <p>{size.size || size.category_name}</p>
     </div>
@@ -154,10 +154,7 @@ const schema = `{
 
           <div class="cat-detail__actions">
             <a href={path('/contact')} class="btn btn-primary">Request Pricing &amp; Specs</a>
-            <a href={backHref} class="btn btn-back btn-back--ghost">
-              <span class="btn-back__ico" aria-hidden="true">←</span>
-              All {size.category_name}
-            </a>
+            <BackButton variant="on-light" href={backHref} />
           </div>
         </div>
       </div>
@@ -298,10 +295,7 @@ const schema = `{
         <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
       <p class="cta-back">
-        <a href={backHref} class="btn-back">
-          <span class="btn-back__ico" aria-hidden="true">←</span>
-          Back to all {size.category_name} sizes
-        </a>
+        <BackButton href={backHref} />
       </p>
     </div>
   </section>
@@ -437,48 +431,15 @@ const schema = `{
     gap: 14px;
   }
 
-  /* ===== BACK BUTTON ===== */
-  .btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--white);
-    text-decoration: none;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 100px;
-    padding: 7px 16px;
-    background: rgba(255, 255, 255, 0.06);
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  /* ===== BACK BUTTON (shared component) ===== */
+  .cta-back {
+    margin-top: 26px;
+    text-align: center;
   }
 
-  .btn-back:hover {
-    background: var(--orange);
-    border-color: var(--orange);
-    color: var(--white);
-    transform: translateX(-2px);
+  .cat-detail__actions .back-btn {
+    align-self: center;
   }
-
-  .btn-back__ico { font-size: 1.05rem; line-height: 1; }
-
-  .page-hero .btn-back { margin-bottom: 28px; }
-
-  .btn-back--ghost {
-    color: var(--deep-navy);
-    border-color: rgba(18, 42, 78, 0.18);
-    background: var(--white);
-  }
-
-  .btn-back--ghost:hover {
-    background: var(--orange);
-    border-color: var(--orange);
-    color: var(--white);
-  }
-
-  .cta-back { margin-top: 26px; }
 
   /* ===== PREV / NEXT SIZE PAGER ===== */
   .vpager {
@@ -730,6 +691,34 @@ const schema = `{
 
     .vpager__link { font-size: 0.68rem; padding: 8px 12px; }
     .vpager__count { grid-column: 1 / -1; justify-self: center; order: -1; }
+  }
+
+  @media (max-width: 480px) {
+    /* Product-range section — mobile only, desktop untouched */
+    .cat-detail { gap: 26px; padding: 18px 0 28px; }
+
+    .cat-detail__media img.pd-main-img { padding: 12px; }
+
+    .cat-detail__body { padding: 0 3px; }
+
+    .cat-detail__types { gap: 11px; }
+    .cat-detail__types-label { flex-basis: 100%; margin-bottom: 16px; }
+
+    .vd-spec dd { font-size: 0.84rem; }
+
+    .cat-detail__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cat-detail__actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .pd-thumbs { gap: 8px; }
+    .pd-thumb { width: 70px; height: 54px; }
   }
 </style>
 

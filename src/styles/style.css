@@ -237,17 +237,17 @@ button {
 
 /* ===== SECTION ===== */
 .section {
-  padding: 96px 0
+  padding: 88px 0
 }
 
 .section-warm {
   background: var(--warm-off-white);
-  padding: 96px 0
+  padding: 88px 0
 }
 
 .section-header {
   text-align: center;
-  margin-bottom: 56px
+  margin-bottom: 48px
 }
 
 .section-header h2 {
@@ -561,7 +561,7 @@ button {
 /* ===== PAGE HERO ===== */
 .page-hero {
   background: var(--deep-navy);
-  padding: 80px 0 64px;
+  padding: 64px 0 48px;
   position: relative;
   overflow: hidden
 }
@@ -577,6 +577,32 @@ button {
 
 .page-hero .container {
   position: relative
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin-bottom: 16px
+}
+
+.hero-top .breadcrumb {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+  min-width: 0
+}
+
+.hero-top .back-btn {
+  margin-bottom: 0;
+  flex: 0 0 auto
+}
+
+@media (max-width: 640px) {
+  .hero-top .back-btn {
+    flex-direction: row;
+    align-items: center
+  }
 }
 
 .page-hero h1 {
@@ -606,15 +632,13 @@ button {
   max-width: 600px
 }
 
-/* ===== HOME HERO — SPLIT CONTENT SLIDER ===== */
+/* ===== HOME HERO — FULL-BLEED BACKGROUND SLIDER ===== */
 .hero {
   position: relative;
   margin-top: var(--nav-height);
   min-height: calc(100vh - var(--nav-height));
   min-height: 600px;
-  padding: 56px 0 132px;
-  display: flex;
-  align-items: center;
+  display: block;
   overflow: hidden;
   background: var(--deep-navy);
   color: var(--white)
@@ -626,53 +650,38 @@ button {
   }
 }
 
-.hero::before {
-  content: '';
+.hero__shade {
   position: absolute;
   inset: 0;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3Crect x='22' y='0' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3Crect x='44' y='0' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3Crect x='0' y='22' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3Crect x='22' y='22' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3Crect x='44' y='22' width='18' height='18' rx='3' fill='%23E8630C' opacity='0.05'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  opacity: 0.7
-}
-
-.hero .container {
-  position: relative;
   z-index: 1;
-  width: 100%
+  background: linear-gradient(90deg,
+    rgba(10, 26, 51, 0.85) 0%,
+    rgba(10, 26, 51, 0.5) 50%,
+    rgba(10, 26, 51, 0.25) 100%)
 }
 
-.hero__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
-  gap: clamp(40px, 5vw, 80px);
-  align-items: center;
-  width: 100%
-}
-
-.hero__media {
-  position: relative
-}
-
-.hero__media-frame {
+.hero__container {
   position: relative;
-  aspect-ratio: 1 / 1;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: var(--deep-navy);
-  box-shadow: 0 40px 80px rgba(5, 12, 26, 0.55)
+  z-index: 2;
+  width: 100%;
+  padding-top: 24px;
+  padding-bottom: 60px
+}
+
+.hero__content {
+  max-width: 740px
 }
 
 .hero__slides {
   position: absolute;
-  inset: 0;
-  border-radius: 22px;
-  overflow: hidden
+  inset: 0
 }
 
 .hero__slide {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
   opacity: 0;
   visibility: hidden
 }
@@ -763,14 +772,16 @@ button {
   text-transform: uppercase;
   letter-spacing: -0.01em;
   color: var(--white);
+  text-shadow: 0 2px 24px rgba(10, 26, 51, 0.5);
   margin-bottom: 22px
 }
 
 .hero__sub {
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.9);
   font-size: clamp(1.05rem, 1.7vw, 1.25rem);
   line-height: 1.7;
   max-width: 600px;
+  text-shadow: 0 1px 12px rgba(10, 26, 51, 0.6);
   margin-bottom: 34px
 }
 
@@ -882,11 +893,11 @@ button {
 }
 
 .hero__arrow--prev {
-  left: -24px
+  left: clamp(16px, 4vw, 48px)
 }
 
 .hero__arrow--next {
-  right: -24px
+  right: clamp(16px, 4vw, 48px)
 }
 
 /* Allow horizontal drag — keep native vertical scrolling on touch */
@@ -2365,7 +2376,7 @@ html.js .reveal.visible {
   /* The header wraps to two rows at these widths, so top heroes must
      clear the full header height (~117px) instead of the 72px desktop. */
   .page-hero {
-    padding: calc(var(--nav-height) + 64px) 0 64px
+    padding: calc(var(--nav-height) + 48px) 0 48px
   }
 
   .site-nav .container {
@@ -2451,18 +2462,11 @@ html.js .reveal.visible {
 /* Tablet portrait / mobile landscape */
 @media(max-width:768px) {
   .hero {
-    min-height: 560px;
-    padding: 48px 0 120px
+    min-height: 560px
   }
 
-  .hero__grid {
-    grid-template-columns: 1fr;
-    gap: 36px
-  }
-
-  .hero__media-frame {
-    max-width: 420px;
-    margin: 0 auto
+  .hero__container {
+    padding-bottom: 48px
   }
 
   .hero__arrow--prev {
@@ -2554,7 +2558,7 @@ html.js .reveal.visible {
   }
 
   .page-hero {
-    padding: calc(var(--nav-height) + 64px) 0
+    padding: calc(var(--nav-height) + 48px) 0
   }
 
   .page-hero h1 {
@@ -2649,10 +2653,6 @@ html.js .reveal.visible {
   .hero__sub {
     font-size: 0.98rem;
     margin-bottom: 26px
-  }
-
-  .hero__media-frame {
-    max-width: 320px
   }
 
   .hero {
@@ -2785,7 +2785,7 @@ html.js .reveal.visible {
   }
 
   .page-hero {
-    padding: calc(var(--nav-height) + 64px) 0
+    padding: calc(var(--nav-height) + 28px) 0
   }
 
   .page-hero h1 {
@@ -2942,15 +2942,29 @@ html.js .reveal.visible {
 
 @media(max-width:560px) {
   .sc-grid {
-    grid-template-columns: 1fr;
-    gap: 20px
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px
+  }
+
+  .sc-card__img {
+    padding: 14px
   }
 
   .sc-card__body {
-    padding: 20px 18px 16px
+    padding: 14px 14px 12px
   }
 
   .sc-card__body h3 {
-    font-size: 1.1rem
+    font-size: 1rem
+  }
+
+  .sc-card__body p {
+    font-size: 0.8rem;
+    margin-bottom: 10px
+  }
+
+  .sc-card__meta {
+    flex-wrap: wrap;
+    gap: 8px
   }
 }

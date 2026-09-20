@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import BackButton from '../../components/BackButton.astro';
 import { path } from '../../lib/site';
 import { CONTACT } from '../../lib/contact';
 import { getCatalogueData, resolveFirstImage } from '../../lib/db';
@@ -67,7 +68,10 @@ const productSearch = productCards.map(p =>
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
-      <p class="breadcrumb"><a href={path('/')}>Home</a> / Products</p>
+      <div class="hero-top">
+        <p class="breadcrumb"><a href={path('/')}>Home</a> / Products</p>
+        <BackButton href={path('/')} />
+      </div>
       <h1 class="display-800">Our Product Range</h1>
       <p>Industrial-grade material handling and packaging equipment for warehouses, dairy, municipal, and commercial buyers.</p>
     </div>

@@ -2,6 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
+import BackButton from '../../../components/BackButton.astro';
 import { path, SITE_URL } from '../../../lib/site';
 import { CONTACT } from '../../../lib/contact';
 import {
@@ -136,7 +137,10 @@ const productSchema = `{
   <!-- ===== PAGE HERO ===== -->
   <section class="page-hero">
     <div class="container">
-      <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / <a href={path(`/categories/${subCategory.category_slug}`)}>{subCategory.category_name}</a> / {subCategory.name}</p>
+      <div class="hero-top">
+        <p class="breadcrumb"><a href={path('/')}>Home</a> / <a href={path('/products')}>Products</a> / <a href={path(`/categories/${subCategory.category_slug}`)}>{subCategory.category_name}</a> / {subCategory.name}</p>
+        <BackButton href={path(`/categories/${subCategory.category_slug}`)} />
+      </div>
       <h1 class="display-800">{subCategory.name}</h1>
       <p>{subtitle}</p>
     </div>
@@ -817,5 +821,16 @@ const productSchema = `{
     font-size: 1.05rem;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 480px) {
+    .cat-detail__stats {
+      gap: 14px 28px;
+      flex-wrap: wrap;
+    }
+
+    .cat-detail__stat strong {
+      font-size: 1.6rem;
+    }
   }
 </style>
