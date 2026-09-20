@@ -561,7 +561,7 @@ button {
 /* ===== PAGE HERO ===== */
 .page-hero {
   background: var(--deep-navy);
-  padding: 64px 0 48px;
+  padding: calc(var(--nav-height) + 40px) 0 48px;
   position: relative;
   overflow: hidden
 }
