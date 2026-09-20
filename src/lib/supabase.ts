@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 // Check if Supabase is properly configured (not placeholder values)
 export function hasSupabase(): boolean {
@@ -17,10 +17,12 @@ export function hasSupabase(): boolean {
 if (!hasSupabase()) {
   console.warn(
     'Supabase is not configured. Falling back to static data. ' +
-    'Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in your .env file to enable database integration.'
+    'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in your .env file to enable database integration.'
   );
 }
 
+type Supabase = ReturnType<typeof createClient<Database>>;
+
 export const supabase = hasSupabase()
-  ? createClient<Database>(supabaseUrl, supabasePublishableKey)
-  : (null as unknown as ReturnType<typeof createClient<Database>>);
+  ? (createClient<Database>(supabaseUrl as string, supabasePublishableKey as string) as Supabase)
+  : (null as unknown as Supabase);

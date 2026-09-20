@@ -1,0 +1,168 @@
+'use client';
+
+import { useEffect } from 'react';
+import AdminShell from '@/components/admin/AdminShell';
+import { gate, supabase, publicUrl, esc, fmtDate, imageInUse, showEmpty, confirmDialog, toast, publishSite } from '@/scripts/admin/core';
+
+// Media Library — port of src/pages/admin/media/index.astro. The heavy lifting is DOM
+// rendering started after gate() resolves, exactly like the Astro script.
+export default function Media() {
+  useEffect(() => {
+    let debounceTimer: number | undefined;
+
+    void (async () => {
+      if (!(await gate())) return;
+
+      interface FileItem { name: string; id: string; created_at: string; size?: number; inUse?: string[] }
+      let allFiles: FileItem[] = [];
+
+      const listEl = document.getElementById('media-list')!;
+      const searchEl = document.getElementById('media-search') as HTMLInputElement;
+      const countEl = document.getElementById('media-count') as HTMLSpanElement;
+
+      async function load() {
+        listEl.innerHTML = '<div class="a-inline-loading"><div class="a-spinner"></div></div>';
+        countEl.textContent = '';
+
+        const rawFiles = await (async () => {
+          const { data, error } = await supabase.storage.from('product-images').list('', { limit: 5000, sortBy: { column: 'created_at', order: 'desc' } });
+          if (error) return [];
+          return (data || []).map((f: any) => ({ name: f.name, id: f.id, created_at: f.created_at || '', size: f.metadata?.size }) as FileItem);
+        })();
+
+        countEl.textContent = `${rawFiles.length} image${rawFiles.length === 1 ? '' : 's'}`;
+
+        if (!rawFiles.length) {
+          showEmpty(listEl, 'No images uploaded', 'Upload product images to the media library.',
+            `<button type="button" class="a-btn a-btn-primary" onclick="document.getElementById('media-upload')?.click()">Upload image</button>`);
+          return;
+        }
+
+        // Check usage for first 100 files to avoid hammering DB (best-effort)
+        const checkBatch = rawFiles.slice(0, 100);
+        for (const file of checkBatch) {
+          const usages = await imageInUse(file.name);
+          if (usages.length) file.inUse = usages;
+        }
+
+        allFiles = rawFiles;
+        render();
+      }
+
+      function render() {
+        const search = searchEl.value.trim().toLowerCase();
+        const filtered = search
+          ? allFiles.filter(f => f.name.toLowerCase().includes(search))
+          : allFiles;
+
+        if (!filtered.length) {
+          showEmpty(listEl, 'No images found', 'Try a different search or upload new images.');
+          return;
+        }
+
+        listEl.innerHTML = `
+          <div class="a-table-wrap">
+            <table class="a-table">
+              <thead><tr>
+                <th></th><th>Filename</th><th>Uploaded</th><th>Size</th><th>Status</th><th style="width:100px">Actions</th>
+              </tr></thead>
+              <tbody>${filtered.map(f => {
+                const url = publicUrl(f.name);
+                const sizeStr = f.size ? (f.size / 1024 < 1024 ? `${(f.size / 1024).toFixed(1)} KB` : `${(f.size / (1024*1024)).toFixed(1)} MB`) : '—';
+                const inUse = f.inUse && f.inUse.length > 0;
+                return `
+                <tr>
+                  <td><img src="${esc(url)}" alt="" class="a-thumb" loading="lazy" /></td>
+                  <td style="word-break:break-all;font-size:0.82rem;">${esc(f.name)}</td>
+                  <td style="white-space:nowrap;font-size:0.82rem;">${fmtDate(f.created_at)}</td>
+                  <td style="font-size:0.82rem;">${sizeStr}</td>
+                  <td>${inUse ? '<span class="a-badge a-badge-active" style="background:var(--a-info-bg);color:var(--a-info);">In use</span>' : '<span style="font-size:0.78rem;color:var(--a-faint);">Not in use</span>'}</td>
+                  <td class="a-actions">
+                    <a href="${esc(url)}" target="_blank" rel="noopener" class="a-btn a-btn-sm">Open</a>
+                    <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-file="${esc(f.name)}">Delete</button>
+                  </td>
+                </tr>`;
+              }).join('')}</tbody>
+            </table>
+          </div>`;
+
+        listEl.querySelectorAll<HTMLButtonElement>('[data-delete-file]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const name = btn.dataset.deleteFile!;
+            const file = allFiles.find(f => f.name === name);
+            if (file?.inUse && file.inUse.length) {
+              toast(`Cannot delete "${name}": it is currently ${file.inUse.join(' and ')}.`, 'error');
+              return;
+            }
+            const ok = await confirmDialog('Delete image?', `Permanently delete "${name}" from storage? This cannot be undone.`, 'Delete');
+            if (!ok) return;
+            const { error } = await supabase.storage.from('product-images').remove([name]);
+            if (error) { toast(error.message, 'error'); return; }
+            toast('Image deleted.', 'success');
+            publishSite();
+            await load();
+          });
+        });
+      }
+
+      document.getElementById('media-upload')?.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        input.onchange = async () => {
+          const files = Array.from(input.files || []);
+          if (!files.length) return;
+          const errors: string[] = [];
+          for (const file of files) {
+            const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const storagePath = `media/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+            const { error } = await supabase.storage.from('product-images').upload(storagePath, file, { cacheControl: '3600', upsert: false });
+            if (error) errors.push(`${file.name}: ${error.message}`);
+          }
+          if (errors.length) toast(errors[0], 'error');
+          else toast(`Uploaded ${files.length} image${files.length > 1 ? 's' : ''}.`, 'success');
+          publishSite();
+          await load();
+        };
+        input.click();
+      });
+
+      searchEl?.addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = window.setTimeout(render, 280); });
+
+      await load();
+    })();
+
+    return () => {
+      if (debounceTimer !== undefined) clearTimeout(debounceTimer);
+    };
+  }, []);
+
+  return (
+    <AdminShell title="Media Library" current="media">
+      <div className="a-page-head">
+        <h2>Media Library</h2>
+        <button type="button" className="a-btn a-btn-primary" id="media-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          Upload image
+        </button>
+      </div>
+
+      <div className="a-card">
+        <div className="a-toolbar" style={{ flexWrap: 'wrap' }}>
+          <input type="search" id="media-search" className="a-input" placeholder="Search filename…" />
+          <span style={{ flex: 1 }}></span>
+          <span id="media-count" style={{ fontSize: '0.84rem', color: 'var(--a-muted)' }}></span>
+        </div>
+        <div className="a-card-body" id="media-list">
+          <div className="a-inline-loading">
+            <div className="a-spinner"></div>
+          </div>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}

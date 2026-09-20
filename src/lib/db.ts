@@ -1,10 +1,9 @@
 import { supabase, hasSupabase } from './supabase';
 import { path } from './site';
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
-const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public');
+const PUBLIC_DIR = join(process.cwd(), 'public');
 
 // ============================================================
 // Types
@@ -136,12 +135,12 @@ const EMPTY_CATALOGUE: CatalogueData = { categories: [], subCategories: [] };
 // Category Queries
 // ============================================================
 
-function getSubCategoryPath(sub: CatalogueSubCategory): { params: { category: string; sub: string } } {
-  return { params: { category: sub.category_slug, sub: sub.slug } };
+function getSubCategoryPath(sub: CatalogueSubCategory): { category: string; sub: string } {
+  return { category: sub.category_slug, sub: sub.slug };
 }
 
 /** Pairs (category slug, sub slug) for the sub-category detail pages. */
-export async function getSubCategoryPaths(): Promise<{ params: { category: string; sub: string } }[]> {
+export async function getSubCategoryPaths(): Promise<{ category: string; sub: string }[]> {
   const catalogue = await getCatalogueData();
   return catalogue.subCategories
     .filter(s => s.is_active && s.category_slug)
@@ -176,14 +175,14 @@ export interface CategoryVariantDetail extends CategoryVariant {
   category_image_url: string | null;
 }
 
-function getCategoryVariantPath(categorySlug: string, variant: string): { params: { category: string; variant: string } } {
-  return { params: { category: categorySlug, variant } };
+function getCategoryVariantPath(categorySlug: string, variant: string): { category: string; variant: string } {
+  return { category: categorySlug, variant };
 }
 
 /** (category slug, variant slug) pairs for the per-size detail pages. */
-export async function getCategoryVariantPaths(): Promise<{ params: { category: string; variant: string } }[]> {
+export async function getCategoryVariantPaths(): Promise<{ category: string; variant: string }[]> {
   const catalogue = await getCatalogueData();
-  const out: { params: { category: string; variant: string } }[] = [];
+  const out: { category: string; variant: string }[] = [];
   for (const cat of catalogue.categories) {
     for (const v of cat.variants) {
       out.push(getCategoryVariantPath(cat.slug, variantSlug(v.name || v.size || 'size')));

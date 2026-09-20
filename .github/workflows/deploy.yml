@@ -1,7 +1,8 @@
 name: Build & Deploy to GitHub Pages
 
-# The Astro site is statically generated, so a successful deploy is the only
-# way admin changes become visible publicly. This workflow runs on:
+# The Next.js site is statically generated (output: 'export', shipped to
+# `dist`), so a successful deploy is the only way admin changes become visible
+# publicly. This workflow runs on:
 #   * every push to main
 #   * a manual "Run workflow" (workflow_dispatch)
 #   * a `deploy_site` repository_dispatch event — sent automatically by the
@@ -15,6 +16,8 @@ name: Build & Deploy to GitHub Pages
 # service-role key:
 #   * SUPABASE_URL
 #   * SUPABASE_PUBLISHABLE_KEY
+# (The build maps them to NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+# which Next inlines into the client bundle at build time.)
 #
 # The auto-rebuild hook additionally needs two Supabase secrets (set with the
 # Supabase CLI, not here):
@@ -56,8 +59,8 @@ jobs:
 
       - name: Build site
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
       - name: Configure Pages

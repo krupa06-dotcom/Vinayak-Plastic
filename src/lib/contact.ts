@@ -1,6 +1,13 @@
 // Central company contact details — single source of truth.
 // Update these values once and they propagate across the whole site.
 
+// Strips formatting and guarantees a single Indian country code (91) prefix
+// regardless of how the number was stored.
+export function normalizedNumber(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits.startsWith('91') ? digits : `91${digits}`;
+}
+
 export const CONTACT = {
   company: 'Vinayak Plastics',
   phone: '9558747862',

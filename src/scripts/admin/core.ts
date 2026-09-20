@@ -12,11 +12,11 @@ declare global {
   }
 }
 
-const globals = window.__VP_SUPABASE__;
+const globals = typeof window !== 'undefined' ? window.__VP_SUPABASE__ : undefined;
 
 export const configured = Boolean(globals && globals.url && globals.key && globals.configured);
 
-export const supabase = configured ? createClient<Database>(globals.url, globals.key) : (null as unknown as ReturnType<typeof createClient<Database>>);
+export const supabase = configured ? createClient<Database>(globals!.url, globals!.key) : (null as unknown as ReturnType<typeof createClient<Database>>);
 
 const BASE: string = globals?.base ?? '/';
 
@@ -206,7 +206,7 @@ async function doPublish(): Promise<void> {
       console.warn('[publish] no session, skipping rebuild trigger');
       return;
     }
-    const endpoint = `${globals.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
+    const endpoint = `${globals!.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }

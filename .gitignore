@@ -1,7 +1,9 @@
+# next.js
+/.next/
+
 # build output
+/out/
 dist/
-# generated types
-.astro/
 
 # dependencies
 node_modules/
@@ -11,6 +13,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# typescript incremental build info
+*.tsbuildinfo
+
+# supabase cli temp files
+supabase/.temp/
 
 
 # environment variables
