@@ -227,7 +227,9 @@ async function doPublish(): Promise<void> {
 /**
  * Queues a website rebuild after a content change. Debounced so that a slice of
  * rapid saves (image upload + insert, bulk updates, etc.) produces a single
- * GitHub Pages rebuild. No-op when Supabase is not configured (local dev).
+ * trigger. On Vercel this hits the project's deploy hook via the deploy-site
+ * edge function, so the static build is regenerated with the new content.
+ * No-op when Supabase is not configured (local dev).
  */
 export function publishSite(delayMs = 2500): void {
   if (!configured) return;

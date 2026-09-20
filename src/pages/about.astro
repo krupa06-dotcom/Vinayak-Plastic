@@ -7,9 +7,18 @@ import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
-import { getCatalogueData, resolveFirstImage } from '../lib/db';
+import { getCatalogueData, getSiteSetting, resolveFirstImage } from '../lib/db';
 
 const catalogue = await getCatalogueData();
+
+const aboutSetting = await getSiteSetting('about') as any;
+const aboutDescription = aboutSetting?.description
+  || 'Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems serving warehouses, dairy distributors, municipal corporations, and commercial buyers across India.';
+const mission = aboutSetting?.mission || null;
+const vision = aboutSetting?.vision || null;
+const whyChooseUs: string[] = Array.isArray(aboutSetting?.why_choose_us)
+  ? aboutSetting.why_choose_us.filter((x: unknown) => typeof x === 'string' && x.trim())
+  : [];
 
 const stats = [
   { num: '25+', label: 'Years in Business' },
@@ -100,8 +109,20 @@ const process = [
         <div class="about-who__body reveal">
           <p class="sec-index">Who We Are</p>
           <h2 class="about-who__title">A business house built on <span class="text-orange">reliable supply</span></h2>
-          <p class="about-who__text">Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems serving warehouses, dairy distributors, municipal corporations, and commercial buyers across India.</p>
-          <p class="about-who__text">Everything we supply is manufactured using HDPE and PP grades — materials chosen for impact resistance, UV stability, and long service life in demanding industrial environments. We work with buyers to deliver products that meet specific size, color, and load-bearing requirements.</p>
+          <p class="about-who__text">{aboutDescription}</p>
+          {mission && (
+            <p class="about-who__text"><strong style="display:block;font-family:var(--font-display);text-transform:uppercase;color:var(--deep-navy);margin-bottom:4px;font-size:.95rem;">Our Mission</strong>{mission}</p>
+          )}
+          {vision && (
+            <p class="about-who__text"><strong style="display:block;font-family:var(--font-display);text-transform:uppercase;color:var(--deep-navy);margin-bottom:4px;font-size:.95rem;">Our Vision</strong>{vision}</p>
+          )}
+          {whyChooseUs.length > 0 && (
+            <ul class="about-who__list">
+              {whyChooseUs.map((point) => (
+                <li class="about-who__point">{point}</li>
+              ))}
+            </ul>
+          )}
           <a href={path('/products')} class="btn btn-ghost">See Our Full Product Range</a>
         </div>
       </div>
@@ -224,5 +245,29 @@ const process = [
     text-align: center;
     color: rgba(18, 42, 78, 0.25);
     background: var(--warm-off-white);
+  }
+
+  .about-who__list {
+    margin: 8px 0 20px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .about-who__point {
+    color: var(--steel);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    padding: 8px 0 8px 24px;
+    position: relative;
+  }
+
+  .about-who__point:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 17px;
+    width: 10px;
+    height: 2px;
+    background: var(--orange);
   }
 </style>

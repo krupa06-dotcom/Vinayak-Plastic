@@ -7,9 +7,13 @@ import { Image } from 'astro:assets';
 import warehouseInterior from '../assets/images/warehouse-interior.webp';
 import { path } from '../lib/site';
 import { CONTACT } from '../lib/contact';
-import { getCatalogueData, resolveFirstImage } from '../lib/db';
+import { getCatalogueData, getSiteSetting, resolveFirstImage } from '../lib/db';
 
 const catalogue = await getCatalogueData();
+
+const homepageSetting = await getSiteSetting('homepage') as any;
+const featuredTagline = homepageSetting?.featured_tagline
+  || 'HDPE and PP material handling and packaging equipment for warehouses, dairy distributors, and municipal buyers across India.';
 
 // "What We Make": 6 cards, all data from the database — the first 4 are the
 // categories (by display order) and the last 2 are the top products
@@ -145,7 +149,7 @@ const reasons = [
       <header class="products-home__head reveal">
         <p class="sec-index">What We Make</p>
         <h2 class="products-home__title">Industrial products built for <span class="text-orange">everyday operations.</span></h2>
-        <p class="products-home__sub">HDPE and PP material handling and packaging equipment for warehouses, dairy distributors, and municipal buyers across India.</p>
+        <p class="products-home__sub">{featuredTagline}</p>
       </header>
 
       <div class="products-home__grid">
