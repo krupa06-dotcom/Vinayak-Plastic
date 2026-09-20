@@ -1,7 +1,7 @@
 name: Build & Deploy to GitHub Pages
 
 # The Next.js site is statically generated (output: 'export', shipped to
-# `dist`), so a successful deploy is the only way admin changes become visible
+# `out`), so a successful deploy is the only way admin changes become visible
 # publicly. This workflow runs on:
 #   * every push to main
 #   * a manual "Run workflow" (workflow_dispatch)
@@ -69,7 +69,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: out
 
   deploy:
     needs: build
