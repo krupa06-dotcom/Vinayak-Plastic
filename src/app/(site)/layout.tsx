@@ -27,6 +27,9 @@ export default function SiteLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: organizationSchema }}
       />
+      <a href="#main" className="skip-link">
+        Skip to main content
+      </a>
       <Header />
       {children}
       <Footer />

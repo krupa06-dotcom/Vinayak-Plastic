@@ -78,7 +78,7 @@ export default function CategoryLightbox() {
       <figure className="lightbox__panel">
         <button type="button" className="lightbox__close" data-lightbox-close aria-label="Close preview">&times;</button>
         <div className="lightbox__imgwrap">
-          <img id="lightbox-img" src="" alt="" />
+          <img id="lightbox-img" src={null} alt="" />
         </div>
         <figcaption className="lightbox__foot">
           <span className="lightbox__fig" id="lightbox-fig">FIG/01</span>

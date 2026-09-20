@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { SITE_URL } from '@/lib/site';
 
 const DEFAULT_DESCRIPTION =
@@ -45,14 +46,11 @@ export default function RootLayout({
         <meta charSet="UTF-8" />
       </head>
       <body>
-        <script
+        <Script
           dangerouslySetInnerHTML={{
             __html: "document.documentElement.classList.add('js');"
           }}
         />
-        <a href="#main" className="skip-link">
-          Skip to main content
-        </a>
         {children}
       </body>
     </html>
