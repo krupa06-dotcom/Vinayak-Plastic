@@ -1,13 +1,10 @@
-// Central URL helper. Paths stay relative so the site works both under the
-// current GitHub Pages base (/Vinayak-Plastic) and on a future custom domain
-// (where `base` would be '/'), with no further code changes.
+// Central URL helper. Paths are root-relative so the site works from the
+// site root (Vercel / custom domain).
 
-export const SITE_URL = 'https://krupa06-dotcom.github.io';
-const BASE_PATH = '/Vinayak-Plastic';
+export const SITE_URL = 'https://vinayak-plastic.vercel.app';
 
 /** Prefix a root-relative path with the configured base path. */
 export function path(p: string): string {
   if (!p.startsWith('/')) p = `/${p}`;
-  if (p.startsWith(BASE_PATH)) return p;
-  return `${BASE_PATH}${p}`;
+  return p;
 }

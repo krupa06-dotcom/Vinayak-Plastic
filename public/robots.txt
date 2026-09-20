@@ -5,4 +5,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /admin/login/
 
-Sitemap: https://krupa06-dotcom.github.io/Vinayak-Plastic/sitemap.xml
+Sitemap: https://vinayak-plastic.vercel.app/sitemap.xml

@@ -3,8 +3,7 @@ import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://krupa06-dotcom.github.io',
-  base: '/Vinayak-Plastic',
+  site: 'https://vinayak-plastic.vercel.app',
   output: 'static',
   build: {
     // Inline the single global stylesheet into each page's <head>
