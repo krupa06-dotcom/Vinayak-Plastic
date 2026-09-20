@@ -644,10 +644,16 @@ export function resolveFirstImage(...candidates: (string | null | undefined)[]):
   return null;
 }
 
+/**
+ * Resolve a Supabase Storage path into an optimized public URL. Images are
+ * re-encoded to webp and capped at 1200px via Supabase's on-the-fly render
+ * endpoint, so admin-uploaded multi-MB PNGs cost ~150KB to download instead
+ * of several MB (the main source of the site feeling laggy).
+ */
 function getProductImageUrl(path: string): string {
   const { data } = supabase.storage
     .from('product-images')
     .getPublicUrl(path);
 
-  return data.publicUrl;
+  return `${data.publicUrl}?width=1200&format=webp&quality=80`;
 }

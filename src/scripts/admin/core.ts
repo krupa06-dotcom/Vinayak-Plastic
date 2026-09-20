@@ -330,7 +330,10 @@ export function publicUrl(pathOrUrl: string | null | undefined): string {
   // Storage objects; make them base-aware instead of building a bucket URL.
   if (pathOrUrl.startsWith('/')) return href(pathOrUrl);
   const { data } = supabase.storage.from('product-images').getPublicUrl(pathOrUrl);
-  return data ? data.publicUrl : '';
+  if (!data) return '';
+  // Serve a small webp render so the Media Library grid doesn't fetch
+  // multi-MB originals (the main cause of a laggy admin).
+  return `${data.publicUrl}?width=600&format=webp&quality=80`;
 }
 
 export async function uploadFile(file: File, storagePath: string): Promise<{ path: string } | { error: string }> {
