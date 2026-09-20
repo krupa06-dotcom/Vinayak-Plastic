@@ -294,15 +294,12 @@ const schema = `{
         <a href={CONTACT.phoneHref} class="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
         <a href={CONTACT.whatsappHref} class="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
       </div>
-      <p class="cta-back">
-        <BackButton href={backHref} />
-      </p>
     </div>
   </section>
 
   </main>
 
-  (mainImage && (
+  {mainImage && (
   <div class="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged model image">
     <div class="lightbox__backdrop" data-lightbox-close></div>
     <figure class="lightbox__panel">
@@ -316,7 +313,7 @@ const schema = `{
       </figcaption>
     </figure>
   </div>
-  ))
+  )}
   <Footer />
 </Layout>
 
