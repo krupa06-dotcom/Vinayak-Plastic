@@ -112,7 +112,7 @@ import { path } from '../../../lib/site';
   </form>
 
   <script>
-    import { gate, supabase, esc, slugify, toast, publicUrl, uploadFile, deleteFile } from '../../../scripts/admin/core';
+    import { gate, supabase, esc, slugify, toast, publicUrl, uploadFile, deleteFile, publishSite } from '../../../scripts/admin/core';
     import { createImagePicker } from '../../../scripts/admin/imagePicker';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
@@ -669,6 +669,7 @@ import { path } from '../../../lib/site';
       } else {
         toast(editId ? 'Saved.' : 'Created.', 'success');
       }
+      publishSite(100);
       window.location.href = href(mode === 'category' ? 'admin/categories/' : 'admin/products/');
     });
   </script>

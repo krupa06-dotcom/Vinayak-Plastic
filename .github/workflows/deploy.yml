@@ -1,7 +1,12 @@
 name: Build & Deploy to GitHub Pages
 
 # The Astro site is statically generated, so a successful deploy is the only
-# way admin changes become visible publicly. Every push to main rebuilds it.
+# way admin changes become visible publicly. This workflow runs on:
+#   * every push to main
+#   * a manual "Run workflow" (workflow_dispatch)
+#   * a `deploy_site` repository_dispatch event — sent automatically by the
+#     admin panel after every save (via the supabase/functions/deploy-site
+#     edge function), so admin edits go live without touching the repo.
 #
 # One-time repo setup (Settings -> Pages):
 #   * Source: "GitHub Actions"
@@ -10,11 +15,19 @@ name: Build & Deploy to GitHub Pages
 # service-role key:
 #   * SUPABASE_URL
 #   * SUPABASE_PUBLISHABLE_KEY
+#
+# The auto-rebuild hook additionally needs two Supabase secrets (set with the
+# Supabase CLI, not here):
+#   * GITHUB_PAT  — a personal access token with `repo` scope (classic) or
+#                   fine-grained "Actions: write" on this repository
+#   * GITHUB_REPO — "krupa06-dotcom/Vinayak-Plastic"
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  repository_dispatch:
+    types: [deploy_site]
 
 permissions:
   contents: read

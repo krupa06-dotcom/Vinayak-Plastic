@@ -193,6 +193,57 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 }
 
 // ============================================================
+// Site publish / rebuild trigger
+// ============================================================
+
+let publishTimer: number | null = null;
+
+async function doPublish(): Promise<void> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      console.warn('[publish] no session, skipping rebuild trigger');
+      return;
+    }
+    const endpoint = `${globals.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error('[publish] deploy-site failed', body);
+      toast((body as any).error || 'Website rebuild could not be started. Changes will appear after the next manual deploy.', 'error');
+      return;
+    }
+    console.log('[publish] website rebuild triggered');
+    toast('Website rebuild started — changes will be live in about 2-3 minutes.', 'info');
+  } catch (e) {
+    console.error('[publish] error', e);
+  }
+}
+
+/**
+ * Queues a website rebuild after a content change. Debounced so that a slice of
+ * rapid saves (image upload + insert, bulk updates, etc.) produces a single
+ * GitHub Pages rebuild. No-op when Supabase is not configured (local dev).
+ */
+export function publishSite(delayMs = 2500): void {
+  if (!configured) return;
+  if (publishTimer !== null) window.clearTimeout(publishTimer);
+  if (delayMs <= 0) {
+    publishTimer = null;
+    void doPublish();
+    return;
+  }
+  publishTimer = window.setTimeout(() => {
+    publishTimer = null;
+    void doPublish();
+  }, delayMs);
+}
+
+// ============================================================
 // State renderers
 // ============================================================
 

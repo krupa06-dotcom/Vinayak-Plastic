@@ -24,7 +24,7 @@ import { path } from '../../../lib/site';
   </div>
 
   <script>
-    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl } from '../../../scripts/admin/core';
+    import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, publishSite } from '../../../scripts/admin/core';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
     const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
@@ -107,6 +107,7 @@ import { path } from '../../../lib/site';
           const { error } = await supabase.from('sub_categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }
           toast('Product deleted.', 'success');
+          publishSite();
           await load();
         });
       });

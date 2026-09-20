@@ -75,7 +75,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   </form>
 
   <script>
-    import { gate, supabase, toast } from '../../../scripts/admin/core';
+    import { gate, supabase, toast, publishSite } from '../../../scripts/admin/core';
 
     const formEl = document.getElementById('set-form') as HTMLFormElement;
     const loadingEl = document.getElementById('set-loading')!;
@@ -147,6 +147,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       const err = err1 || err2;
       if (err) { showError(err.message); return; }
       toast('Settings saved.', 'success');
+      publishSite();
     });
   </script>
 </AdminLayout>

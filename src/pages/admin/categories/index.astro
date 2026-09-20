@@ -63,7 +63,7 @@ import { path } from '../../../lib/site';
   </div>
 
   <script>
-    import { gate, supabase, esc, slugify, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl } from '../../../scripts/admin/core';
+    import { gate, supabase, esc, slugify, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, publishSite } from '../../../scripts/admin/core';
     import { createImagePicker } from '../../../scripts/admin/imagePicker';
 
     const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
@@ -185,6 +185,7 @@ import { path } from '../../../lib/site';
           const { error } = await supabase.from('categories').delete().eq('id', id);
           if (error) { toast(error.message, 'error'); return; }
           toast('Category deleted.', 'success');
+          publishSite();
           await load();
         });
       });
@@ -230,6 +231,7 @@ import { path } from '../../../lib/site';
 
       if (error) { setError(error.message); return; }
       toast('Category created.', 'success');
+      publishSite();
       closeForm();
       await load();
     });

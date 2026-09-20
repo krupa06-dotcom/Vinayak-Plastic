@@ -20,7 +20,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   </div>
 
   <script>
-    import { gate, supabase, publicUrl, esc, fmtDate, imageInUse, showEmpty, confirmDialog, toast } from '../../../scripts/admin/core';
+    import { gate, supabase, publicUrl, esc, fmtDate, imageInUse, showEmpty, confirmDialog, toast, publishSite } from '../../../scripts/admin/core';
 
     interface FileItem { name: string; id: string; created_at: string; size?: number; inUse?: string[] }
     let allFiles: FileItem[] = [];
@@ -109,6 +109,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
           const { error } = await supabase.storage.from('product-images').remove([name]);
           if (error) { toast(error.message, 'error'); return; }
           toast('Image deleted.', 'success');
+          publishSite();
           await load();
         });
       });
@@ -131,6 +132,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         }
         if (errors.length) toast(errors[0], 'error');
         else toast(`Uploaded ${files.length} image${files.length > 1 ? 's' : ''}.`, 'success');
+        publishSite();
         await load();
       };
       input.click();
