@@ -309,34 +309,241 @@ a.cat-detail__chip:hover {
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 960px) {
   .cat-detail {
     grid-template-columns: 1fr;
     gap: 36px;
   }
+  
+  .specs-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -24px;
+    padding: 0 24px;
+  }
+  
+  .spec-table-models {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cat-detail {
+    gap: 32px;
+    padding: 48px 0 64px;
+  }
+  
+  .cat-detail__media {
+    aspect-ratio: 16/10;
+  }
+  
+  .cat-detail__media img {
+    padding: 16px;
+  }
+  
+  .cat-detail__body h2 {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+  
+  .cat-detail__stats {
+    gap: 24px;
+    padding: 16px 0;
+  }
+  
+  .cat-detail__stat strong {
+    font-size: 1.6rem;
+  }
+  
+  .cat-detail__types {
+    gap: 6px;
+  }
+  
+  .cat-detail__types-label {
+    font-size: 0.68rem;
+  }
+  
+  .cat-detail__chip {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+  }
+  
+  .spec-model {
+    min-width: 160px;
+    gap: 8px;
+  }
+  
+  .spec-model__thumb-btn {
+    width: 48px;
+    height: 36px;
+  }
 }
 
 @media (max-width: 640px) {
-  .cat-detail { gap: 30px; padding: 16px 0 24px; }
-
-  .cat-detail__stats { gap: 18px 24px; flex-wrap: wrap; }
-  .cat-detail__stat strong { font-size: 1.6rem; }
-
-  .cat-detail__types { row-gap: 2px; }
-  .cat-detail__types-label { flex-basis: 160px; }
+  .cat-detail { 
+    gap: 28px; 
+    padding: 32px 0 48px; 
+  }
+  
+  .cat-detail__media {
+    aspect-ratio: 4/3;
+  }
+  
+  .cat-detail__media img {
+    padding: 12px;
+  }
+  
+  .cat-detail__placeholder { 
+    font-size: 1rem; 
+  }
+  
+  .cat-detail__body h2 {
+    font-size: clamp(1.3rem, 7vw, 1.7rem);
+  }
+  
+  .cat-detail__body p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  
+  .cat-detail__stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 24px;
+    padding: 14px 0;
+  }
+  
+  .cat-detail__stat {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .cat-detail__stat strong {
+    font-size: 1.5rem;
+  }
+  
+  .cat-detail__stat span {
+    font-size: 0.62rem;
+  }
+  
+  .cat-detail__types {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  
+  .cat-detail__types-label {
+    flex-basis: 100%;
+    margin-bottom: 8px;
+    font-size: 0.65rem;
+  }
+  
+  .cat-detail__chip {
+    font-size: 0.72rem;
+    padding: 5px 10px;
+  }
+  
+  .cat-detail__body .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .spec-model {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 140px;
+  }
+  
+  .spec-model__thumb-btn {
+    width: 44px;
+    height: 32px;
+  }
 }
 
 @media (max-width: 480px) {
-  .cat-detail { gap: 26px; padding: 12px 0 22px; }
-
-  .cat-detail__media img { padding: 12px; }
-  .cat-detail__placeholder { font-size: 0.82rem; }
-
-  .cat-detail__stats {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px 28px;
+  .cat-detail { 
+    gap: 24px; 
+    padding: 24px 0 40px; 
   }
-  .cat-detail__types-label { flex-basis: auto; }
+  
+  .cat-detail__media img { 
+    padding: 10px; 
+  }
+  
+  .cat-detail__placeholder { 
+    font-size: 0.85rem; 
+  }
+  
+  .cat-detail__stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+  }
+  
+  .cat-detail__stat {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(18, 42, 78, 0.03);
+    border-radius: var(--radius-sm);
+  }
+  
+  .cat-detail__stat strong {
+    font-size: 1.4rem;
+  }
+  
+  .cat-detail__types-label { 
+    flex-basis: 100%; 
+  }
+  
+  .specs-table-wrap {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+  
+  .lightbox__panel {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 0;
+    margin: 0;
+  }
+  
+  .lightbox__imgwrap {
+    padding: 12px;
+  }
+  
+  .lightbox__close {
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .sc-card__img {
+    padding: 16px;
+  }
+  
+  .sc-card__body {
+    padding: 16px 16px 14px;
+  }
+  
+  .sc-card__body h3 {
+    font-size: 1.05rem;
+  }
+  
+  .sc-card__body p {
+    font-size: 0.82rem;
+  }
+  
+  .sc-card__meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }

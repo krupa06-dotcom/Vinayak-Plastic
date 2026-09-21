@@ -2666,6 +2666,22 @@ html.js .reveal.visible {
   .page-hero h1 {
     font-size: clamp(1.6rem, 6vw, 2.4rem)
   }
+  
+  .hero-top {
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  
+  .hero-top .breadcrumb {
+    flex: 1 1 100%;
+    order: 2;
+    margin-top: 4px;
+    font-size: 0.75rem;
+  }
+  
+  .hero-top .back-btn {
+    order: 1;
+  }
 
   .footer-grid {
     grid-template-columns: 1fr;
@@ -2896,6 +2912,20 @@ html.js .reveal.visible {
 
   .page-hero p {
     font-size: 0.9rem
+  }
+  
+  .hero-top {
+    gap: 8px 12px;
+  }
+  
+  .hero-top .breadcrumb {
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+  }
+  
+  .back-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
   }
 
   .about-values {
