@@ -102,6 +102,11 @@ export default function Categories() {
           return;
         }
 
+        const subsByCat = new Map<string, number>();
+        for (const s of subs) {
+          subsByCat.set(s.category_id, (subsByCat.get(s.category_id) || 0) + 1);
+        }
+
         listEl.innerHTML = `
           <div class="a-table-wrap">
             <table class="a-table">
@@ -110,19 +115,19 @@ export default function Categories() {
               </tr></thead>
               <tbody>
                 ${cats.map(c => {
-                  const catProds = subs.filter(s => s.category_id === c.id);
+                  const prodCount = subsByCat.get(c.id) || 0;
                   return `
                     <tr data-name="${esc((c.name + ' ' + c.slug).toLowerCase())}">
                       <td>
                         <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
-                          ${c.image_url ? `<img src="${esc(publicUrl(c.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
+                          ${c.image_url ? `<img src="${esc(publicUrl(c.image_url, 100))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
                           <div>
                             <strong>${esc(c.name)}</strong>
                             <div style="font-size:0.72rem;color:var(--a-faint);">${esc(c.slug)}</div>
                           </div>
                         </div>
                       </td>
-                      <td><span class="a-chip">${catProds.length} product${catProds.length === 1 ? '' : 's'}</span></td>
+                      <td><span class="a-chip">${prodCount} product${prodCount === 1 ? '' : 's'}</span></td>
                       <td>${activeBadge(c.is_active)}</td>
                       <td class="a-actions">
                         <a href="${href(`admin/products/edit/?category=${c.id}`)}" class="a-btn a-btn-sm">Edit</a>

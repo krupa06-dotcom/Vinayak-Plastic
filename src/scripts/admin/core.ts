@@ -43,16 +43,22 @@ export function dashboardHref(): string {
 // ============================================================
 
 let gateState: 'pending' | 'ready' | 'redirected' = 'pending';
+let authPromise: Promise<boolean> | null = null;
+let currentSessionEmail: string | null = null;
 
 function dispatchReady() {
   gateState = 'ready';
-  document.body.classList.add('admin-ready');
-  document.dispatchEvent(new CustomEvent('vpadmin:ready'));
+  if (typeof document !== 'undefined') {
+    document.body.classList.add('admin-ready');
+    document.dispatchEvent(new CustomEvent('vpadmin:ready'));
+  }
 }
 
 function markRedirected() {
   gateState = 'redirected';
-  document.body.classList.add('admin-redirecting');
+  if (typeof document !== 'undefined') {
+    document.body.classList.add('admin-redirecting');
+  }
 }
 
 function isAdminEmail(email: string): boolean {
@@ -63,41 +69,49 @@ function isAdminEmail(email: string): boolean {
 export function gate(): Promise<boolean> {
   if (gateState === 'ready') return Promise.resolve(true);
   if (gateState === 'redirected') return Promise.resolve(false);
-  return new Promise<boolean>((resolve) => {
-    const iv = window.setInterval(() => {
-      if (gateState !== 'pending') {
-        window.clearInterval(iv);
-        resolve(gateState === 'ready');
-      }
-    }, 30);
-    window.setTimeout(() => {
-      window.clearInterval(iv);
-      resolve(gateState === 'ready');
-    }, 10000);
-  });
+  return ensureAdmin();
 }
 
 /** Run on every protected admin page. Redirects away if there is no valid session. */
 export async function ensureAdmin(): Promise<boolean> {
   if (!configured) {
     markRedirected();
-    window.location.replace(loginHref());
+    if (typeof window !== 'undefined') window.location.replace(loginHref());
     return false;
   }
-  if (gateState === 'ready') return true;
+  if (gateState === 'ready') {
+    if (currentSessionEmail) fillUserBar(currentSessionEmail);
+    wireShellUi();
+    return true;
+  }
 
-  const { data } = await supabase.auth.getSession();
-  const session = data.session;
-  if (!session || !isAdminEmail(session.user.email || '')) {
-    markRedirected();
-    if (session) await supabase.auth.signOut();
-    window.location.replace(loginHref());
-    return false;
+  if (!authPromise) {
+    authPromise = (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
+        if (!session || !isAdminEmail(session.user.email || '')) {
+          markRedirected();
+          if (session) await supabase.auth.signOut();
+          if (typeof window !== 'undefined') window.location.replace(loginHref());
+          return false;
+        }
+        currentSessionEmail = session.user.email || '';
+        dispatchReady();
+        fillUserBar(currentSessionEmail);
+        wireShellUi();
+        return true;
+      } catch (err) {
+        console.error('[auth] session check failed', err);
+        markRedirected();
+        if (typeof window !== 'undefined') window.location.replace(loginHref());
+        return false;
+      } finally {
+        authPromise = null;
+      }
+    })();
   }
-  dispatchReady();
-  fillUserBar(session.user.email || '');
-  wireShellUi();
-  return true;
+  return authPromise;
 }
 
 function fillUserBar(email: string) {
@@ -315,7 +329,7 @@ export function activeBadge(active: boolean): string {
 // Storage helpers (bucket: product-images)
 // ============================================================
 
-export function publicUrl(pathOrUrl: string | null | undefined): string {
+export function publicUrl(pathOrUrl: string | null | undefined, width = 400): string {
   if (!pathOrUrl) return '';
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
   // Root-relative paths are static assets shipped with the site, not
@@ -323,9 +337,8 @@ export function publicUrl(pathOrUrl: string | null | undefined): string {
   if (pathOrUrl.startsWith('/')) return href(pathOrUrl);
   const { data } = supabase.storage.from('product-images').getPublicUrl(pathOrUrl);
   if (!data) return '';
-  // Serve a small webp render so the Media Library grid doesn't fetch
-  // multi-MB originals (the main cause of a laggy admin).
-  return `${data.publicUrl}?width=600&format=webp&quality=80`;
+  // Serve an optimized render so the admin doesn't download multi-MB originals
+  return `${data.publicUrl}?width=${width}&format=webp&quality=80`;
 }
 
 export async function uploadFile(file: File, storagePath: string): Promise<{ path: string } | { error: string }> {
@@ -345,55 +358,59 @@ export async function deleteFile(pathOrUrl: string): Promise<boolean> {
   return !error;
 }
 
-/** Check whether a storage path / public URL is referenced anywhere in the content model. */
-export async function imageInUse(pathOrUrl: string): Promise<string[]> {
-  const candidates = new Set<string>();
-  if (pathOrUrl) {
-    candidates.add(pathOrUrl);
-    const pub = publicUrl(pathOrUrl);
-    if (pub) candidates.add(pub);
-  }
-  const refs: string[] = [];
+/**
+ * Batch resolves all in-use images in a single parallel query instead of 400 sequential queries.
+ * Returns a map from normalized image path/name to reference descriptions.
+ */
+export async function getAllInUseImagesMap(): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
 
-  const { data: simgs } = await supabase
-    .from('sub_category_images')
-    .select('image_url, sub_category:sub_categories(name)')
-    .limit(1000);
-  for (const row of simgs || []) {
-    if (row.image_url && candidates.has(row.image_url)) {
-      const subName = (row.sub_category && Array.isArray(row.sub_category)
-        ? row.sub_category[0]?.name
-        : (row as any).sub_category?.name) || null;
-      refs.push(subName ? `as an image for "${subName}"` : 'as a sub-category image');
-      break;
+  function record(urlOrPath: string | null | undefined, label: string) {
+    if (!urlOrPath) return;
+    const clean = urlOrPath.trim();
+    if (!clean) return;
+
+    const list1 = map.get(clean) || [];
+    if (!list1.includes(label)) list1.push(label);
+    map.set(clean, list1);
+
+    const baseName = clean.split('/').pop()?.split('?')[0];
+    if (baseName && baseName !== clean) {
+      const list2 = map.get(baseName) || [];
+      if (!list2.includes(label)) list2.push(label);
+      map.set(baseName, list2);
     }
   }
-  const { data: cats } = await supabase.from('categories').select('image_url, name').limit(1000);
-  for (const row of cats || []) {
-    if (row.image_url && candidates.has(row.image_url)) {
-      refs.push(`as the image for category "${row.name}"`);
-      break;
-    }
+
+  const [simgsRes, catsRes, catImgsRes, subsRes] = await Promise.all([
+    supabase.from('sub_category_images').select('image_url, sub_category:sub_categories(name)').limit(2000),
+    supabase.from('categories').select('image_url, name').limit(500),
+    supabase.from('category_images').select('image_url, category:categories(name)').limit(2000),
+    supabase.from('sub_categories').select('image_url, name').limit(1000)
+  ]);
+
+  for (const row of simgsRes.data || []) {
+    const name = (row.sub_category && Array.isArray(row.sub_category) ? row.sub_category[0]?.name : (row as any).sub_category?.name) || 'product';
+    record(row.image_url, `as an image for product "${name}"`);
   }
-  const { data: catImgs } = await supabase
-    .from('category_images')
-    .select('image_url, category:categories(name)')
-    .limit(1000);
-  for (const row of catImgs || []) {
-    if (row.image_url && candidates.has(row.image_url)) {
-      const catName = (row.category && Array.isArray(row.category)
-        ? row.category[0]?.name
-        : (row as any).category?.name) || null;
-      refs.push(catName ? `as an image for "${catName}"` : 'as a category image');
-      break;
-    }
+  for (const row of catsRes.data || []) {
+    record(row.image_url, `as cover image for category "${row.name}"`);
   }
-  const { data: subs } = await supabase.from('sub_categories').select('image_url, name').limit(1000);
-  for (const row of subs || []) {
-    if (row.image_url && candidates.has(row.image_url)) {
-      refs.push(`as the image for sub-category "${row.name}"`);
-      break;
-    }
+  for (const row of catImgsRes.data || []) {
+    const name = (row.category && Array.isArray(row.category) ? row.category[0]?.name : (row as any).category?.name) || 'category';
+    record(row.image_url, `as gallery image for category "${name}"`);
   }
-  return refs;
+  for (const row of subsRes.data || []) {
+    record(row.image_url, `as main image for product "${row.name}"`);
+  }
+
+  return map;
+}
+
+/** Check whether a single storage path / public URL is referenced anywhere in the content model. */
+export async function imageInUse(pathOrUrl: string): Promise<string[]> {
+  const inUseMap = await getAllInUseImagesMap();
+  const clean = (pathOrUrl || '').trim();
+  const baseName = clean.split('/').pop()?.split('?')[0] || '';
+  return inUseMap.get(clean) || (baseName ? inUseMap.get(baseName) : undefined) || [];
 }

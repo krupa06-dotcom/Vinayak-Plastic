@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, type ReactNode } from 'react';
+import Link from 'next/link';
 import { ensureAdmin } from '@/scripts/admin/core';
 
 export type AdminNavKey =
@@ -65,13 +66,13 @@ export default function AdminShell({ title, current, children }: AdminShellProps
                 {item.section && prev?.section !== item.section && (
                   <div className="admin-nav-section">{item.section}</div>
                 )}
-                <a
+                <Link
                   href={item.href}
                   className={current === item.key ? 'admin-nav-link is-active' : 'admin-nav-link'}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: item.svg }} />
                   {item.label}
-                </a>
+                </Link>
               </Fragment>
             );
           })}

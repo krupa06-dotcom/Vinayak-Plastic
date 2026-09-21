@@ -43,7 +43,14 @@ export default function Products() {
         catName = new Map(cats.map(c => [c.id, c.name]));
         products = (prodsRes.data || []) as ProdRow[];
         const vars = (varsRes.data || []) as Array<{ sub_category_id: string; is_active: boolean }>;
-        const sizeCount = (id: string) => vars.filter(v => v.sub_category_id === id && v.is_active).length;
+        
+        const sizeCounts = new Map<string, number>();
+        for (const v of vars) {
+          if (v.is_active) {
+            sizeCounts.set(v.sub_category_id, (sizeCounts.get(v.sub_category_id) || 0) + 1);
+          }
+        }
+        const sizeCount = (id: string) => sizeCounts.get(id) || 0;
 
         if (!products.length) {
           showEmpty(listEl, 'No products yet', 'Products are the individual ranges sold under a category. Create a category first, then add products to it.',
@@ -63,7 +70,7 @@ export default function Products() {
                   <tr data-name="${esc((p.name + ' ' + p.slug + ' ' + (catName.get(p.category_id) || '')).toLowerCase())}">
                     <td>
                       <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
-                        ${p.image_url ? `<img src="${esc(publicUrl(p.image_url))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
+                        ${p.image_url ? `<img src="${esc(publicUrl(p.image_url, 100))}" alt="" class="a-thumb" style="width:44px;height:36px;flex-shrink:0;" loading="lazy" />` : ''}
                         <div>
                           <strong>${esc(p.name)}</strong>
                           <div style="font-size:0.72rem;color:var(--a-faint);">${esc(p.slug)}</div>

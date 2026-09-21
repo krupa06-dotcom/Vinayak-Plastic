@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { gate, supabase, publicUrl, esc, fmtDate, imageInUse, showEmpty, confirmDialog, toast, publishSite } from '@/scripts/admin/core';
+import { gate, supabase, publicUrl, esc, fmtDate, getAllInUseImagesMap, showEmpty, confirmDialog, toast, publishSite } from '@/scripts/admin/core';
 
 // Media Library — port of src/pages/admin/media/index.astro. The heavy lifting is DOM
 // rendering started after gate() resolves, exactly like the Astro script.
@@ -24,11 +24,14 @@ export default function Media() {
         listEl.innerHTML = '<div class="a-inline-loading"><div class="a-spinner"></div></div>';
         countEl.textContent = '';
 
-        const rawFiles = await (async () => {
-          const { data, error } = await supabase.storage.from('product-images').list('', { limit: 5000, sortBy: { column: 'created_at', order: 'desc' } });
-          if (error) return [];
-          return (data || []).map((f: any) => ({ name: f.name, id: f.id, created_at: f.created_at || '', size: f.metadata?.size }) as FileItem);
-        })();
+        const [rawFiles, inUseMap] = await Promise.all([
+          (async () => {
+            const { data, error } = await supabase.storage.from('product-images').list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+            if (error) return [];
+            return (data || []).map((f: any) => ({ name: f.name, id: f.id, created_at: f.created_at || '', size: f.metadata?.size }) as FileItem);
+          })(),
+          getAllInUseImagesMap()
+        ]);
 
         countEl.textContent = `${rawFiles.length} image${rawFiles.length === 1 ? '' : 's'}`;
 
@@ -38,11 +41,10 @@ export default function Media() {
           return;
         }
 
-        // Check usage for first 100 files to avoid hammering DB (best-effort)
-        const checkBatch = rawFiles.slice(0, 100);
-        for (const file of checkBatch) {
-          const usages = await imageInUse(file.name);
-          if (usages.length) file.inUse = usages;
+        // Fast in-memory usage mapping (0ms overhead)
+        for (const file of rawFiles) {
+          const usages = inUseMap.get(file.name) || inUseMap.get(`media/${file.name}`);
+          if (usages && usages.length) file.inUse = usages;
         }
 
         allFiles = rawFiles;
@@ -67,18 +69,19 @@ export default function Media() {
                 <th></th><th>Filename</th><th>Uploaded</th><th>Size</th><th>Status</th><th style="width:100px">Actions</th>
               </tr></thead>
               <tbody>${filtered.map(f => {
-                const url = publicUrl(f.name);
+                const thumbUrl = publicUrl(f.name, 120);
+                const fullUrl = publicUrl(f.name, 1200);
                 const sizeStr = f.size ? (f.size / 1024 < 1024 ? `${(f.size / 1024).toFixed(1)} KB` : `${(f.size / (1024*1024)).toFixed(1)} MB`) : '—';
                 const inUse = f.inUse && f.inUse.length > 0;
                 return `
                 <tr>
-                  <td><img src="${esc(url)}" alt="" class="a-thumb" loading="lazy" /></td>
+                  <td><img src="${esc(thumbUrl)}" alt="" class="a-thumb" loading="lazy" /></td>
                   <td style="word-break:break-all;font-size:0.82rem;">${esc(f.name)}</td>
                   <td style="white-space:nowrap;font-size:0.82rem;">${fmtDate(f.created_at)}</td>
                   <td style="font-size:0.82rem;">${sizeStr}</td>
                   <td>${inUse ? '<span class="a-badge a-badge-active" style="background:var(--a-info-bg);color:var(--a-info);">In use</span>' : '<span style="font-size:0.78rem;color:var(--a-faint);">Not in use</span>'}</td>
                   <td class="a-actions">
-                    <a href="${esc(url)}" target="_blank" rel="noopener" class="a-btn a-btn-sm">Open</a>
+                    <a href="${esc(fullUrl)}" target="_blank" rel="noopener" class="a-btn a-btn-sm">Open</a>
                     <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-file="${esc(f.name)}">Delete</button>
                   </td>
                 </tr>`;
