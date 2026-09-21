@@ -232,7 +232,7 @@ export default function Categories() {
                 <span className="a-hint">Leave blank to auto-generate.</span>
               </div>
               <div className="a-field a-field-full">
-                <label htmlFor="cat-image">Main image</label>
+                <label>Main image</label>
                 <div id="cat-image"></div>
               </div>
               <div className="a-field a-field-full">

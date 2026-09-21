@@ -649,7 +649,7 @@ export default function EditProduct() {
                 <input id="pd-sku" className="a-input" autoComplete="off" placeholder="e.g. VPC-SERIES" />
               </div>
               <div className="a-field a-field-full">
-                <label htmlFor="pd-image-picker">Main image</label>
+                <label>Main image</label>
                 <div id="pd-image-picker"></div>
               </div>
               <div className="a-field a-field-full">
