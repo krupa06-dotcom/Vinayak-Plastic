@@ -1,5 +1,5 @@
 import './../../styles/style.css';
-import Header from '@/components/Header';
+import HeaderWrapper from '@/components/HeaderWrapper';
 import Footer from '@/components/Footer';
 import SiteScripts from '@/components/SiteScripts';
 import { SITE_URL } from '@/lib/site';
@@ -33,7 +33,7 @@ export default function SiteLayout({
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
-      <Header />
+      <HeaderWrapper />
       {children}
       <Footer />
       <SiteScripts />
