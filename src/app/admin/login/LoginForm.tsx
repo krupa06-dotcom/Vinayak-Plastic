@@ -7,7 +7,7 @@ import { supabase, configured, loginHref, dashboardHref } from '@/scripts/admin/
 // useEffect since there are no inline handlers in the hand-rolled markup.
 export default function LoginForm() {
   useEffect(() => {
-    if (!configured) return;
+    if (!configured()) return;
 
     void (async () => {
       const {
@@ -91,7 +91,7 @@ export default function LoginForm() {
           <p>Admin Panel</p>
         </div>
 
-        {configured ? (
+        {configured() ? (
           <form id="login-form" noValidate>
             <div className="a-form-row">
               <div className="a-field">

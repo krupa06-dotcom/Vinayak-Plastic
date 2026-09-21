@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import AdminShell from '@/components/admin/AdminShell';
 import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty } from '@/scripts/admin/core';
 
@@ -220,22 +221,26 @@ export default function Dashboard() {
             </div>
             <div className="a-card-body">
               <div className="a-quick">
-                <a href="/admin/products/">
+                <Link href="/admin/products/">
                   <span>Manage products</span>
                   <span>→</span>
-                </a>
-                <a href="/admin/products/edit/">
+                </Link>
+                <Link href="/admin/products/edit/">
                   <span>New product</span>
                   <span>→</span>
-                </a>
-                <a href="/admin/categories/">
+                </Link>
+                <Link href="/admin/categories/">
                   <span>Manage categories</span>
                   <span>→</span>
-                </a>
-                <a href="/admin/media/">
-                  <span>Upload images</span>
+                </Link>
+                <Link href="/admin/website/">
+                  <span>Website content</span>
                   <span>→</span>
-                </a>
+                </Link>
+                <Link href="/admin/enquiries/">
+                  <span>Customer enquiries</span>
+                  <span>→</span>
+                </Link>
               </div>
             </div>
           </div>

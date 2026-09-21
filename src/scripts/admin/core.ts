@@ -12,13 +12,44 @@ declare global {
   }
 }
 
-const globals = typeof window !== 'undefined' ? window.__VP_SUPABASE__ : undefined;
+function getGlobals() {
+  if (typeof window === 'undefined') return undefined;
+  return window.__VP_SUPABASE__;
+}
 
-export const configured = Boolean(globals && globals.url && globals.key && globals.configured);
+function getBase() {
+  return getGlobals()?.base ?? '/';
+}
 
-export const supabase = configured ? createClient<Database>(globals!.url, globals!.key) : (null as unknown as ReturnType<typeof createClient<Database>>);
+let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
 
-const BASE: string = globals?.base ?? '/';
+export function getSupabase() {
+  if (!isConfigured()) return null;
+  if (!supabaseInstance) {
+    const g = getGlobals()!;
+    supabaseInstance = createClient<Database>(g.url, g.key);
+  }
+  return supabaseInstance;
+}
+
+export function isConfigured() {
+  const g = getGlobals();
+  return Boolean(g && g.url && g.key && g.configured);
+}
+
+export const configured = isConfigured;
+
+export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
+  get(_target, prop) {
+    const client = getSupabase();
+    if (!client) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+    return (client as any)[prop];
+  }
+}) as ReturnType<typeof createClient<Database>>;
+
+const BASE: string = getBase();
 
 // ============================================================
 // URL helpers
@@ -74,7 +105,7 @@ export function gate(): Promise<boolean> {
 
 /** Run on every protected admin page. Redirects away if there is no valid session. */
 export async function ensureAdmin(): Promise<boolean> {
-  if (!configured) {
+  if (!configured()) {
     markRedirected();
     if (typeof window !== 'undefined') window.location.replace(loginHref());
     return false;
@@ -194,7 +225,7 @@ function getToastWrap(): HTMLDivElement {
 }
 
 export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'): void {
-  if (!configured || !document.body) return;
+  if (!configured() || !document.body) return;
   const el = document.createElement('div');
   el.className = `a-toast a-toast-${type}`;
   el.textContent = msg;
@@ -217,9 +248,10 @@ async function doPublish(): Promise<void> {
     toast('Changes saved! Live website updated.', 'success');
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    if (!token || !globals?.url) return;
+    const g = getGlobals();
+    if (!token || !g?.url) return;
 
-    const endpoint = `${globals.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
+    const endpoint = `${g.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
@@ -238,7 +270,7 @@ async function doPublish(): Promise<void> {
  * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single notification.
  */
 export function publishSite(delayMs = 2500): void {
-  if (!configured) return;
+  if (!configured()) return;
   if (publishTimer !== null) window.clearTimeout(publishTimer);
   if (delayMs <= 0) {
     publishTimer = null;
