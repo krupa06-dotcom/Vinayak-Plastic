@@ -7,7 +7,9 @@ import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import { getCatalogueData, resolveImageUrl, resolveFirstImage, variantSlug } from '@/lib/db';
 
-export const dynamicParams = false;
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export const generateStaticParams = async () => {
   const catalogue = await getCatalogueData();

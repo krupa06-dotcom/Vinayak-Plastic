@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     'Contact Vinayak Plastics by phone or WhatsApp for pricing, product specs and dispatch timelines on plastic crates, pallets, waste bins and hand pallet trucks.'
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function ContactPage() {
   const contactSetting = await getSiteSetting('contact') as Record<string, string> | null;
   const phone = contactSetting?.phone || CONTACT.phoneDisplay;

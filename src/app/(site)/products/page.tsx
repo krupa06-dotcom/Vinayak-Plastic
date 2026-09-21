@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     'Explore Vinayak Plastics product range — plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks. HDPE & PP industrial-grade material handling equipment.'
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function sizeLabel(count: number, colors = 0): string {
   const parts: string[] = [];
   parts.push(count > 0

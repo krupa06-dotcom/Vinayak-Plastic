@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     'Vinayak Plastics manufactures and supplies plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks. Industrial-grade HDPE & PP material handling equipment across India.'
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function HomePage() {
   const catalogue = await getCatalogueData();
 

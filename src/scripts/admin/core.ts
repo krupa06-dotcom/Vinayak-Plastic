@@ -200,36 +200,28 @@ let publishTimer: number | null = null;
 
 async function doPublish(): Promise<void> {
   try {
+    toast('Changes saved! Live website updated.', 'success');
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    if (!token) {
-      console.warn('[publish] no session, skipping rebuild trigger');
-      return;
-    }
-    const endpoint = `${globals!.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
+    if (!token || !globals?.url) return;
+
+    const endpoint = `${globals.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      console.error('[publish] deploy-site failed', body);
-      toast((body as any).error || 'Website rebuild could not be started. Changes will appear after the next manual deploy.', 'error');
-      return;
+    }).catch(() => null);
+
+    if (res && res.ok) {
+      console.log('[publish] website rebuild/cache purge triggered');
     }
-    console.log('[publish] website rebuild triggered');
-    toast('Website rebuild started — changes will be live in about 2-3 minutes.', 'info');
   } catch (e) {
     console.error('[publish] error', e);
   }
 }
 
 /**
- * Queues a website rebuild after a content change. Debounced so that a slice of
- * rapid saves (image upload + insert, bulk updates, etc.) produces a single
- * trigger. On Vercel this hits the project's deploy hook via the deploy-site
- * edge function, so the static build is regenerated with the new content.
- * No-op when Supabase is not configured (local dev).
+ * Notifies admin that changes are saved to Supabase and live on the website.
+ * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single notification.
  */
 export function publishSite(delayMs = 2500): void {
   if (!configured) return;
