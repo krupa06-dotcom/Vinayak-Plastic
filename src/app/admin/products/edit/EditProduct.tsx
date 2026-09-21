@@ -152,7 +152,7 @@ export default function EditProduct() {
         id: string | null;
         key: string;               // stable client key (== id once saved)
         name: string; size: string; shape: string; color: string;
-        weight: string; capacity: string; material: string; price: string;
+        weight: string; capacity: string; material: string;
         is_active: boolean; order: number;
         image: VariantImage | null;
       }
@@ -199,15 +199,14 @@ export default function EditProduct() {
                 <input class="a-input v-material" data-idx="${idx}" value="${esc(v.material)}" placeholder="e.g. PP / HDPE" />
               </div>
               <div class="a-field">
-                <label>Approx. price</label>
-                <input class="a-input v-price" data-idx="${idx}" value="${esc(v.price)}" placeholder="e.g. ₹250 / piece" />
-              </div>
-              <div class="a-field">
-                <label>Colour</label>
-                <input class="a-input v-color" data-idx="${idx}" value="${esc(v.color)}" placeholder="e.g. Blue" />
-                <div class="a-var-colors" style="margin-top:6px;">
-                  ${COMMON_COLORS.map(c => `<button type="button" class="a-color-swatch ${v.color === c ? 'is-selected' : ''}" data-color="${c}" data-idx="${idx}" title="${c}"></button>`).join('')}
+                <label>Colours</label>
+                <div class="a-var-colors" style="display:flex;flex-wrap:wrap;gap:6px;">
+                  ${COMMON_COLORS.map(c => {
+                    const selected = v.color?.split(',').map(s => s.trim()).includes(c) || false;
+                    return `<label class="a-color-check" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid var(--a-border);border-radius:4px;cursor:pointer;${selected ? 'background:var(--a-primary);color:white;border-color:var(--a-primary)' : ''}"><input type="checkbox" class="v-color-checkbox" data-idx="${idx}" value="${c}" ${selected ? 'checked' : ''} style="margin:0;" /> ${c}</label>`;
+                  }).join('')}
                 </div>
+                <input type="hidden" class="v-color" data-idx="${idx}" value="${esc(v.color)}" />
               </div>
             </div>
             ${variantPhotoHtml(v, idx)}
@@ -219,20 +218,31 @@ export default function EditProduct() {
         variantsEl.querySelectorAll<HTMLInputElement>('.v-weight').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].weight = (e.target as HTMLInputElement).value; }));
         variantsEl.querySelectorAll<HTMLInputElement>('.v-capacity').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].capacity = (e.target as HTMLInputElement).value; }));
         variantsEl.querySelectorAll<HTMLInputElement>('.v-material').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].material = (e.target as HTMLInputElement).value; }));
-        variantsEl.querySelectorAll<HTMLInputElement>('.v-price').forEach(el => el.addEventListener('input', (e) => { const i = Number((e.target as HTMLElement).dataset.idx); variantsState[i].price = (e.target as HTMLInputElement).value; }));
-        variantsEl.querySelectorAll<HTMLInputElement>('.v-color').forEach(el => el.addEventListener('input', (e) => {
+        variantsEl.querySelectorAll<HTMLInputElement>('.v-color-checkbox').forEach(cb => cb.addEventListener('change', (e) => {
           const i = Number((e.target as HTMLElement).dataset.idx);
-          variantsState[i].color = (e.target as HTMLInputElement).value;
+          const checkbox = e.target as HTMLInputElement;
           const card = variantsEl.querySelector(`.a-var-card[data-idx="${i}"]`);
-          card?.querySelectorAll('.a-color-swatch').forEach((sw: any) => sw.classList.toggle('is-selected', sw.dataset.color === variantsState[i].color));
-        }));
-
-        variantsEl.querySelectorAll<HTMLButtonElement>('[data-color]').forEach(sw => sw.addEventListener('click', () => {
-          const i = Number(sw.dataset.idx);
-          variantsState[i].color = sw.dataset.color!;
-          const input = variantsEl.querySelector<HTMLInputElement>(`.a-var-card[data-idx="${i}"] .v-color`);
-          if (input) input.value = sw.dataset.color!;
-          variantsEl.querySelectorAll<HTMLButtonElement>(`.a-var-card[data-idx="${i}"] [data-color]`).forEach(s2 => s2.classList.toggle('is-selected', s2.dataset.color === variantsState[i].color));
+          const hiddenInput = card?.querySelector<HTMLInputElement>('.v-color');
+          const checkboxes = card?.querySelectorAll<HTMLInputElement>('.v-color-checkbox');
+          const selectedColors: string[] = [];
+          checkboxes?.forEach(c => { if (c.checked) selectedColors.push(c.value); });
+          const colorValue = selectedColors.join(', ');
+          if (hiddenInput) hiddenInput.value = colorValue;
+          variantsState[i].color = colorValue;
+          checkboxes?.forEach(c => {
+            const label = c.closest('label');
+            if (label) {
+              if (c.checked) {
+                label.style.background = 'var(--a-primary)';
+                label.style.color = 'white';
+                label.style.borderColor = 'var(--a-primary)';
+              } else {
+                label.style.background = '';
+                label.style.color = '';
+                label.style.borderColor = '';
+              }
+            }
+          });
         }));
 
         variantsEl.querySelectorAll<HTMLInputElement>('[data-active]').forEach(cb => cb.addEventListener('change', (e) => {
@@ -311,7 +321,7 @@ export default function EditProduct() {
 
       const addVariantBtn = document.getElementById('add-variant');
       const onAddVariant = () => {
-        variantsState.push({ id: null, key: crypto.randomUUID(), name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', price: '', is_active: true, order: variantsState.length, image: null });
+        variantsState.push({ id: null, key: crypto.randomUUID(), name: '', size: '', shape: '', color: '', weight: '', capacity: '', material: '', is_active: true, order: variantsState.length, image: null });
         renderVariants();
       };
       addVariantBtn?.addEventListener('click', onAddVariant);
@@ -353,7 +363,7 @@ export default function EditProduct() {
 
             variantsState = ((cat as any).category_variants || []).map((v: any) => ({
               id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
-              weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+              weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '',
               is_active: v.is_active, order: v.display_order,
               image: null
             })).sort((a: any, b: any) => a.order - b.order);
@@ -386,7 +396,7 @@ export default function EditProduct() {
 
             variantsState = ((prod as any).sub_category_variants || []).map((v: any) => ({
               id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
-              weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '', price: v.price ?? '',
+              weight: v.weight ?? '', capacity: v.capacity ?? '', material: v.material ?? '',
               is_active: v.is_active, order: v.display_order,
               image: null
             })).sort((a: any, b: any) => a.order - b.order);
@@ -462,7 +472,6 @@ export default function EditProduct() {
             weight: v.weight.trim() || null,
             capacity: v.capacity.trim() || null,
             material: v.material.trim() || null,
-            price: v.price.trim() || null,
             updated_at: new Date().toISOString()
           };
           if (mode === 'category') {
