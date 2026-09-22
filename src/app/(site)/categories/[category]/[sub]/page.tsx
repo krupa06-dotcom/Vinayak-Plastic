@@ -7,9 +7,7 @@ import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import { getSubCategoryPaths, getCatalogueData, resolveFirstImage, variantSlug } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-export const revalidate = 0;
+export const dynamicParams = false;
 
 export const generateStaticParams = async () => getSubCategoryPaths();
 

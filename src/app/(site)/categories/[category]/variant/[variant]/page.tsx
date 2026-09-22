@@ -6,9 +6,7 @@ import VariantGallery from '@/components/VariantGallery';
 import { CONTACT } from '@/lib/contact';
 import { getCategoryVariantPaths, getCategoryVariantBySlug, getCatalogueData, variantSlug, resolveImageUrl, resolveFirstImage } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
-export const revalidate = 0;
+export const dynamicParams = false;
 
 export const generateStaticParams = async () => getCategoryVariantPaths();
 

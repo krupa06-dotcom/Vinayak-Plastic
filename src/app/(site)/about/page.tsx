@@ -11,8 +11,7 @@ export const metadata: Metadata = {
     'About Vinayak Plastics — business house supplying material handling & packaging products — plastic crates, pallets, waste bins and hand pallet trucks — to warehouses, dairy and municipal buyers across India.'
 };
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamicParams = false;
 
 export default async function AboutPage() {
   const catalogue = await getCatalogueData();
