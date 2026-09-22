@@ -2,38 +2,9 @@
 
 import { useEffect } from 'react';
 
-// Site-wide DOM enhancement: mobile nav toggle + scroll reveal. Mirrors the
-// inline script that was previously bundled with every public page.
+// Site-wide DOM enhancement: scroll reveal. Mirrors the inline script that
+// was previously bundled with every public page.
 export default function SiteScripts() {
-  useEffect(() => {
-    // Mobile nav toggle
-    const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
-    const navLinks = document.querySelector<HTMLElement>('.nav-links');
-
-    if (toggle && navLinks) {
-      const onToggleClick = () => {
-        const expanded = toggle.getAttribute('aria-expanded') === 'true' ? false : true;
-        toggle.setAttribute('aria-expanded', expanded.toString());
-        navLinks.classList.toggle('nav-open');
-      };
-      toggle.addEventListener('click', onToggleClick);
-
-      const onLinkClick = () => {
-        navLinks.classList.remove('nav-open');
-        toggle.setAttribute('aria-expanded', 'false');
-      };
-      navLinks.querySelectorAll('a').forEach((link) => {
-        link.addEventListener('click', onLinkClick);
-      });
-      return () => {
-        toggle.removeEventListener('click', onToggleClick);
-        navLinks.querySelectorAll('a').forEach((link) => {
-          link.removeEventListener('click', onLinkClick);
-        });
-      };
-    }
-  }, []);
-
   useEffect(() => {
     // Scroll reveal with IntersectionObserver
     const reveals = document.querySelectorAll<HTMLElement>('.reveal');

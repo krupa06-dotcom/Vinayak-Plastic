@@ -51,14 +51,13 @@ export default async function SubCategoryPage({ params }: { params: Promise<{ ca
 
   const variants = subCategory.variants;
   const hasVariants = variants.length > 0;
-  const variantCols = (['name', 'size', 'shape', 'color', 'weight', 'capacity', 'material'] as const)
+  const variantCols = (['name', 'size', 'shape', 'color', 'capacity', 'material'] as const)
     .filter((k) => hasVariants && variants.some((v) => v[k] !== null && v[k] !== ''));
   const variantLabels: Record<string, string> = {
     name: 'Model',
     size: 'Size (L × W × H)',
     shape: 'Shape',
     color: 'Colour',
-    weight: 'Weight',
     capacity: 'Capacity / Load',
     material: 'Material'
   };
@@ -269,7 +268,6 @@ export default async function SubCategoryPage({ params }: { params: Promise<{ ca
                     <tr>
                       <th>Model</th>
                       <th>External Size (L × W × H) mm</th>
-                      <th>Weight</th>
                       <th>Load Capacity</th>
                       <th>Material</th>
                     </tr>
@@ -279,7 +277,6 @@ export default async function SubCategoryPage({ params }: { params: Promise<{ ca
                       <tr key={i}>
                         <td>{spec.model}</td>
                         <td>{spec.size}</td>
-                        <td>{spec.weight}</td>
                         <td>{spec.capacity}</td>
                         <td>{spec.material}</td>
                       </tr>
@@ -292,7 +289,7 @@ export default async function SubCategoryPage({ params }: { params: Promise<{ ca
             {hasVariants && <CategoryLightbox />}
 
             <div className="reveal" style={{ marginTop: 16, fontSize: '0.85rem', color: 'var(--steel)', textAlign: 'center' }}>
-              <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
+              <p>Note: Specifications are indicative and may vary by batch. Contact us for detailed technical drawings.</p>
             </div>
           </div>
         </section>

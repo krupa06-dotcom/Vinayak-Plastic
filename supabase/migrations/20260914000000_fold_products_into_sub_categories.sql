@@ -109,7 +109,6 @@ CREATE TABLE IF NOT EXISTS sub_category_variants (
   size VARCHAR(255),                   -- e.g. "400 × 300 × 130 mm"
   shape VARCHAR(255),                  -- e.g. "Rectangular", "Nestable"
   color VARCHAR(255),                  -- e.g. "Blue"
-  weight VARCHAR(255),                 -- e.g. "~750 g"
   capacity VARCHAR(255),               -- e.g. "15 kg"
   material VARCHAR(255),               -- e.g. "PP / HDPE"
   price VARCHAR(255),                  -- optional unit price / price band
@@ -228,7 +227,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 5e. Migrate product variants -> sub-category variants (id preserved).
 INSERT INTO sub_category_variants (
-  id, sub_category_id, name, size, shape, color, weight,
+  id, sub_category_id, name, size, shape, color,
   capacity, material, price, is_active, display_order, created_at, updated_at
 )
 SELECT
@@ -238,7 +237,6 @@ SELECT
   pv.size,
   pv.shape,
   pv.color,
-  pv.weight,
   pv.capacity,
   pv.material,
   pv.price,

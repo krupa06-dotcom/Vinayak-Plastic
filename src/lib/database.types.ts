@@ -192,7 +192,6 @@ export interface Database {
           size: string | null;
           shape: string | null;
           color: string | null;
-          weight: string | null;
           capacity: string | null;
           material: string | null;
           price: string | null;
@@ -208,7 +207,6 @@ export interface Database {
           size?: string | null;
           shape?: string | null;
           color?: string | null;
-          weight?: string | null;
           capacity?: string | null;
           material?: string | null;
           price?: string | null;
@@ -224,7 +222,6 @@ export interface Database {
           size?: string | null;
           shape?: string | null;
           color?: string | null;
-          weight?: string | null;
           capacity?: string | null;
           material?: string | null;
           price?: string | null;
@@ -296,7 +293,6 @@ export interface Database {
           size: string | null;
           shape: string | null;
           color: string | null;
-          weight: string | null;
           capacity: string | null;
           material: string | null;
           price: string | null;
@@ -312,7 +308,6 @@ export interface Database {
           size?: string | null;
           shape?: string | null;
           color?: string | null;
-          weight?: string | null;
           capacity?: string | null;
           material?: string | null;
           price?: string | null;
@@ -328,7 +323,6 @@ export interface Database {
           size?: string | null;
           shape?: string | null;
           color?: string | null;
-          weight?: string | null;
           capacity?: string | null;
           material?: string | null;
           price?: string | null;

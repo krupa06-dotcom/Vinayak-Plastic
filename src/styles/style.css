@@ -536,16 +536,25 @@ button {
 
 .nav-cta:hover {
   filter: brightness(1.1);
-  transform: translateY(-1px)
+  transform: translateY(-1px);
+}
+
+.nav-cta-mobile {
+  display: none
 }
 
 .nav-toggle {
   display: none;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   background: none;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
   z-index: 101;
 }
@@ -559,100 +568,8 @@ button {
   transition: all 0.3s;
 }
 
-/* Mobile navigation */
-@media (max-width: 900px) {
-  .nav-toggle {
-    display: flex;
-  }
-
-  .nav-inner {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 320px;
-    background: var(--deep-navy);
-    flex-direction: column;
-    padding: calc(var(--nav-height) + 24px) 24px 24px;
-    gap: 24px;
-    transform: translateX(100%);
-    transition: transform 0.35s ease;
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
-    overflow-y: auto;
-  }
-
-  .nav-inner.is-open {
-    transform: translateX(0);
-  }
-
-  .nav-links {
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
-  }
-
-  .nav-links a {
-    display: block;
-    padding: 16px 0;
-    font-size: 1.1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .nav-links a::after {
-    display: none;
-  }
-
-  .nav-right {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    width: 100%;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .nav-search .search-form {
-    width: 100% !important;
-  }
-
-  .nav-phone {
-    text-align: center;
-    padding: 12px 0;
-  }
-
-  .nav-cta {
-    width: 100%;
-    text-align: center;
-  }
-
-  /* Hamburger animation */
-  .nav-toggle[aria-expanded="true"] span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-  }
-  .nav-toggle[aria-expanded="true"] span:nth-child(2) {
-    opacity: 0;
-  }
-  .nav-toggle[aria-expanded="true"] span:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
-  }
-
-  /* Backdrop overlay */
-  .nav-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .nav-overlay.is-visible {
-    display: block;
-    opacity: 1;
-  }
+.nav-toggle:hover span {
+  background: var(--orange-light);
 }
 
 /* Scrolled nav */
@@ -2388,18 +2305,6 @@ html.js .reveal.visible {
 
 /* Tablet landscape / small desktop */
 @media(max-width:1024px) {
-  .nav-inner {
-    gap: 16px
-  }
-
-  .nav-links {
-    gap: 20px
-  }
-
-  .nav-right {
-    gap: 14px
-  }
-
   .about-home__grid {
     gap: 40px
   }
@@ -2466,98 +2371,149 @@ html.js .reveal.visible {
   }
 }
 
-/* Small desktops / tablets — collapse to the mobile-style header so
-   nothing overflows between 769px and 1024px. */
+/* Mobile navigation — header becomes two rows (logo+toggle, then a full-width
+   search bar below the logo) with a slide-in drawer for the links. The React
+   toggle (HeaderMobileMenu) flips `.nav-inner.is-open` / `.nav-overlay.is-visible`. */
 @media(max-width:1024px) {
-  .site-nav {
-    height: auto;
-    min-height: var(--nav-height);
-    padding: 4px 0
+  :root {
+    --nav-height: 118px;
   }
 
-  /* The header wraps to two rows at these widths, so top heroes must
-     clear the full header height (~117px) instead of the 72px desktop. */
-  .page-hero {
-    padding: calc(var(--nav-height) + 48px) 0 48px
+  .site-nav {
+    height: auto;
   }
 
   .site-nav .container {
-    height: auto;
     flex-wrap: wrap;
-    padding: 8px 20px;
-    gap: 10px
-  }
-
-  .nav-inner {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-left: 0
-  }
-
-  .nav-right {
-    flex-wrap: wrap;
-    row-gap: 10px;
-    width: 100%;
-    flex-shrink: 0;
-    gap: 12px
-  }
-
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--deep-navy);
-    flex-direction: column;
-    padding: 16px 24px 24px;
-    gap: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06)
-  }
-
-  .nav-links.nav-open {
-    display: flex
-  }
-
-  .nav-links a {
-    font-size: 0.95rem
-  }
-
-  .nav-search {
-    order: 2;
-    flex: 1 1 auto;
-    min-width: 0
-  }
-
-  .site-nav .nav-search .search-form,
-  .site-nav.nav-products .nav-search .search-form {
-    width: 100%;
-    height: 40px
-  }
-
-  .nav-search .search-form input {
-    padding: 0 14px;
-    font-size: 0.95rem
-  }
-
-  .nav-search .search-form button {
-    padding: 0 12px
-  }
-
-  .nav-phone {
-    display: none
-  }
-
-  .nav-cta {
-    display: none
+    gap: 10px;
+    padding: 10px 20px;
   }
 
   .nav-toggle {
     display: flex;
-    margin-left: auto;
+    margin-left: 0;
+    margin-right: -8px;
     flex-shrink: 0;
-    align-self: center
+  }
+
+  .nav-inner {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 88vw);
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+    padding: calc(var(--nav-height) + 28px) 24px 28px;
+    gap: 24px;
+    background: var(--deep-navy);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: -16px 0 48px rgba(5, 12, 26, 0.45);
+    transform: translateX(100%);
+    transition: transform 0.35s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .nav-inner.is-open {
+    transform: translateX(0);
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 16px 0;
+    font-size: 1.05rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-links a::after {
+    display: none;
+  }
+
+  .nav-right {
+    display: none;
+  }
+
+  .nav-search {
+    order: 3;
+    width: 100%;
+  }
+
+  .site-nav .nav-search .search-form,
+  .site-nav.nav-products .nav-search .search-form {
+    width: 100% !important;
+    height: 44px;
+  }
+
+  .nav-search .search-form input {
+    padding: 0 14px;
+    font-size: 0.92rem;
+  }
+
+  .nav-search .search-form button {
+    padding: 0 14px;
+  }
+
+  .nav-search .search-form button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-phone {
+    display: block;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  .nav-cta {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .site-nav .nav-cta-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    width: auto;
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    border-radius: 2px;
+  }
+
+  /* Hamburger animation */
+  .nav-toggle[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+  }
+  .nav-toggle[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Backdrop overlay */
+  .nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .nav-overlay.is-visible {
+    display: block;
+    opacity: 1;
   }
 }
 
@@ -2668,19 +2624,11 @@ html.js .reveal.visible {
   }
   
   .hero-top {
-    flex-wrap: wrap;
     gap: 10px 14px;
   }
-  
+
   .hero-top .breadcrumb {
-    flex: 1 1 100%;
-    order: 2;
-    margin-top: 4px;
     font-size: 0.75rem;
-  }
-  
-  .hero-top .back-btn {
-    order: 1;
   }
 
   .footer-grid {
@@ -2732,6 +2680,10 @@ html.js .reveal.visible {
 
 /* Mobile portrait */
 @media(max-width:480px) {
+  :root {
+    --nav-height: 114px;
+  }
+
   .site-nav .container {
     padding: 8px 16px
   }
@@ -3252,18 +3204,24 @@ html.js .reveal.visible {
 /* Trust bar responsive */
 @media (max-width: 640px) {
   .trustbar__grid {
-    flex-direction: column;
-    gap: 24px;
+    flex-direction: row;
+    gap: 2px;
   }
   
   .trustbar__divider {
-    width: 100%;
-    height: 1px;
-    max-width: 200px;
+    width: 1px;
+    height: 30px;
   }
   
   .trustbar__item {
-    padding: 0 16px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 2px;
+    gap: 3px;
+  }
+
+  .trustbar__num {
+    font-size: clamp(0.78rem, 3.2vw, 1.3rem);
   }
 }
 
@@ -3293,6 +3251,18 @@ html.js .reveal.visible {
   
   .hero__counter {
     display: none;
+  }
+}
+
+/* Very small screens — the swipe gesture and dots remain, but the two arrow
+   buttons are dropped so they never overlap the headline on narrow phones. */
+@media (max-width: 480px) {
+  .hero__arrow {
+    display: none;
+  }
+
+  .hero__container {
+    padding-top: 32px;
   }
 }
 
@@ -3461,7 +3431,7 @@ html.js .reveal.visible {
 /* Trustbar numbers responsive */
 @media (max-width: 480px) {
   .trustbar__num {
-    font-size: 1.4rem;
+    font-size: clamp(0.72rem, 3.4vw, 1.1rem);
   }
 }
 
@@ -3472,9 +3442,8 @@ html.js .reveal.visible {
   }
   
   .hero-top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 8px 10px;
   }
 }
 

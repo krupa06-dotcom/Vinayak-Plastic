@@ -55,6 +55,8 @@ export default function HeaderMobileMenu({ currentPage, searchItems, isProducts 
             <span className="logo-text">Vinayak Plastics</span>
           </a>
 
+          <a href="/contact" className="nav-cta nav-cta-mobile">Get a Quote</a>
+
           <button
             className="nav-toggle"
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
@@ -74,11 +76,13 @@ export default function HeaderMobileMenu({ currentPage, searchItems, isProducts 
               <a href="/products" className={isActive('/products', currentPage) ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>Products</a>
               <a href="/contact" className={isActive('/contact', currentPage) ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>Contact</a>
             </div>
-            <div className="nav-right">
-              <NavSearch items={searchItems} popular={['Plastic Crates', 'Waste Bins', 'Plastic Pallets', 'Hand Pallet Trucks', 'Standard Crates', 'Standard Trucks']} />
-              <a href={CONTACT.phoneHref} className="nav-phone" aria-label="Call us">{CONTACT.phoneDisplay}</a>
-              <a href="/contact" className="nav-cta">Get a Quote</a>
-            </div>
+          </div>
+
+          <NavSearch items={searchItems} popular={['Plastic Crates', 'Waste Bins', 'Plastic Pallets', 'Hand Pallet Trucks', 'Standard Crates', 'Standard Trucks']} />
+
+          <div className="nav-right">
+            <a href={CONTACT.phoneHref} className="nav-phone" aria-label="Call us">{CONTACT.phoneDisplay}</a>
+            <a href="/contact" className="nav-cta">Get a Quote</a>
           </div>
         </div>
       </nav>

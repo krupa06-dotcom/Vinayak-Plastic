@@ -54,7 +54,6 @@ export interface SubCategoryVariant {
   size: string | null;
   shape: string | null;
   color: string | null;
-  weight: string | null;
   capacity: string | null;
   material: string | null;
   price: string | null;
@@ -69,7 +68,6 @@ export interface CategoryVariant {
   size: string | null;
   shape: string | null;
   color: string | null;
-  weight: string | null;
   capacity: string | null;
   material: string | null;
   price: string | null;
@@ -377,7 +375,7 @@ interface FallbackDetail {
   product_code: string;
   features: string[];
   applications: { name: string; description: string }[];
-  variants: Array<{ model: string; size: string; weight: string; capacity: string; material: string }>;
+  variants: Array<{ model: string; size: string; capacity: string; material: string }>;
 }
 
 const FALLBACK_CATEGORIES: Category[] = [
@@ -409,11 +407,11 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
       { name: 'Warehouse', description: 'General material handling crates for inventory storage, order picking, and internal logistics.' }
     ],
     variants: [
-      { model: 'VPC-400', size: '400 × 300 × 130', weight: '~750g', capacity: '15kg', material: 'PP / HDPE' },
-      { model: 'VPC-500', size: '500 × 350 × 150', weight: '~1050g', capacity: '20kg', material: 'PP / HDPE' },
-      { model: 'VPC-600', size: '600 × 400 × 200', weight: '~1400g', capacity: '25kg', material: 'HDPE' },
-      { model: 'VPC-650', size: '650 × 450 × 250', weight: '~1800g', capacity: '30kg', material: 'HDPE' },
-      { model: 'VPC-700', size: '700 × 500 × 300', weight: '~2200g', capacity: '35kg', material: 'HDPE' }
+      { model: 'VPC-400', size: '400 × 300 × 130', capacity: '15kg', material: 'PP / HDPE' },
+      { model: 'VPC-500', size: '500 × 350 × 150', capacity: '20kg', material: 'PP / HDPE' },
+      { model: 'VPC-600', size: '600 × 400 × 200', capacity: '25kg', material: 'HDPE' },
+      { model: 'VPC-650', size: '650 × 450 × 250', capacity: '30kg', material: 'HDPE' },
+      { model: 'VPC-700', size: '700 × 500 × 300', capacity: '35kg', material: 'HDPE' }
     ]
   },
   'standard-pallets': {
@@ -437,10 +435,10 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
       { name: 'Distribution', description: 'Cross-docking and last-mile delivery applications with durability and reusability.' }
     ],
     variants: [
-      { model: 'VPP-1200', size: '1200 × 1000 × 150', weight: '~18kg', capacity: '1500kg', material: 'HDPE' },
-      { model: 'VPP-1100', size: '1100 × 1100 × 150', weight: '~20kg', capacity: '1800kg', material: 'HDPE' },
-      { model: 'VPP-1208', size: '1200 × 800 × 150', weight: '~15kg', capacity: '1200kg', material: 'HDPE' },
-      { model: 'VPP-NEST', size: '1200 × 1000 × 160', weight: '~22kg', capacity: '2000kg', material: 'HDPE' }
+      { model: 'VPP-1200', size: '1200 × 1000 × 150', capacity: '1500kg', material: 'HDPE' },
+      { model: 'VPP-1100', size: '1100 × 1100 × 150', capacity: '1800kg', material: 'HDPE' },
+      { model: 'VPP-1208', size: '1200 × 800 × 150', capacity: '1200kg', material: 'HDPE' },
+      { model: 'VPP-NEST', size: '1200 × 1000 × 160', capacity: '2000kg', material: 'HDPE' }
     ]
   },
   'standard-bins': {
@@ -464,10 +462,10 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
       { name: 'Segregation Systems', description: 'Color-coded bins for recyclable, organic, and general waste separation programs.' }
     ],
     variants: [
-      { model: 'VWB-120', size: '480 × 550 × 930', weight: '~8kg', capacity: '120L', material: 'HDPE' },
-      { model: 'VWB-240', size: '580 × 740 × 1100', weight: '~14kg', capacity: '240L', material: 'HDPE' },
-      { model: 'VWB-360', size: '620 × 860 × 1200', weight: '~18kg', capacity: '360L', material: 'HDPE' },
-      { model: 'VWB-660', size: '800 × 1200 × 1350', weight: '~28kg', capacity: '660L', material: 'HDPE' }
+      { model: 'VWB-120', size: '480 × 550 × 930', capacity: '120L', material: 'HDPE' },
+      { model: 'VWB-240', size: '580 × 740 × 1100', capacity: '240L', material: 'HDPE' },
+      { model: 'VWB-360', size: '620 × 860 × 1200', capacity: '360L', material: 'HDPE' },
+      { model: 'VWB-660', size: '800 × 1200 × 1350', capacity: '660L', material: 'HDPE' }
     ]
   },
   'standard-trucks': {
@@ -491,10 +489,10 @@ const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
       { name: 'Cross-Docking', description: 'Fast-paced material transfer in logistics hubs and transportation terminals.' }
     ],
     variants: [
-      { model: 'VPT-2500', size: '1150 × 550 × 1200', weight: '~68kg', capacity: '2500kg', material: 'Steel' },
-      { model: 'VPT-3000', size: '1150 × 550 × 1200', weight: '~75kg', capacity: '3000kg', material: 'Steel' },
-      { model: 'VPT-2500-PU', size: '1150 × 550 × 1200', weight: '~70kg', capacity: '2500kg', material: 'Steel + PU' },
-      { model: 'VPT-3000-PU', size: '1150 × 550 × 1200', weight: '~78kg', capacity: '3000kg', material: 'Steel + PU' }
+      { model: 'VPT-2500', size: '1150 × 550 × 1200', capacity: '2500kg', material: 'Steel' },
+      { model: 'VPT-3000', size: '1150 × 550 × 1200', capacity: '3000kg', material: 'Steel' },
+      { model: 'VPT-2500-PU', size: '1150 × 550 × 1200', capacity: '2500kg', material: 'Steel + PU' },
+      { model: 'VPT-3000-PU', size: '1150 × 550 × 1200', capacity: '3000kg', material: 'Steel + PU' }
     ]
   }
 };
@@ -507,7 +505,6 @@ function buildFallbackSub(detail: FallbackDetail, category: Category, order: num
     size: v.size,
     shape: null,
     color: null,
-    weight: v.weight,
     capacity: v.capacity,
     material: v.material,
     price: null,
@@ -515,11 +512,10 @@ function buildFallbackSub(detail: FallbackDetail, category: Category, order: num
     display_order: i
   }));
   const specifications: SubCategorySpecification[] = detail.variants.flatMap((v, i) => [
-    { id: `sp-${category.slug}-${i}-model`, sub_category_id: `s-${category.slug}`, specification_name: 'Model', specification_value: v.model, display_order: i * 5 + 1 },
-    { id: `sp-${category.slug}-${i}-size`, sub_category_id: `s-${category.slug}`, specification_name: 'Size (mm)', specification_value: v.size, display_order: i * 5 + 2 },
-    { id: `sp-${category.slug}-${i}-weight`, sub_category_id: `s-${category.slug}`, specification_name: 'Weight', specification_value: v.weight, display_order: i * 5 + 3 },
-    { id: `sp-${category.slug}-${i}-cap`, sub_category_id: `s-${category.slug}`, specification_name: getCapName(category.slug), specification_value: v.capacity, display_order: i * 5 + 4 },
-    { id: `sp-${category.slug}-${i}-mat`, sub_category_id: `s-${category.slug}`, specification_name: 'Material', specification_value: v.material, display_order: i * 5 + 5 }
+    { id: `sp-${category.slug}-${i}-model`, sub_category_id: `s-${category.slug}`, specification_name: 'Model', specification_value: v.model, display_order: i * 4 + 1 },
+    { id: `sp-${category.slug}-${i}-size`, sub_category_id: `s-${category.slug}`, specification_name: 'Size (mm)', specification_value: v.size, display_order: i * 4 + 2 },
+    { id: `sp-${category.slug}-${i}-cap`, sub_category_id: `s-${category.slug}`, specification_name: getCapName(category.slug), specification_value: v.capacity, display_order: i * 4 + 3 },
+    { id: `sp-${category.slug}-${i}-mat`, sub_category_id: `s-${category.slug}`, specification_name: 'Material', specification_value: v.material, display_order: i * 4 + 4 }
   ]);
   return {
     id: `s-${category.slug}`,
@@ -557,7 +553,6 @@ function buildFallbackCategoryVariants(detail: FallbackDetail, category: Categor
     size: v.size,
     shape: null,
     color: i % 2 === 0 ? 'Blue' : null,
-    weight: v.weight,
     capacity: v.capacity,
     material: v.material,
     price: null,

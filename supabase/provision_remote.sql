@@ -151,7 +151,6 @@ CREATE TABLE IF NOT EXISTS sub_category_variants (
   size VARCHAR(255),
   shape VARCHAR(255),
   color VARCHAR(255),
-  weight VARCHAR(255),
   capacity VARCHAR(255),
   material VARCHAR(255),
   price VARCHAR(255),
@@ -233,11 +232,13 @@ FROM product_specifications ps
 JOIN products p ON p.id = ps.product_id
 ON CONFLICT (id) DO NOTHING;
 
+DELETE FROM sub_category_specifications WHERE LOWER(specification_name) = 'weight';
+
 INSERT INTO sub_category_variants (
-  id, sub_category_id, name, size, shape, color, weight,
+  id, sub_category_id, name, size, shape, color,
   capacity, material, price, is_active, display_order, created_at, updated_at
 )
-SELECT pv.id, p.sub_category_id, pv.name, pv.size, pv.shape, pv.color, pv.weight,
+SELECT pv.id, p.sub_category_id, pv.name, pv.size, pv.shape, pv.color,
   pv.capacity, pv.material, pv.price, pv.is_active, pv.display_order,
   pv.created_at, pv.updated_at
 FROM product_variants pv

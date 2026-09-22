@@ -7,7 +7,7 @@
 --
 -- New model:
 --   categories
---     ├── category_variants  (size · shape · colour · weight · capacity …)
+--     ├── category_variants  (size · shape · colour · capacity …)
 --     └── category_images    (gallery; optionally tied to one variant/size)
 
 -- ============================================================
@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS category_variants (
   size VARCHAR(255),                   -- e.g. "400 × 300 × 130 mm"
   shape VARCHAR(255),                  -- e.g. "Rectangular", "Nestable"
   color VARCHAR(255),                  -- e.g. "Blue"
-  weight VARCHAR(255),                 -- e.g. "~750 g"
   capacity VARCHAR(255),               -- e.g. "15 kg"
   material VARCHAR(255),               -- e.g. "PP / HDPE"
   price VARCHAR(255),                  -- optional unit price / price band

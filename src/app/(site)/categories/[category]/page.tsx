@@ -51,13 +51,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const totalSizes = category.variants_count;
   const categorySizes = category.variants;
 
-  const variantCols = (['name', 'size', 'color', 'weight', 'capacity', 'material'] as const)
+  const variantCols = (['name', 'size', 'color', 'capacity', 'material'] as const)
     .filter((k) => categorySizes.some((v) => v[k] !== null && v[k] !== ''));
   const variantLabels: Record<string, string> = {
     name: 'Model',
     size: 'Size (L × W × H)',
     color: 'Colour',
-    weight: 'Weight',
     capacity: 'Capacity / Load',
     material: 'Material'
   };
@@ -227,7 +226,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
             <CategoryLightbox />
 
             <div className="reveal" style={{ marginTop: 16, fontSize: '0.85rem', color: 'var(--steel)', textAlign: 'center' }}>
-              <p>Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.</p>
+              <p>Note: Specifications are indicative and may vary by batch. Contact us for detailed technical drawings.</p>
             </div>
           </div>
         </section>

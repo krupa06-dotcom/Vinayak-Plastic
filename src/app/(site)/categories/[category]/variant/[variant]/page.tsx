@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   if (!size) return {};
   return {
     title: { absolute: `${size.name} | ${size.category_name} | Vinayak Plastics` },
-    description: `${size.name} ${size.category_name.toLowerCase()} — ${[size.size, size.color, size.weight, size.capacity].filter(Boolean).join(' · ')}.`
+    description: `${size.name} ${size.category_name.toLowerCase()} — ${[size.size, size.color, size.capacity].filter(Boolean).join(' · ')}.`
   };
 }
 
@@ -55,7 +55,6 @@ export default async function VariantPage({ params }: { params: Promise<{ catego
     { label: 'External Size (L × W × H)', value: size.size },
     { label: 'Shape / Version', value: size.shape },
     { label: 'Colour', value: size.color },
-    { label: 'Weight', value: size.weight },
     { label: 'Capacity / Load', value: size.capacity },
     { label: 'Material', value: size.material },
     { label: 'Price / Band', value: size.price }
@@ -167,7 +166,7 @@ export default async function VariantPage({ params }: { params: Promise<{ catego
           )}
 
           <p className="vd-note reveal">
-            Note: Specifications are indicative. Final dimensions and weight may vary by batch. Contact us for detailed technical drawings.
+            Note: Specifications are indicative and may vary by batch. Contact us for detailed technical drawings.
           </p>
         </div>
       </section>
