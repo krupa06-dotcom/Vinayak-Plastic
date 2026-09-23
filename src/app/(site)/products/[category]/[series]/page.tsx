@@ -5,10 +5,12 @@ import '@/styles/subcategory.css';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
-import SeriesConfigurator, { type ConfigSize } from '@/components/SeriesConfigurator';
+import SeriesRail from '@/components/SeriesRail';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
+  formatFootprint,
+  formatSize,
   getHierarchySeriesPaths,
   getSeriesByKey,
   normalizeApplications
@@ -51,26 +53,6 @@ export default async function SeriesPage({
   const features = (s.features || []).filter(Boolean);
   const applications = normalizeApplications(s.applications);
   const description = s.short_description || s.description;
-  const siblings = cat.series.filter((x) => x.series_key !== s.series_key);
-
-  const sizes: ConfigSize[] = s.sizes.map((sz) => ({
-    sizeKey: sz.size_key,
-    label: sz.label,
-    height: sz.height,
-    versions: sz.variants.map((v) => ({
-      versionKey: v.version_key,
-      displayName: v.display_name,
-      modelCode: v.model_code,
-      image: v.card_image,
-      description: v.description,
-      href: v.href
-    }))
-  }));
-
-  const stats = [
-    { value: String(s.heights_count), label: s.heights_count === 1 ? 'Height' : 'Heights' },
-    { value: String(s.models_count), label: s.models_count === 1 ? 'Model' : 'Models' }
-  ];
 
   return (
     <main id="main">
@@ -89,75 +71,77 @@ export default async function SeriesPage({
         </div>
       </section>
 
-      {/* ===== SERIES INTRO ===== */}
-      {s.heights_count > 0 && (
-        <section className="section" id="series-intro">
-          <div className="container">
-            <div className="cat-detail">
-              <div className="cat-detail__media-wrap reveal">
-                <div className="cat-detail__media">
-                  {s.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={s.image}
-                      alt={`${s.name} — ${cat.name}`}
-                      width="800"
-                      height="600"
-                      loading="eager"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span className="cat-detail__placeholder">{s.name}</span>
-                  )}
+      {/* ===== SERIES SPEC TABLE ===== */}
+      <section className="section" id="series-specs">
+        <div className="container">
+          <div className="sr-layout">
+            <SeriesRail category={cat} activeSeriesKey={s.series_key} />
+            <div className="sr-layout__main">
+              <header className="section-header reveal" style={{ textAlign: 'left' }}>
+                <p className="sec-index">Series Specification</p>
+                <h2 className="display-700">
+                  {s.name} — complete size range
+                </h2>
+                <p>
+                  All standard heights for the {formatFootprint(s) || s.name} footprint with model codes,
+                  external dimensions and load capacity in one table.
+                </p>
+              </header>
+
+              {s.sizes.length > 0 ? (
+                <div className="specs-table-wrap reveal">
+                  <table className="specs-table st-catalog" style={{ minWidth: '820px' }}>
+                    <thead>
+                      <tr>
+                        <th>Size · Height</th>
+                        <th>Model</th>
+                        <th>External Size (mm)</th>
+                        <th>Load Capacity</th>
+                        <th>Versions</th>
+                        <th aria-hidden="true"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {s.sizes.flatMap((sz) =>
+                        sz.variants.map((v, i) => (
+                          <tr key={`${sz.size_key}-${v.version_key}`}>
+                            {i === 0 && (
+                              <td rowSpan={sz.variants.length} className="st-catalog__size">
+                                {formatSize(s, sz.height)}
+                              </td>
+                            )}
+                            <td>
+                              <a href={v.href} className="st-catalog__model">
+                                {v.model_code}
+                              </a>
+                            </td>
+                            <td className="st-catalog__dims">
+                              {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height}
+                            </td>
+                            <td>{v.load_capacity ?? '—'}</td>
+                            <td className="st-catalog__ver">{v.version_code ?? v.display_name ?? '—'}</td>
+                            <td>
+                              <a href={v.href} className="st-catalog__cta" aria-label={`View ${v.model_code} details`}>
+                                View <span aria-hidden="true">→</span>
+                              </a>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-              <div className="cat-detail__body reveal">
-                <span className="sec-index">Series · {cat.name}</span>
-                <h2 className="display-700">{s.name}</h2>
-                <p>{s.description || description || `${s.name} from the ${cat.name} range, manufactured in industrial-grade polymer.`}</p>
-                {stats.length > 0 && (
-                  <div className="cat-detail__stats">
-                    {stats.map((stat) => (
-                      <div className="cat-detail__stat" key={stat.label}>
-                        <strong>{stat.value}</strong>
-                        <span>{stat.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="cat-detail__types">
-                  <span className="cat-detail__types-label">Footprint:</span>
-                  <span className="cat-detail__chip">{s.series_key} mm</span>
-                  {s.product_code && (
-                    <span className="cat-detail__chip">{s.product_code}</span>
-                  )}
+              ) : (
+                <div className="empty-state reveal">
+                  <h3>No sizes available yet</h3>
+                  <p>
+                    We are finalising the dimensions for this series. <a href="/contact">Contact us</a> to
+                    check availability.
+                  </p>
                 </div>
-                <a href="#config" className="btn btn-primary">Choose Height &amp; Version</a>
-              </div>
+              )}
             </div>
           </div>
-        </section>
-      )}
-
-      {/* ===== HEIGHT CHOOSER + VERSIONS ===== */}
-      <section className="section-warm" id="config">
-        <div className="container">
-          <header className="section-header reveal">
-            <p className="sec-index">Available Heights</p>
-            <h2 className="display-700">Choose a height, then pick your model</h2>
-            <p>Switch between heights to see the models available at each size — every selection is live, no filters needed.</p>
-          </header>
-          {sizes.length > 0 ? (
-            <SeriesConfigurator sizes={sizes} />
-          ) : (
-            <div className="empty-state reveal">
-              <h3>No sizes available yet</h3>
-              <p>
-                We are finalising the dimensions for this series. <a href="/contact">Contact us</a> to
-                check availability.
-              </p>
-            </div>
-          )}
         </div>
       </section>
 
@@ -188,40 +172,6 @@ export default async function SeriesPage({
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ===== OTHER SERIES IN THIS RANGE ===== */}
-      {siblings.length > 0 && (
-        <section className="section section-warm" id="other-series">
-          <div className="container">
-            <div className="section-header reveal">
-              <p className="sec-index">More from this range</p>
-              <h2 className="display-700">Other {cat.name} series</h2>
-              <p>Other footprints within the {cat.name.toLowerCase()} family.</p>
-            </div>
-            <div className="sc-grid reveal">
-              {siblings.map((x) => (
-                <a href={x.href} className="sc-card" key={x.series_key}>
-                  <div className="sc-card__img sc-card__img--light">
-                    {x.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={x.image} alt={`${x.name} — ${cat.name}`} width="480" height="300" loading="lazy" decoding="async" />
-                    ) : (
-                      <span className="sc-card__placeholder">{x.name}</span>
-                    )}
-                  </div>
-                  <div className="sc-card__body">
-                    <h3>{x.name}</h3>
-                    <div className="sc-card__meta">
-                      <span className="sc-card__count">{x.series_key}</span>
-                      <span className="sc-card__cta">View Series <span aria-hidden="true">→</span></span>
-                    </div>
-                  </div>
-                </a>
-              ))}
             </div>
           </div>
         </section>

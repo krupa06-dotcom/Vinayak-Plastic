@@ -29,13 +29,16 @@ export interface ProductCardData {
 type ProductListFilterProps = {
   rangeCards: RangeCardData[];
   productCards: ProductCardData[];
+  /** Hide the "Browse by product range" card grid (used when /products already
+   *  shows large premium category cards as its primary content). Default true. */
+  showRangeIndex?: boolean;
 };
 
 // Live search + category filter over the full product range. Ports the
 // original `[is:inline]` script: ?q= pre-populates the search, ?subproduct= /
 // ?category= deep-link straight to a card, and results are shown/hidden in
 // place. Pure progressive enhancement — the grid is server-rendered.
-export default function ProductListFilter({ rangeCards, productCards }: ProductListFilterProps) {
+export default function ProductListFilter({ rangeCards, productCards, showRangeIndex = true }: ProductListFilterProps) {
   const [term, setTerm] = useState('');
   const [activeCat, setActiveCat] = useState('');
   const gridRef = useRef<HTMLDivElement>(null);
@@ -62,6 +65,8 @@ export default function ProductListFilter({ rangeCards, productCards }: ProductL
       window.setTimeout(() => highlight(target), 420);
     };
 
+    const productsSection = () => document.getElementById('products-section') || document.getElementById('categories-section');
+
     const subLink = document.querySelector<HTMLElement>('[data-sub="' + (params.get('subproduct') || '') + '"]');
     const catLink = document.querySelector<HTMLElement>('[data-cat="' + (params.get('category') || '') + '"]');
 
@@ -72,8 +77,8 @@ export default function ProductListFilter({ rangeCards, productCards }: ProductL
 
     if (q) {
       setTerm(q);
-      const catsSection = document.getElementById('categories-section');
-      if (catsSection) catsSection.scrollIntoView({ behavior: 'auto', block: 'start' });
+      const section = productsSection();
+      if (section) section.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
   }, []);
 
@@ -102,6 +107,7 @@ export default function ProductListFilter({ rangeCards, productCards }: ProductL
   return (
     <div>
       {/* ===== CATEGORY INDEX ===== */}
+      {showRangeIndex && (
       <section className="section" id="categories-section">
         <div className="container">
           <header className="pl-head reveal">
@@ -150,6 +156,7 @@ export default function ProductListFilter({ rangeCards, productCards }: ProductL
           )}
         </div>
       </section>
+      )}
 
       {/* ===== ALL PRODUCTS ===== */}
       <section className="section section-warm" id="products-section">

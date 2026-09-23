@@ -5,11 +5,14 @@ import '@/styles/subcategory.css';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import SeriesRail from '@/components/SeriesRail';
 import VariantGallery from '@/components/VariantGallery';
 import EnquiryForm, { type EnquiryPrefill } from '@/components/EnquiryForm';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
+  formatFootprint,
+  formatSize,
   getHierarchyVersionPaths,
   getProductDetail,
   normalizeApplications
@@ -70,17 +73,18 @@ export async function generateMetadata({
   const { category, series, size, version } = await params;
   const ctx = await getProductDetail(category, series, size, version);
   if (!ctx) return {};
-  const { category: cat, series: s, variant } = ctx;
+  const { category: cat, series: s, size: sz, variant } = ctx;
+  const fullName = `${variant.display_name} — ${formatSize(s, sz.height)}`;
   const name = `${variant.display_name} — ${s.name}`;
   const description =
     variant.description || s.short_description || `${name} from the ${cat.name} range.`.slice(0, 160);
   const image = variant.images[0]?.src || variant.card_image;
   return {
-    title: { absolute: `${variant.display_name} (${variant.model_code}) | Vinayak Plastics` },
+    title: { absolute: `${fullName} | Vinayak Plastics` },
     description: description.slice(0, 160),
     alternates: { canonical: variant.href },
     openGraph: {
-      title: `${variant.display_name} (${variant.model_code}) | Vinayak Plastics`,
+      title: `${fullName} | Vinayak Plastics`,
       description: description.slice(0, 160),
       url: variant.href,
       images: image ? [{ url: image, alt: `${name} — ${cat.name}` }] : undefined
@@ -99,6 +103,11 @@ export default async function ProductDetailPage({
   const features = (variant.description ? [variant.description] : []).concat(s.features || []);
   const applications = normalizeApplications(s.applications);
   const specs = specsFor(ctx);
+  const fullSize = formatSize(s, sz.height);
+  const footprint = formatFootprint(s);
+
+  const siblingSizeHref = (sib: { size_key: string; variants: { href: string }[] }) =>
+    sib.variants[0]?.href ?? `${s.href}#size-${sib.size_key}`;
 
   const galleryImages =
     variant.images.length > 0
@@ -120,7 +129,7 @@ export default async function ProductDetailPage({
     productVariantId: variant.id,
     category: cat.name,
     series: s.name,
-    size: `${s.series_key} · ${sz.height} mm`,
+    size: fullSize,
     version: variant.display_name,
     modelCode: variant.model_code
   };
@@ -152,13 +161,15 @@ export default async function ProductDetailPage({
             <p className="breadcrumb">
               <a href="/">Home</a> / <a href="/products">Products</a> /{' '}
               <a href={cat.href}>{cat.name}</a> /{' '}
-              <a href={s.href}>{s.name}</a> / {variant.display_name}
+              <a href={s.href}>{s.name}</a> /{' '}
+              {fullSize} / {variant.display_name}
             </p>
             <BackButton href={`${s.href}#size-${sz.size_key}`} />
           </div>
           <h1 className="display-800">{variant.display_name}</h1>
+          {fullSize && <p className="page-hero__dims">{fullSize}</p>}
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--white)' }}>
-            Model Code: <strong>{variant.model_code}</strong> · {s.name}
+            Model Code: <strong>{variant.model_code}</strong> · Series: <strong>{s.name}</strong>
           </p>
         </div>
       </section>
@@ -166,8 +177,16 @@ export default async function ProductDetailPage({
       {/* ===== PRODUCT DETAIL ===== */}
       <section className="section" id="product-detail">
         <div className="container">
-          <div className="cat-detail">
-            <div className="cat-detail__media-wrap reveal">
+          <div className="sr-layout reveal">
+            <SeriesRail
+              category={cat}
+              activeSeriesKey={s.series_key}
+              activeSizeKey={sz.size_key}
+              sizeHref={(series, size) => size.variants[0]?.href ?? `${series.href}#size-${size.size_key}`}
+            />
+            <div className="sr-layout__main">
+              <div className="cat-detail">
+                <div className="cat-detail__media-wrap reveal">
               <VariantGallery images={galleryImages} name={variant.display_name} />
               <div className="lightbox" data-lightbox aria-modal="true" role="dialog" aria-label="Enlarged product image">
                 <div className="lightbox__backdrop" data-lightbox-close></div>
@@ -175,7 +194,7 @@ export default async function ProductDetailPage({
                   <button type="button" className="lightbox__close" data-lightbox-close aria-label="Close preview">✕</button>
                   <div className="lightbox__imgwrap">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img id="lightbox-img" src="" alt="" />
+                    <img id="lightbox-img" alt="" />
                   </div>
                   <div className="lightbox__foot">
                     <span className="lightbox__fig">VINAYAK PLASTICS</span>
@@ -190,6 +209,13 @@ export default async function ProductDetailPage({
               <p>
                 {variant.description || s.short_description || s.description || `${variant.display_name} from the ${cat.name} range.`}
               </p>
+              {fullSize && (
+                <div className="pd-dims">
+                  <span className="pd-dims__tag">Product Size</span>
+                  <span className="pd-dims__val">{fullSize}</span>
+                  <span className="pd-dims__hint">L × W × H · external dimensions</span>
+                </div>
+              )}
               {quickFacts.length > 0 && (
                 <ul className="hx-facts">
                   {quickFacts.map((f) => (
@@ -201,18 +227,17 @@ export default async function ProductDetailPage({
                 </ul>
               )}
               <div className="cat-detail__types">
-                <span className="cat-detail__types-label">Other heights in this series:</span>
-                {siblingSizes.length > 0 ? (
-                  siblingSizes.map((sib) => (
-                    <a key={sib.size_key} href={`${s.href}#size-${sib.size_key}`} className="cat-detail__chip">
-                      {sib.height} mm
-                    </a>
-                  ))
-                ) : (
-                  <span className="cat-detail__chip">{sz.height} mm</span>
-                )}
+                <span className="cat-detail__types-label">Other sizes in this series:</span>
+                <span className="cat-detail__chip cat-detail__chip--current" aria-current="true">{fullSize}</span>
+                {siblingSizes.map((sib) => (
+                  <a key={sib.size_key} href={siblingSizeHref(sib)} className="cat-detail__chip">
+                    {formatSize(s, sib.height)}
+                  </a>
+                ))}
               </div>
               <a href="#quote" className="btn btn-primary">Request a Quote</a>
+            </div>
+          </div>
             </div>
           </div>
         </div>
@@ -290,25 +315,26 @@ export default async function ProductDetailPage({
           <div className="container">
             <div className="section-header reveal">
               <p className="sec-index">Other models</p>
-              <h2 className="display-700">Other versions at {sz.height} mm</h2>
-              <p>Alternative models available at this height in the {s.name.toLowerCase()} series.</p>
+              <h2 className="display-700">Other versions at {fullSize}</h2>
+              <p>Alternative construction types available at this size in the {s.name.toLowerCase()} series.</p>
             </div>
-            <div className="hx-version-grid reveal">
+            <div className="px-version-grid reveal">
               {siblingVariants.map((v) => (
-                <a key={v.version_key} href={v.href} className="hx-version">
-                  <div className="hx-version__img">
+                <a key={v.version_key} href={v.href} className="px-version">
+                  <div className="px-version__img">
                     {v.card_image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
                     ) : (
-                      <span className="hx-version__placeholder">{v.display_name}</span>
+                      <span className="px-version__placeholder">{v.display_name}</span>
                     )}
                   </div>
-                  <div className="hx-version__body">
-                    <span className="hx-version__parent">{v.model_code}</span>
-                    <h3>{v.display_name}</h3>
-                    <div className="hx-version__meta">
-                      <span className="hx-version__cta">View Details <span aria-hidden="true">→</span></span>
+                  <div className="px-version__body">
+                    <span className="px-version__code">{v.model_code}</span>
+                    <h3 className="px-version__name">{v.display_name}</h3>
+                    <span className="px-version__dims">{fullSize}</span>
+                    <div className="px-version__foot">
+                      <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
                     </div>
                   </div>
                 </a>

@@ -6,6 +6,7 @@ import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
+  formatFootprint,
   getHierarchyCategoryPaths,
   getCategoryBySlug
 } from '@/lib/hierarchy';
@@ -34,13 +35,6 @@ export async function generateMetadata({
   };
 }
 
-function seriesMeta(heights: number, models: number): string {
-  const parts: string[] = [];
-  if (heights > 0) parts.push(`${heights} ${heights === 1 ? 'height' : 'heights'}`);
-  if (models > 0) parts.push(`${models} ${models === 1 ? 'model' : 'models'}`);
-  return parts.join(' · ') || 'Range on request';
-}
-
 export default async function CategoryPage({
   params
 }: { params: Promise<{ category: string }> }) {
@@ -51,7 +45,7 @@ export default async function CategoryPage({
   return (
     <main id="main">
       {/* ===== PAGE HERO ===== */}
-      <section className="page-hero">
+      <section className={`page-hero${cat.image ? ' page-hero--split' : ''}`}>
         <div className="container">
           <div className="hero-top">
             <p className="breadcrumb">
@@ -59,8 +53,18 @@ export default async function CategoryPage({
             </p>
             <BackButton href="/products" />
           </div>
-          <h1 className="display-800">{cat.name}</h1>
-          {cat.description && <p>{cat.description}</p>}
+          <div className="page-hero__grid">
+            <div className="page-hero__text">
+              <h1 className="display-800">{cat.name}</h1>
+              {cat.description && <p>{cat.description}</p>}
+            </div>
+            {cat.image && (
+              <div className="page-hero__media" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cat.image} alt="" width="560" height="360" decoding="async" />
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -69,41 +73,55 @@ export default async function CategoryPage({
         <div className="container">
           <header className="section-header reveal">
             <p className="sec-index">Series in this range</p>
-            <h2 className="display-700">Choose a {cat.name} series</h2>
-            <p>Each series covers a footprint — pick one to see the available heights and models inside.</p>
+            <h2 className="display-700">Choose your {cat.name.toLowerCase()} series</h2>
+            <p>Each series covers a single footprint — pick one to walk through the available heights and construction types.</p>
           </header>
 
           {cat.series.length > 0 ? (
-            <div className="sc-grid reveal">
-              {cat.series.map((s) => (
-                <a href={s.href} className="sc-card" key={s.series_key}>
-                  <div className="sc-card__img sc-card__img--light">
-                    {s.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={s.image}
-                        alt={`${s.name} — ${cat.name}`}
-                        width="480"
-                        height="300"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span className="sc-card__placeholder">{s.name}</span>
-                    )}
-                  </div>
-                  <div className="sc-card__body">
-                    <h3>{s.name}</h3>
-                    {(s.short_description || s.description) && (
-                      <p>{s.short_description || s.description}</p>
-                    )}
-                    <div className="sc-card__meta">
-                      <span className="sc-card__count">{seriesMeta(s.heights_count, s.models_count)}</span>
-                      <span className="sc-card__cta">View Series <span aria-hidden="true">→</span></span>
+            <div className="px-series-grid reveal">
+              {cat.series.map((s, i) => {
+                const footprint = formatFootprint(s);
+                return (
+                  <a href={s.href} className="px-series" key={s.series_key}>
+                    <div className="px-series__media">
+                      {s.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={s.image}
+                          alt={`${s.name} — ${cat.name}`}
+                          width="560"
+                          height="400"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span className="px-series__placeholder">{footprint || s.name}</span>
+                      )}
                     </div>
-                  </div>
-                </a>
-              ))}
+                    <div className="px-series__body">
+                      <div className="px-series__topline">
+                        <span className="px-series__index" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="px-series__label">{cat.name} Series</span>
+                      </div>
+                      <div className="px-series__title">
+                        {footprint && <span className="px-series__dims">{footprint}</span>}
+                        <span className="px-series__name">{s.name}</span>
+                      </div>
+                      {(s.short_description || s.description) && (
+                        <p className="px-series__desc">{s.short_description || s.description}</p>
+                      )}
+                      <div className="px-series__meta">
+                        <span className="pl-chip">{s.heights_count} {s.heights_count === 1 ? 'size' : 'sizes'}</span>
+                        <span className="pl-chip">{s.models_count} {s.models_count === 1 ? 'model' : 'models'}</span>
+                        {s.sizes.slice(0, 4).map((sz) => (
+                          <span key={sz.size_key} className="pl-chip pl-chip-outline">{sz.height} mm</span>
+                        ))}
+                      </div>
+                      <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           ) : (
             <div className="empty-state reveal">

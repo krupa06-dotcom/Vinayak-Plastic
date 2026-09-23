@@ -165,6 +165,22 @@ export function makeVersionKey(variant: { version_name: string | null; model_cod
   return variantSlug(variant.version_name || variant.model_code);
 }
 
+/** Human-readable footprint, e.g. "600 × 400", from base dimensions. */
+export function formatFootprint(series: { base_length: number | null; base_width: number | null }): string {
+  return series.base_length != null && series.base_width != null
+    ? `${series.base_length} × ${series.base_width}`
+    : '';
+}
+
+/** Human-readable full size, e.g. "600 × 400 × 220 mm". */
+export function formatSize(
+  series: { base_length: number | null; base_width: number | null },
+  height: number
+): string {
+  const fp = formatFootprint(series);
+  return fp ? `${fp} × ${height} mm` : `${height} mm`;
+}
+
 /** Normalise the series `applications` JSON column into renderable rows. */
 export function normalizeApplications(apps: unknown): { name: string; description: string }[] {
   if (!Array.isArray(apps)) return [];

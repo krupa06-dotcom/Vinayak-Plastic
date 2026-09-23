@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import '@/styles/category.css';
 import BackButton from '@/components/BackButton';
-import CategoryLightbox from '@/components/CategoryLightbox';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
+import CategorySectionNav, { type SectionNavItem } from '@/components/CategorySectionNav';
+import CategoryModelCatalogue, { type CatalogueModelRow, type SpecColumn } from '@/components/CategoryModelCatalogue';
+import CategoryRail, { type CategoryRailItem } from '@/components/CategoryRail';
 import { getCatalogueData, resolveImageUrl, resolveFirstImage, variantSlug } from '@/lib/db';
 
 export const dynamicParams = false;
@@ -49,16 +51,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const totalSizes = category.variants_count;
   const categorySizes = category.variants;
 
-  const variantCols = (['name', 'size', 'color', 'capacity', 'material'] as const)
-    .filter((k) => categorySizes.some((v) => v[k] !== null && v[k] !== ''));
-  const variantLabels: Record<string, string> = {
-    name: 'Model',
-    size: 'Size (L × W × H)',
-    color: 'Colour',
-    capacity: 'Capacity / Load',
-    material: 'Material'
-  };
-
   const colors = Array.from(new Set(categorySizes.map((v) => (v.color || '').trim()).filter(Boolean)));
 
   // Model catalogue data for the combined sizes & models spec sheet:
@@ -85,6 +77,56 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     };
   });
 
+  // Model rows for the live quick-filter catalogue.
+  const modelRows: CatalogueModelRow[] = catalogueModels.map((m) => {
+    const v = m.v;
+    const raw = (x: string | null) => (x || '').trim();
+    return {
+      id: v.id,
+      name: m.name,
+      href: m.href,
+      img: m.img,
+      fig: m.fig,
+      hexCss: m.hexCss,
+      cols: {
+        name: m.name,
+        size: raw(v.size) || '—',
+        color: raw(v.color) || '—',
+        capacity: raw(v.capacity) || '—',
+        material: raw(v.material) || '—'
+      },
+      search: [m.name, v.size, v.color, v.capacity, v.material]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+    };
+  });
+
+  const modelColumns: SpecColumn[] = (['name', 'size', 'color', 'capacity', 'material'] as const)
+    .filter((k) => categorySizes.some((v) => v[k] !== null && v[k] !== ''))
+    .map((k) => k as SpecColumn);
+
+  const colourFacets = colors.map((label) => ({ label, hex: colorHex(label) || '' }));
+  const materialFacets = Array.from(
+    new Set(categorySizes.map((v) => (v.material || '').trim()).filter(Boolean))
+  );
+
+  // Cross-category rail for "keep exploring".
+  const railCategories: CategoryRailItem[] = catalogue.categories.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    description: c.description,
+    image: resolveImageUrl(c.image_url),
+    count: c.variants_count
+  }));
+
+  const navSections: SectionNavItem[] = [
+    { id: 'range-detail', label: 'Overview' },
+    ...(catalogueModels.length > 0 ? [{ id: 'range', label: 'Models & Specs' }] : []),
+    ...(products.length > 0 ? [{ id: 'products', label: 'Products' }] : []),
+    { id: 'enquire', label: 'Get a Quote' }
+  ];
+
   const heroImage = resolveImageUrl(category.image_url);
 
   const categorySchema = {
@@ -110,6 +152,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           <p>{category.description}</p>
         </div>
       </section>
+
+      <CategorySectionNav sections={navSections} />
 
       {/* ===== RANGE DETAIL ===== */}
       <section className="section" id="range-detail">
@@ -171,61 +215,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
       {catalogueModels.length > 0 && (
         <section className="section-warm" id="range">
           <div className="container">
-            <div className="section-header reveal">
-              <p className="sec-index">Model Catalogue</p>
-              <h2 className="display-700">Available sizes &amp; models</h2>
-              <p>Click any model image to view it enlarged — or click a model name to open its full detail page.</p>
-            </div>
-
-            <div className="specs-table-wrap reveal">
-              <table className="specs-table spec-table-models">
-                <thead>
-                  <tr>
-                    {variantCols.map((k) => (
-                      <th key={k}>{variantLabels[k]}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {catalogueModels.map((m) => (
-                    <tr className="spec-row" data-spec-href={m.href} key={m.v.id}>
-                      {variantCols.map((k) => (
-                        <td className={k === 'name' ? 'spec-td-model' : ''} key={k}>
-                          {k === 'name' ? (
-                            <div className="spec-model">
-                              {m.img && (
-                                <button
-                                  type="button"
-                                  className="spec-model__thumb-btn"
-                                  data-lightbox-src={m.img}
-                                  data-lightbox-name={m.name}
-                                  data-lightbox-fig={m.fig}
-                                  aria-label={`Preview ${m.name} image`}
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img className="spec-model__thumb" src={m.img} alt="" width="108" height="84" loading="lazy" decoding="async" />
-                                </button>
-                              )}
-                              <a href={m.href} className="specs-model spec-model__link">{m.v[k] || '—'}</a>
-                            </div>
-                          ) : k === 'color' ? (
-                            <span className="spec-swatch" style={{ '--chip': m.hexCss || '#cccccc' } as React.CSSProperties}>{m.v[k] || '—'}</span>
-                          ) : (
-                            m.v[k] || '—'
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <CategoryLightbox />
-
-            <div className="reveal" style={{ marginTop: 16, fontSize: '0.85rem', color: 'var(--steel)', textAlign: 'center' }}>
-              <p>Note: Specifications are indicative and may vary by batch. Contact us for detailed technical drawings.</p>
-            </div>
+            <CategoryModelCatalogue
+              models={modelRows}
+              columns={modelColumns}
+              colours={colourFacets}
+              materials={materialFacets}
+            />
           </div>
         </section>
       )}
@@ -281,8 +276,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         </div>
       </section>
 
+      <CategoryRail categories={railCategories} currentSlug={category.slug} />
+
       {/* ===== CTA ===== */}
-      <section className="cta-banner" aria-label={`Enquire about ${category.name.toLowerCase()}`}>
+      <section className="cta-banner" id="enquire" aria-label={`Enquire about ${category.name.toLowerCase()}`}>
         <div className="container reveal">
           <h2 className="display-700">Need {category.name.toLowerCase()} specs or pricing?</h2>
           <p>Call or WhatsApp us directly for dimensions, material grades, custom sizes and dispatch timelines.</p>
