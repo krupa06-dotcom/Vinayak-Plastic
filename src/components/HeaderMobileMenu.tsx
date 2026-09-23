@@ -78,7 +78,7 @@ export default function HeaderMobileMenu({ currentPage, searchItems, isProducts 
             </div>
           </div>
 
-          <NavSearch items={searchItems} popular={['Plastic Crates', 'Waste Bins', 'Plastic Pallets', 'Hand Pallet Trucks', 'Standard Crates', 'Standard Trucks']} />
+          <NavSearch items={searchItems} popular={['Plastic Crates', 'Waste Bins', 'Plastic Pallets', 'Hand Pallet Trucks', '600 × 400 Series', '1200 × 1000 Series']} />
 
           <div className="nav-right">
             <a href={CONTACT.phoneHref} className="nav-phone" aria-label="Call us">{CONTACT.phoneDisplay}</a>

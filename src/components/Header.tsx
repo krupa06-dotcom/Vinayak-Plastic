@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation';
 import vpLogo from '@/assets/images/vp-logo.webp';
 import { CONTACT } from '@/lib/contact';
-import { variantSlug } from '@/lib/db';
 import NavSearch from '@/components/NavSearch';
 import type { SearchItem } from '@/components/NavSearch';
 import HeaderMobileMenu from '@/components/HeaderMobileMenu';

@@ -3,7 +3,8 @@ import '@/styles/home.css';
 import Hero from '@/components/Hero';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
 import { CONTACT } from '@/lib/contact';
-import { getCatalogueData, getSiteSetting, resolveFirstImage } from '@/lib/db';
+import { getSiteSetting } from '@/lib/db';
+import { getHierarchyData } from '@/lib/hierarchy';
 
 export const metadata: Metadata = {
   title: { absolute: 'Vinayak Plastics — Material Handling & Packaging Products' },
@@ -14,61 +15,55 @@ export const metadata: Metadata = {
 export const dynamicParams = false;
 
 export default async function HomePage() {
-  const catalogue = await getCatalogueData();
+  const hierarchy = await getHierarchyData();
 
   const homepageSetting = await getSiteSetting('homepage') as Record<string, string> | null;
   const featuredTagline =
     homepageSetting?.featured_tagline ||
     'HDPE and PP material handling and packaging equipment for warehouses, dairy distributors, and municipal buyers across India.';
 
-  // "What We Make": 6 cards, all data from the database — the first 4 are the
-  // categories (by display order) and the last 2 are the top products
-  // (sub-categories flagged as featured in the admin panel). Images are the
-  // admin-controlled DB image URLs (sub_categories.image_url / categories.image_url).
-  const activeCategories = catalogue.categories
+  // "What We Make": 6 cards, all data from the Phase-3 hierarchy — the first 4
+  // are the categories (by display order) and the last 2 are the featured series
+  // (is_featured = true). All card links point at the /products pages.
+  const activeCategories = hierarchy.categories
     .filter((c) => c.is_active !== false)
     .sort((a, b) => a.display_order - b.display_order);
 
   const categoryCards = activeCategories.slice(0, 4).map((cat) => ({
     name: cat.name,
     desc: cat.description ?? '',
-    slug: `/categories/${cat.slug}`,
+    slug: cat.href,
     alt: cat.name,
-    image: resolveFirstImage(cat.image_url, cat.images[0]?.image_url)
+    image: cat.image
   }));
-
-  // Category main images — fallback for product cards that have no own image.
-  const categoryImageBySlug = new Map(activeCategories.map((cat) => [cat.slug, cat.image_url]));
 
   const categoryNames = new Set(categoryCards.map((c) => c.name.toLowerCase()).filter(Boolean));
 
-  const topProducts = catalogue.subCategories
-    .filter((s) => s.is_active !== false && s.is_featured && s.category_slug && !categoryNames.has((s.name || '').toLowerCase()))
-    .sort((a, b) => a.display_order - b.display_order)
+  const topProducts = hierarchy.series
+    .filter((s) => s.is_featured && s.category_slug && !categoryNames.has((s.category_name || '').toLowerCase()))
     .slice(0, 2)
-    .map((p) => ({
-      name: p.name,
-      desc: p.short_description ?? p.description ?? '',
-      slug: `/categories/${p.category_slug}/${p.slug}`,
-      alt: p.name,
-      image: resolveFirstImage(p.image_url, p.images[0]?.image_url, categoryImageBySlug.get(p.category_slug))
+    .map((ser) => ({
+      name: ser.name,
+      desc: ser.short_description ?? ser.description ?? '',
+      slug: ser.href,
+      alt: ser.name,
+      image: ser.image
     }));
 
-  // Top up to 2 products with the earliest sub-categories when the admin has not
-  // flagged enough products as featured, so the section still fills to six cards.
+  // Top up to 2 series with the earliest remaining series when not enough are
+  // flagged as featured, so the section still fills to six cards.
   if (topProducts.length < 2) {
     const used = new Set([...categoryCards.map((c) => c.slug), ...topProducts.map((p) => p.slug)]);
-    for (const s of catalogue.subCategories) {
+    for (const ser of hierarchy.series) {
       if (topProducts.length >= 2) break;
-      const slug = s.category_slug ? `/categories/${s.category_slug}/${s.slug}` : '';
-      if (!slug || used.has(slug) || s.is_active === false) continue;
-      used.add(slug);
+      if (used.has(ser.href)) continue;
+      used.add(ser.href);
       topProducts.push({
-        name: s.name,
-        desc: s.short_description ?? s.description ?? '',
-        slug,
-        alt: s.name,
-        image: resolveFirstImage(s.image_url, s.images[0]?.image_url, categoryImageBySlug.get(s.category_slug))
+        name: ser.name,
+        desc: ser.short_description ?? ser.description ?? '',
+        slug: ser.href,
+        alt: ser.name,
+        image: ser.image
       });
     }
   }

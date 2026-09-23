@@ -1,4 +1,4 @@
-import { getCatalogueData, variantSlug } from '@/lib/db';
+import { getHierarchyData } from '@/lib/hierarchy';
 import Header from '@/components/Header';
 import type { SearchItem } from '@/components/NavSearch';
 
@@ -7,37 +7,35 @@ const POPULAR_SEARCHES = [
   'Waste Bins',
   'Plastic Pallets',
   'Hand Pallet Trucks',
-  'Standard Crates',
-  'Standard Trucks'
+  '600 × 400 Series',
+  '1200 × 1000 Series'
 ];
 
 async function getSearchItems(): Promise<SearchItem[]> {
-  const catalogue = await getCatalogueData();
+  const hierarchy = await getHierarchyData();
 
   return [
-    ...catalogue.categories.map((cat) => ({
+    ...hierarchy.categories.map((cat) => ({
       label: cat.name,
       hint: 'Category',
-      href: `/categories/${cat.slug}`,
+      href: cat.href,
       k: `${cat.name} ${cat.description || ''}`.toLowerCase(),
       group: 0
     })),
-    ...catalogue.subCategories.map((sub) => ({
-      label: sub.name,
-      hint: sub.category_name || 'Product Type',
-      href: sub.category_slug ? `/categories/${sub.category_slug}/${sub.slug}` : '/products',
-      k: `${sub.name} ${sub.category_name || ''} ${sub.short_description || ''} ${sub.description || ''}`.toLowerCase(),
+    ...hierarchy.series.map((s) => ({
+      label: s.name,
+      hint: `${s.category_name} · Series`,
+      href: s.href,
+      k: `${s.name} ${s.category_name || ''} ${s.short_description || ''} ${s.description || ''}`.toLowerCase(),
       group: 1
     })),
-    ...catalogue.categories.flatMap((cat) =>
-      cat.variants.map((v) => ({
-        label: v.name || v.size || '',
-        hint: `${cat.name} · Size / Model`,
-        href: `/categories/${cat.slug}/variant/${variantSlug(v.name || v.size || 'size')}`,
-        k: `${v.name} ${v.size} ${v.color} ${v.material} ${cat.name}`.toLowerCase(),
-        group: 2
-      }))
-    )
+    ...hierarchy.variants.map((v) => ({
+      label: v.display_name,
+      hint: `${v.category_name} · ${v.series_name}`,
+      href: v.href,
+      k: `${v.display_name} ${v.model_code} ${v.category_name} ${v.series_name}`.toLowerCase(),
+      group: 2
+    }))
   ];
 }
 

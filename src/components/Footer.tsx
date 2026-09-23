@@ -33,10 +33,10 @@ export default async function Footer() {
 
           <div className="footer-col">
             <h3>Products</h3>
-            <a href="/categories/plastic-crates">Plastic Crates</a>
-            <a href="/categories/plastic-pallets">Plastic Pallets</a>
-            <a href="/categories/waste-bins">Waste Bins / Dustbins</a>
-            <a href="/categories/hand-pallet-trucks">Hand Pallet Trucks</a>
+            <a href="/products/plastic-crates">Plastic Crates</a>
+            <a href="/products/plastic-pallets">Plastic Pallets</a>
+            <a href="/products/waste-bins">Waste Bins / Dustbins</a>
+            <a href="/products/hand-pallet-trucks">Hand Pallet Trucks</a>
             <a href="/products">Full Product Range</a>
           </div>
 

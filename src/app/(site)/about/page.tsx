@@ -64,7 +64,7 @@ export default async function AboutPage() {
       img: image,
       alt: cat ? `${cat.name} — Vinayak Plastics` : '',
       name: cat?.name ?? slug.replace(/-/g, ' '),
-      href: cat ? `/categories/${cat.slug}` : '/products'
+      href: cat ? `/products/${cat.slug}` : '/products'
     };
   });
 
