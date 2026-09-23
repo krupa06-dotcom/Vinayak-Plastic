@@ -414,11 +414,13 @@ export async function getAllInUseImagesMap(): Promise<Map<string, string[]>> {
     }
   }
 
-  const [simgsRes, catsRes, catImgsRes, subsRes] = await Promise.all([
+  const [simgsRes, catsRes, catImgsRes, subsRes, seriesRes, pimgsRes] = await Promise.all([
     supabase.from('sub_category_images').select('image_url, sub_category:sub_categories(name)').limit(2000),
     supabase.from('categories').select('image_url, name').limit(500),
     supabase.from('category_images').select('image_url, category:categories(name)').limit(2000),
-    supabase.from('sub_categories').select('image_url, name').limit(1000)
+    supabase.from('sub_categories').select('image_url, name').limit(1000),
+    supabase.from('series').select('image_url, name').limit(2000),
+    supabase.from('product_images').select('image_url, product_variant:product_variants(model_code)').limit(4000)
   ]);
 
   for (const row of simgsRes.data || []) {
@@ -434,6 +436,13 @@ export async function getAllInUseImagesMap(): Promise<Map<string, string[]>> {
   }
   for (const row of subsRes.data || []) {
     record(row.image_url, `as main image for product "${row.name}"`);
+  }
+  for (const row of seriesRes.data || []) {
+    record(row.image_url, `as cover image for series "${row.name}"`);
+  }
+  for (const row of pimgsRes.data || []) {
+    const name = (row.product_variant && Array.isArray(row.product_variant) ? row.product_variant[0]?.model_code : (row as any).product_variant?.model_code) || 'product version';
+    record(row.image_url, `as image for product version "${name}"`);
   }
 
   return map;

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import '@/styles/products.css';
+import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import ProductListFilter from '@/components/ProductListFilter';
 import { CONTACT } from '@/lib/contact';
-import { getCatalogueData, resolveFirstImage } from '@/lib/db';
+import { getHierarchyData } from '@/lib/hierarchy';
 
 export const metadata: Metadata = {
   title: { absolute: 'Products | Vinayak Plastics — Plastic Crates, Pallets & Waste Bins' },
@@ -11,54 +12,35 @@ export const metadata: Metadata = {
     'Explore Vinayak Plastics product range — plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks. HDPE & PP industrial-grade material handling equipment.'
 };
 
-function sizeLabel(count: number, colors = 0): string {
-  const parts: string[] = [];
-  parts.push(count > 0
-    ? `${count} ${count === 1 ? 'size / model' : 'sizes / models'}`
-    : 'range on request');
-  if (colors > 1) parts.push(`${colors} colour${colors === 1 ? '' : 's'}`);
-  return parts.join(' · ');
-}
-
-function colorCount(variants: Array<{ color: string | null }>): number {
-  return new Set(variants.map((v) => (v.color || '').trim()).filter(Boolean)).size;
-}
-
 export default async function ProductsPage() {
-  const catalogue = await getCatalogueData();
-  const { categories, subCategories } = catalogue;
+  const hierarchy = await getHierarchyData();
 
   // Category cards — the main ranges, numbered like a catalogue index.
-  const rangeCards = categories.map((cat, i) => ({
+  const rangeCards = hierarchy.categories.map((cat, i) => ({
     index: String(i + 1).padStart(2, '0'),
     name: cat.name,
     slug: cat.slug,
     description: cat.description,
-    image: resolveFirstImage(cat.image_url, cat.images[0]?.image_url),
-    sizeNames: cat.variants.map((v) => v.name || '').filter(Boolean),
-    count: cat.variants.length,
-    subCount: cat.sub_categories.length,
-    href: `/categories/${cat.slug}`
+    image: cat.image,
+    sizeNames: cat.series.slice(0, 3).map((s) => s.series_key),
+    count: cat.models_count,
+    subCount: cat.series.length,
+    href: `/products/${cat.slug}`
   }));
 
-  // Category main images — used as a last-resort fallback for product cards.
-  const categoryImageBySlug = new Map(categories.map((cat) => [cat.slug, cat.image_url]));
-
-  // Product cards — every actual product across all categories.
-  const productCards = subCategories.map((sub) => ({
-    name: sub.name,
-    slug: sub.slug,
-    categoryName: sub.category_name,
-    categorySlug: sub.category_slug,
-    description: sub.short_description || sub.description,
-    image: resolveFirstImage(sub.image_url, sub.images[0]?.image_url, categoryImageBySlug.get(sub.category_slug)),
-    sizesLabel: sizeLabel(sub.variants.length, colorCount(sub.variants)),
-    href: `/categories/${sub.category_slug}/${sub.slug}`
+  // Product cards — every actual product (series size / model) across all categories.
+  const productCards = hierarchy.variants.map((v) => ({
+    name: v.display_name,
+    slug: `${v.category_slug}-${v.series_key}-${v.size_key}-${v.version_key}`,
+    categoryName: v.category_name,
+    categorySlug: v.category_slug,
+    description: v.description,
+    image: v.card_image,
+    sizesLabel: `${v.series_key} · ${v.size_label} high`,
+    href: v.href
   }));
 
-  const productSearch = productCards.map((p) =>
-    `${p.name} ${p.categoryName} ${p.description || ''}`.toLowerCase()
-  );
+  const productsSearch = hierarchy.variants.map((v) => v.search);
 
   return (
     <main id="main">
@@ -76,7 +58,7 @@ export default async function ProductsPage() {
 
       <ProductListFilter
         rangeCards={rangeCards}
-        productCards={productCards.map((c, i) => ({ ...c, search: productSearch[i] }))}
+        productCards={productCards.map((c, i) => ({ ...c, search: productsSearch[i] }))}
       />
 
       {/* ===== CTA ===== */}

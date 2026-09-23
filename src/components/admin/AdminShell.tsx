@@ -7,6 +7,7 @@ import { ensureAdmin } from '@/scripts/admin/core';
 export type AdminNavKey =
   | 'dashboard'
   | 'categories'
+  | 'series'
   | 'products'
   | 'enquiries'
   | 'website'
@@ -28,6 +29,7 @@ const navItems: Array<{
 }> = [
   { key: 'dashboard', href: '/admin/', label: 'Dashboard', svg: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>', section: '' },
   { key: 'categories', href: '/admin/categories/', label: 'Categories', svg: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>', section: 'Catalogue' },
+  { key: 'series', href: '/admin/series/', label: 'Series', svg: '<path d="M4 7h16M4 12h16M4 17h10"/><rect x="3" y="4" width="18" height="16" rx="2"/>', section: '' },
   { key: 'products', href: '/admin/products/', label: 'Products', svg: '<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>', section: '' },
   { key: 'media', href: '/admin/media/', label: 'Media Library', svg: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 17"/>', section: 'Catalogue' },
   { key: 'enquiries', href: '/admin/enquiries/', label: 'Enquiries', svg: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>', section: 'Sales' },

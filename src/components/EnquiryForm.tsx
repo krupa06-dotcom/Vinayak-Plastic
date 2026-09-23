@@ -13,21 +13,35 @@ const configured = Boolean(
   !supabaseKey.includes('sb_publishable_xxxxx')
 );
 
+export interface EnquiryPrefill {
+  productVariantId?: string;
+  category?: string;
+  series?: string;
+  size?: string;
+  version?: string;
+  modelCode?: string;
+}
+
 // Enquiry form — public submission straight to Supabase. The RLS policy allows
 // public insert for the enquiries table, so this runs fully client-side.
-export default function EnquiryForm() {
+export default function EnquiryForm({ prefill }: { prefill?: EnquiryPrefill }) {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
 
-    // Get sub-category ID from URL if on a product / sub-category page
+    // Get sub-category / product IDs from URL if linked from a product page
     const urlParams = new URLSearchParams(window.location.search);
     const subCategoryId = urlParams.get('sub_category_id');
     const subCategoryIdInput = document.getElementById('sub-category-id') as HTMLInputElement | null;
     if (subCategoryId && subCategoryIdInput) {
       subCategoryIdInput.value = subCategoryId;
+    }
+    const productVariantId = urlParams.get('product_variant_id');
+    const productVariantIdInput = document.getElementById('product-variant-id') as HTMLInputElement | null;
+    if (productVariantId && productVariantIdInput) {
+      productVariantIdInput.value = productVariantId;
     }
 
     const onSubmit = async (e: Event) => {
@@ -49,6 +63,7 @@ export default function EnquiryForm() {
       const formData = new FormData(form);
       const data = {
         sub_category_id: formData.get('sub_category_id') || null,
+        product_variant_id: formData.get('product_variant_id') || null,
         name: formData.get('name'),
         company: formData.get('company') || null,
         phone: formData.get('phone'),
@@ -101,10 +116,40 @@ export default function EnquiryForm() {
     return () => form.removeEventListener('submit', onSubmit);
   }, []);
 
+  const hasPrefill = Boolean(prefill && Object.values(prefill).some((v) => v));
+  const defaultMessage =
+    prefill?.version && prefill?.modelCode
+      ? `I am interested in ${prefill.version} (${prefill.modelCode})${prefill.size ? ` — ${prefill.size}` : ''}. Please share pricing and specifications.`
+      : '';
+
   return (
     <div id="enquiry-form-container">
       <form id="enquiry-form" className="enquiry-form" ref={formRef}>
         <input type="hidden" id="sub-category-id" name="sub_category_id" value="" />
+        <input type="hidden" id="product-variant-id" name="product_variant_id" value={prefill?.productVariantId ?? ''} />
+
+        {hasPrefill && (
+          <div className="enquiry-prefill">
+            <p className="enquiry-prefill__title">Enquiring about</p>
+            <dl className="enquiry-prefill__list">
+              {prefill?.category && (
+                <div className="enquiry-prefill__row"><dt>Category</dt><dd>{prefill.category}</dd></div>
+              )}
+              {prefill?.series && (
+                <div className="enquiry-prefill__row"><dt>Series</dt><dd>{prefill.series}</dd></div>
+              )}
+              {prefill?.size && (
+                <div className="enquiry-prefill__row"><dt>Size</dt><dd>{prefill.size}</dd></div>
+              )}
+              {prefill?.version && (
+                <div className="enquiry-prefill__row"><dt>Version</dt><dd>{prefill.version}</dd></div>
+              )}
+              {prefill?.modelCode && (
+                <div className="enquiry-prefill__row"><dt>Model Code</dt><dd>{prefill.modelCode}</dd></div>
+              )}
+            </dl>
+          </div>
+        )}
 
         <div className="form-group">
           <label htmlFor="name">Name *</label>
@@ -133,7 +178,7 @@ export default function EnquiryForm() {
 
         <div className="form-group">
           <label htmlFor="message">Message</label>
-          <textarea id="message" name="message" rows={4} placeholder="Tell us about your requirements..."></textarea>
+          <textarea id="message" name="message" rows={4} placeholder="Tell us about your requirements..." defaultValue={defaultMessage}></textarea>
         </div>
 
         <button type="submit" className="btn btn-primary" id="submit-btn">

@@ -366,7 +366,7 @@ export function getCatalogueData(): Promise<CatalogueData> {
 // so the public site renders the same base range in local/dev builds.
 // ============================================================
 
-interface FallbackDetail {
+export interface FallbackDetail {
   name: string;
   slug: string;
   description: string;
@@ -378,14 +378,14 @@ interface FallbackDetail {
   variants: Array<{ model: string; size: string; capacity: string; material: string }>;
 }
 
-const FALLBACK_CATEGORIES: Category[] = [
+export const FALLBACK_CATEGORIES: Category[] = [
   { id: 'c-plastic-crates', name: 'Plastic Crates', slug: 'plastic-crates', description: 'Durable, lightweight and stackable crates for dairy, bakery, warehouse and material handling.', image_url: null, display_order: 1, is_active: true },
   { id: 'c-plastic-pallets', name: 'Plastic Pallets', slug: 'plastic-pallets', description: 'Heavy-duty industrial pallets for warehouse racking, logistics and export applications.', image_url: null, display_order: 2, is_active: true },
   { id: 'c-waste-bins', name: 'Waste Bins', slug: 'waste-bins', description: 'Industrial waste bins and dustbins for municipal, commercial and factory use.', image_url: null, display_order: 3, is_active: true },
   { id: 'c-hand-pallet-trucks', name: 'Hand Pallet Trucks', slug: 'hand-pallet-trucks', description: 'Manual material handling equipment for warehouse loading and unloading.', image_url: null, display_order: 4, is_active: true }
 ];
 
-const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
+export const FALLBACK_DETAILS: Record<string, FallbackDetail> = {
   'standard-crates': {
     name: 'Standard Crates',
     slug: 'standard-crates',

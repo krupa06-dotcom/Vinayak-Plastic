@@ -134,6 +134,7 @@ export default function ProductListFilter({ rangeCards, productCards }: ProductL
                       ))}
                       {card.sizeNames.length > 3 && <span className="pl-chip pl-chip-outline">+{card.sizeNames.length - 3} more</span>}
                     </div>
+                    <span className="pl-cat__cta">Explore Range <span aria-hidden="true">→</span></span>
                   </div>
                   <span className="pl-cat__arrow" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>

@@ -57,3 +57,60 @@
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+/* ===== Product prefill summary (quote from a product page) ===== */
+.enquiry-prefill {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--warm-off-white);
+  border: 1px solid rgba(18, 42, 78, 0.1);
+  border-left: 3px solid var(--orange);
+  border-radius: var(--radius-sm);
+}
+
+.enquiry-prefill__title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange-deep);
+  margin-bottom: 8px;
+}
+
+.enquiry-prefill__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.enquiry-prefill__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.enquiry-prefill__row dt {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.enquiry-prefill__row dd {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--deep-navy);
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  .enquiry-prefill__list {
+    grid-template-columns: 1fr;
+  }
+}
