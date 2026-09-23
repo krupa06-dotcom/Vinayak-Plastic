@@ -986,6 +986,24 @@ a.hx-chip:focus-visible {
   gap: 6px;
 }
 
+.pl-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--orange-deep);
+  background: rgba(232, 99, 12, 0.1);
+  padding: 4px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.pl-chip-outline {
+  color: var(--steel);
+  background: rgba(18, 42, 78, 0.06);
+}
+
 .px-series__cta {
   margin-top: 16px;
   padding-top: 14px;
@@ -1134,76 +1152,29 @@ a.hx-chip:focus-visible {
   background: var(--orange);
 }
 
-/* ---------- Series catalog spec table ---------- */
-.st-catalog thead th {
-  white-space: nowrap;
+/* ---------- Series catalog: image card grid ---------- */
+.st-catalog {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
 }
 
-.st-catalog td {
-  vertical-align: middle;
-}
-
-.st-catalog tbody tr {
-  transition: background 0.2s ease;
-}
-
-.st-catalog tbody tr:hover {
-  background: rgba(232, 99, 12, 0.04);
-}
-
-.st-catalog__size {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.02rem;
-  color: var(--deep-navy);
-  white-space: nowrap;
-}
-
-.st-catalog__model {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  color: var(--orange-deep);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.st-catalog__model:hover,
-.st-catalog__model:focus-visible {
-  color: var(--orange);
-  text-decoration: underline;
-}
-
-.st-catalog__dims {
-  font-family: var(--font-mono);
+.st-catalog__load {
   font-size: 0.82rem;
-  color: var(--steel);
-  white-space: nowrap;
+  font-weight: 600;
+  color: var(--deep-navy);
+  background: var(--warm-off-white);
+  border: 1px solid rgba(18, 42, 78, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-top: 8px;
 }
 
 .st-catalog__ver {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   color: var(--steel);
+  margin-top: 4px;
 }
-
-.st-catalog__cta {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--orange-deep);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.st-catalog__cta span { transition: transform 0.2s ease; }
-.st-catalog__cta:hover,
-.st-catalog__cta:focus-visible { color: var(--orange); }
-.st-catalog__cta:hover span { transform: translateX(3px); }
 
 /* ===== Responsive ===== */
 @media (max-width: 1024px) {
@@ -1216,6 +1187,11 @@ a.hx-chip:focus-visible {
   }
 
   .px-series-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .st-catalog {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
   }
@@ -1234,12 +1210,72 @@ a.hx-chip:focus-visible {
   }
 }
 
+/* Series rail on mobile: becomes a horizontal chip strip instead of a tall
+   sidebar, so it stays compact and keeps the catalogue content above the fold. */
+@media (max-width: 768px) {
+  .sr-rail {
+    position: static;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--warm-off-white);
+    overflow: hidden;
+  }
+
+  .sr-rail__label {
+    padding: 10px 14px;
+    font-size: 0.62rem;
+  }
+
+  .sr-rail__nav {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 0 10px 10px;
+    gap: 8px;
+  }
+
+  .sr-rail__item {
+    border: none;
+  }
+
+  .sr-rail__item:last-child {
+    border: none;
+  }
+
+  .sr-rail__link {
+    gap: 8px;
+    padding: 8px 14px;
+    white-space: nowrap;
+    border: 1px solid rgba(18, 42, 78, 0.1);
+    border-radius: 100px;
+    background: var(--white);
+  }
+
+  .sr-rail__item.is-active .sr-rail__link {
+    border-color: var(--orange);
+    background: var(--white);
+  }
+
+  .sr-rail__meta {
+    display: none;
+  }
+
+  .sr-rail__sizes {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .page-hero__media {
     display: none;
   }
 
   .px-series-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .st-catalog {
     grid-template-columns: 1fr;
   }
 

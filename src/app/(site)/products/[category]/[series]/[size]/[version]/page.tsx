@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import '@/styles/category.css';
 import '@/styles/subcategory.css';
 import '@/styles/catalogue.css';
+import '@/styles/variant.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import SeriesRail from '@/components/SeriesRail';

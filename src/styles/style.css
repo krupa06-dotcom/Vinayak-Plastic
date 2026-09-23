@@ -3017,6 +3017,40 @@ html.js .reveal.visible {
   }
 }
 
+/* Ultra-narrow phones (<400px): keep the top header row on ONE line so the
+   fixed header never wraps taller than --nav-height and hides page titles. */
+@media(max-width:400px) {
+  .site-nav .container {
+    gap: 6px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .nav-logo {
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .logo-text {
+    font-size: 0.75rem;
+    max-width: 42vw;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .site-nav .nav-cta-mobile {
+    display: inline-flex;
+    padding: 6px 10px;
+    font-size: 0.68rem;
+  }
+
+  .nav-toggle {
+    margin-left: 0;
+    margin-right: -4px;
+  }
+}
+
 /* ===== CATALOGUE RESPONSIVE ===== */
 @media(max-width:1024px) {
   .sc-grid {
@@ -3193,11 +3227,29 @@ html.js .reveal.visible {
   }
   
   .specs-table {
-    min-width: 720px;
+    min-width: 420px;
   }
   
   .spec-table-models {
     min-width: 800px;
+  }
+}
+
+/* Two-column spec tables shrink gracefully on phones — no forced side scroll. */
+@media (max-width: 480px) {
+  .specs-table-wrap {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .specs-table {
+    min-width: 0;
+  }
+
+  .specs-table th,
+  .specs-table td {
+    padding: 10px 12px;
+    white-space: normal;
   }
 }
 
@@ -3435,6 +3487,29 @@ html.js .reveal.visible {
   }
 }
 
+/* Very small phones: trustbar becomes a 2×2 grid so the four stats never
+   overflow or shrink to unreadably small text on 320px screens. */
+@media (max-width: 400px) {
+  .trustbar__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 16px;
+  }
+
+  .trustbar__divider {
+    display: none;
+  }
+
+  .trustbar__item {
+    padding: 0 4px;
+  }
+
+  .trustbar__label {
+    font-size: 0.58rem;
+    letter-spacing: 0.04em;
+  }
+}
+
 /* Breadcrumb responsive */
 @media (max-width: 480px) {
   .breadcrumb {
@@ -3444,6 +3519,25 @@ html.js .reveal.visible {
   .hero-top {
     align-items: center;
     gap: 8px 10px;
+  }
+
+  /* Long breadcrumbs (Products / Category / Series / Size / Model) stay on
+     one line and scroll horizontally instead of wrapping into a tall block. */
+  .hero-top {
+    flex-wrap: nowrap;
+  }
+
+  .hero-top .breadcrumb {
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    min-width: 0;
+    scrollbar-width: none;
+  }
+
+  .hero-top .breadcrumb::-webkit-scrollbar {
+    display: none;
   }
 }
 

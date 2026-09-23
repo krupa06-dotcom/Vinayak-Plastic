@@ -43,6 +43,7 @@ export default function Series() {
         if (catsRes.error) { showError(listEl, catsRes.error.message); return; }
         if (seriesRes.error) { showError(listEl, seriesRes.error.message); return; }
         if (sizesRes.error) { showError(listEl, sizesRes.error.message); return; }
+        if (versionsRes.error) { showError(listEl, versionsRes.error.message); return; }
 
         cats = (catsRes.data || []) as CatRow[];
         series = (seriesRes.data || []) as SeriesRow[];
@@ -88,7 +89,7 @@ export default function Series() {
                   rows.push(`
                     <tr class="a-tree-parent" id="cat-${cat.id}">
                       <td>
-                        ${catSeries.length ? `<button type="button" class="a-tree-toggle" data-toggle="${cat.id}" aria-label="Toggle series" style="margin-right:8px;">+</button>` : ''}
+                        ${catSeries.length ? `<button type="button" class="a-tree-toggle" data-toggle="${cat.id}" aria-label="Toggle series" style="margin-right:8px;">−</button>` : ''}
                         <span style="font-weight:700;">${esc(cat.name)}</span>
                         <span class="a-chip">${catSeries.length}</span>
                       </td>
@@ -102,7 +103,7 @@ export default function Series() {
                     const sizes = sizeBySeries.get(s.id) || { total: 0, active: 0 };
                     const versions = versionsBySeries.get(s.id) || 0;
                     rows.push(`
-                      <tr class="is-child" data-cat="${cat.id}" style="display:none;">
+                      <tr class="is-child" data-cat="${cat.id}">
                         <td>
                           <div style="display:flex;align-items:center;gap:10px;padding-left:22px;">
                             ${s.image_url ? `<img src="${esc(publicUrl(s.image_url, 100))}" alt="" class="a-thumb" style="width:40px;height:32px;flex-shrink:0;" loading="lazy" />` : ''}

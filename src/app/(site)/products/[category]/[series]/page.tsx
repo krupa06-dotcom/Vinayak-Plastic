@@ -84,52 +84,40 @@ export default async function SeriesPage({
                 </h2>
                 <p>
                   All standard heights for the {formatFootprint(s) || s.name} footprint with model codes,
-                  external dimensions and load capacity in one table.
+                  external dimensions and load capacity at a glance.
                 </p>
               </header>
 
               {s.sizes.length > 0 ? (
-                <div className="specs-table-wrap reveal">
-                  <table className="specs-table st-catalog" style={{ minWidth: '820px' }}>
-                    <thead>
-                      <tr>
-                        <th>Size · Height</th>
-                        <th>Model</th>
-                        <th>External Size (mm)</th>
-                        <th>Load Capacity</th>
-                        <th>Versions</th>
-                        <th aria-hidden="true"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {s.sizes.flatMap((sz) =>
-                        sz.variants.map((v, i) => (
-                          <tr key={`${sz.size_key}-${v.version_key}`}>
-                            {i === 0 && (
-                              <td rowSpan={sz.variants.length} className="st-catalog__size">
-                                {formatSize(s, sz.height)}
-                              </td>
-                            )}
-                            <td>
-                              <a href={v.href} className="st-catalog__model">
-                                {v.model_code}
-                              </a>
-                            </td>
-                            <td className="st-catalog__dims">
-                              {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height}
-                            </td>
-                            <td>{v.load_capacity ?? '—'}</td>
-                            <td className="st-catalog__ver">{v.version_code ?? v.display_name ?? '—'}</td>
-                            <td>
-                              <a href={v.href} className="st-catalog__cta" aria-label={`View ${v.model_code} details`}>
-                                View <span aria-hidden="true">→</span>
-                              </a>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                <div className="st-catalog reveal">
+                  {s.sizes.flatMap((sz) =>
+                    sz.variants.map((v) => (
+                      <a key={`${sz.size_key}-${v.version_key}`} href={v.href} className="px-version">
+                        <div className="px-version__img">
+                          {v.card_image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
+                          ) : (
+                            <span className="px-version__placeholder">{v.model_code}</span>
+                          )}
+                        </div>
+                        <div className="px-version__body">
+                          <span className="px-version__code">{v.model_code}</span>
+                          <h3 className="px-version__name">{v.display_name}</h3>
+                          <span className="px-version__dims">
+                            {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height} mm
+                          </span>
+                          {v.load_capacity && <span className="st-catalog__load">{v.load_capacity}</span>}
+                          {v.version_code && v.version_code !== v.display_name && (
+                            <span className="st-catalog__ver">{v.version_code}</span>
+                          )}
+                          <div className="px-version__foot">
+                            <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
+                          </div>
+                        </div>
+                      </a>
+                    ))
+                  )}
                 </div>
               ) : (
                 <div className="empty-state reveal">
