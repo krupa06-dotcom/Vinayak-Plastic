@@ -13,6 +13,7 @@ import {
   confirmDialog,
   toast,
   publicUrl,
+  deleteFile,
   publishSite
 } from '@/scripts/admin/core';
 import { createImagePicker } from '@/scripts/admin/imagePicker';
@@ -146,8 +147,20 @@ export default function Categories() {
             const ok = await confirmDialog(`Delete "${cat?.name ?? 'category'}"?`,
               'This permanently deletes the category, all of its products, sizes and images. This cannot be undone.');
             if (!ok) return;
+            const { data: catRow } = await supabase
+              .from('categories')
+              .select('image_url, sub_categories(image_url, sub_category_images(image_url))')
+              .eq('id', id)
+              .single();
             const { error } = await supabase.from('categories').delete().eq('id', id);
             if (error) { toast(error.message, 'error'); return; }
+            const staleUrls: string[] = [];
+            if ((catRow as any)?.image_url) staleUrls.push((catRow as any).image_url);
+            for (const p of ((catRow as any)?.sub_categories || []) as Array<{ image_url: string; sub_category_images: Array<{ image_url: string }> }>) {
+              if (p.image_url) staleUrls.push(p.image_url);
+              for (const i of p.sub_category_images || []) staleUrls.push(i.image_url);
+            }
+            for (const url of staleUrls) await deleteFile(url);
             toast('Category deleted.', 'success');
             publishSite();
             await load();

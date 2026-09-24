@@ -605,6 +605,35 @@ export default function EditSeries() {
           imageUrl = result.url;
         }
 
+        // Pre-check unique constraints: series slug (category-scoped) and footprint if given
+        {
+          const baseL = baseLength ? l : null;
+          const baseW = baseWidth ? w : null;
+          // Slug collision check
+          const { data: dupSeries, error: dsErr } = await supabase
+            .from('series')
+            .select('id')
+            .eq('category_id', categoryId)
+            .eq('slug', slug);
+          if (dsErr) { resetBtn(); showError(dsErr.message); return; }
+          if ((dupSeries || []).some((r: any) => r.id !== editId)) {
+            resetBtn(); showError(`Another series in this category already uses the slug "${slug}".`); return;
+          }
+          // Footprint collision check (only if both set)
+          if (baseL !== null && baseW !== null) {
+            const { data: dupFoot, error: dfErr } = await supabase
+              .from('series')
+              .select('id')
+              .eq('category_id', categoryId)
+              .eq('base_length', baseL)
+              .eq('base_width', baseW);
+            if (dfErr) { resetBtn(); showError(dfErr.message); return; }
+            if ((dupFoot || []).some((r: any) => r.id !== editId)) {
+              resetBtn(); showError(`Another series in this category already has this footprint (${baseL} × ${baseW} mm).`); return;
+            }
+          }
+        }
+
         // ---- Save series ----
         const seriesPayload: Record<string, unknown> = {
           id,

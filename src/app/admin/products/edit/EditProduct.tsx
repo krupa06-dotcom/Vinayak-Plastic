@@ -34,6 +34,10 @@ export default function EditProduct() {
       const editId = mode === 'category' ? (editCategory !== 'new' ? editCategory : null) : (editProduct !== 'new' ? editProduct : null);
       const preCategory = mode === 'product' ? params.get('category') : null;
 
+      // The image currently persisted on the parent row, so a cover that is
+      // replaced OR removed from the picker has its storage object cleaned up.
+      let initialImage: string | null = null;
+
       const formEl = document.getElementById('pd-form') as HTMLFormElement;
       const loadingEl = document.getElementById('edit-loading')!;
       const titleEl = document.getElementById('page-title')!;
@@ -355,6 +359,7 @@ export default function EditProduct() {
             orderEl.value = String(cat.display_order);
             activeEl.checked = cat.is_active;
             picker.setValue({ existing: cat.image_url ?? null, file: null });
+            initialImage = cat.image_url ?? null;
 
             variantsState = ((cat as any).category_variants || []).map((v: any) => ({
               id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
@@ -388,6 +393,7 @@ export default function EditProduct() {
             activeEl.checked = prod.is_active;
             featuredEl.checked = (prod as any).is_featured ?? false;
             picker.setValue({ existing: prod.image_url ?? null, file: null });
+            initialImage = prod.image_url ?? null;
 
             variantsState = ((prod as any).sub_category_variants || []).map((v: any) => ({
               id: v.id, key: v.id, name: v.name ?? '', size: v.size ?? '', shape: v.shape ?? '', color: v.color ?? '',
@@ -439,9 +445,25 @@ export default function EditProduct() {
         };
 
         const slug = slugEl.value.trim() || slugify(name);
+
+        // Pre-check slug collisions for a clear message instead of a raw DB error.
+        {
+          const { data: dupRows, error: dupErr } = await supabase
+            .from(mode === 'category' ? 'categories' : 'sub_categories')
+            .select('id')
+            .eq('slug', slug);
+          if (dupErr) { resetBtn(); showError(dupErr.message); return; }
+          const collide = (dupRows || []).some((r: any) => r.id !== editId);
+          if (collide) {
+            resetBtn();
+            showError(`Another ${mode === 'category' ? 'category' : 'product'} already uses the slug "${slug}".`);
+            return;
+          }
+        }
+
         const pickerValue = picker.getValue();
         let imageUrl: string | null = pickerValue.existing;
-        const previousImage = pickerValue.existing;
+        const previousImage = initialImage;
         const id = editId || crypto.randomUUID();
 
         if (pickerValue.file) {

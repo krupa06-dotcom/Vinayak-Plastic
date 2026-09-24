@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, publishSite } from '@/scripts/admin/core';
+import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, deleteFile, publishSite } from '@/scripts/admin/core';
 
 // Product list — port of src/pages/admin/products/index.astro. The table is
 // rendered into the DOM after gate() resolves, exactly like the Astro script.
@@ -97,12 +97,22 @@ export default function Products() {
         listEl.querySelectorAll<HTMLButtonElement>('[data-delete-prod]').forEach(btn => {
           btn.addEventListener('click', async () => {
             const id = btn.dataset.deleteProd!;
-            const prod = products.find(p => p.id === id);
-            const ok = await confirmDialog(`Delete "${prod?.name ?? 'product'}"?`,
+            const prodRow = products.find(p => p.id === id);
+            const ok = await confirmDialog(`Delete "${prodRow?.name ?? 'product'}"?`,
               'This permanently deletes the product and all of its sizes, specifications and images. This cannot be undone.');
             if (!ok) return;
+            const { data: prodData } = await supabase
+              .from('sub_categories')
+              .select('image_url, sub_category_images(image_url)')
+              .eq('id', id)
+              .single();
             const { error } = await supabase.from('sub_categories').delete().eq('id', id);
             if (error) { toast(error.message, 'error'); return; }
+            const staleUrls = [
+              (prodData as any)?.image_url,
+              ...(((prodData as any)?.sub_category_images || []) as Array<{ image_url: string }>).map(i => i.image_url)
+            ].filter(Boolean) as string[];
+            for (const url of staleUrls) await deleteFile(url);
             toast('Product deleted.', 'success');
             publishSite();
             await load();

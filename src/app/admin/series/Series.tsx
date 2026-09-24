@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, publishSite } from '@/scripts/admin/core';
+import { gate, supabase, esc, activeBadge, showError, showEmpty, confirmDialog, toast, publicUrl, deleteFile, publishSite } from '@/scripts/admin/core';
 
 // Series list — the Phase 2 hierarchy (category → series → sizes → versions).
 // Built as a collapsible tree so the admin always sees the level they are on.
@@ -148,8 +148,22 @@ export default function Series() {
             const ok = await confirmDialog(`Delete series "${name}"?`,
               'This permanently deletes this series and ALL of its sizes, versions and version images. This cannot be undone.');
             if (!ok) return;
+            const { data: row } = await supabase
+              .from('series')
+              .select('image_url, size_variants(product_variants(product_images(image_url)))')
+              .eq('id', id)
+              .single();
             const { error } = await supabase.from('series').delete().eq('id', id);
             if (error) { toast(error.message, 'error'); return; }
+            const staleUrls: string[] = [];
+            const sizesRows = (row as any)?.size_variants || [];
+            for (const size of sizesRows) {
+              for (const ver of (size.product_variants || []) as Array<{ product_images: Array<{ image_url: string }> }>) {
+                for (const img of ver.product_images || []) staleUrls.push(img.image_url);
+              }
+            }
+            if ((row as any)?.image_url) staleUrls.push((row as any).image_url);
+            for (const url of staleUrls) await deleteFile(url);
             toast('Series deleted.', 'success');
             publishSite();
             await load();
