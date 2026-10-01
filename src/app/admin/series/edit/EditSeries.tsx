@@ -150,7 +150,7 @@ export default function EditSeries() {
         description: string; material: string; weight: string; load_capacity: string;
         outer_l: string; outer_w: string; outer_h: string;
         inner_l: string; inner_w: string; inner_h: string;
-        colours: string; shape: string; price: string;
+        colours: string; shape: string;
         is_active: boolean; order: number;
         images: VerImg[];
       }
@@ -172,7 +172,7 @@ export default function EditSeries() {
         return { id: null, key: crypto.randomUUID(), version_name: '', version_code: '', model_code: '',
           description: '', material: '', weight: '', load_capacity: '',
           outer_l: '', outer_w: '', outer_h: '', inner_l: '', inner_w: '', inner_h: '',
-          colours: '', shape: '', price: '', is_active: true, order: 0, images: [] };
+          colours: '', shape: '', is_active: true, order: 0, images: [] };
       }
       function newSizeRow(): SizeRow {
         return { id: null, key: crypto.randomUUID(), height: '', is_active: true, order: 0, versions: [] };
@@ -265,10 +265,6 @@ export default function EditSeries() {
             <div class="a-field">
               <label>Shape</label>
               ${f('v-shape', ver.shape, ' placeholder="e.g. Nestable"')}
-            </div>
-            <div class="a-field">
-              <label>Price</label>
-              ${f('v-price', ver.price, ' placeholder="Optional price string"')}
             </div>
             <div class="a-field">
               <label>Order</label>
@@ -447,7 +443,6 @@ export default function EditSeries() {
         BIND('v-inner-h', r => v => { r.inner_h = v; });
         BIND('v-colours', r => v => { r.colours = v; });
         BIND('v-shape', r => v => { r.shape = v; });
-        BIND('v-price', r => v => { r.price = v; });
         BIND('v-order', r => v => { r.order = Number(v) || 0; });
         BIND('v-description', r => v => { r.description = v; });
         sizesEl.querySelectorAll<HTMLInputElement>('.v-active').forEach(el => el.addEventListener('change', (e) => {
@@ -525,7 +520,7 @@ export default function EditSeries() {
                 outer_h: pv.outer_height != null ? String(pv.outer_height) : '',
                 inner_l: pv.inner_length != null ? String(pv.inner_length) : '', inner_w: pv.inner_width != null ? String(pv.inner_width) : '',
                 inner_h: pv.inner_height != null ? String(pv.inner_height) : '',
-                colours: pv.colours ?? '', shape: pv.shape ?? '', price: pv.price ?? '',
+                colours: pv.colours ?? '', shape: pv.shape ?? '',
                 is_active: pv.is_active, order: pv.display_order || 0,
                 images: ((pv.product_images) || []).slice().sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((pi: any): VerImg => ({
                   id: pi.id, url: pi.image_url ?? '', alt: pi.alt_text ?? '', main: pi.is_main, order: pi.display_order || 0
@@ -717,7 +712,7 @@ export default function EditSeries() {
               inner_length: num(ver.inner_l), inner_width: num(ver.inner_w), inner_height: num(ver.inner_h),
               colours: ver.colours.trim() || null,
               shape: ver.shape.trim() || null,
-              price: ver.price.trim() || null,
+              price: null,
               is_active: ver.is_active, display_order: vi,
               updated_at: new Date().toISOString()
             } as never, { onConflict: 'id' });

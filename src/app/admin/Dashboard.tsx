@@ -5,8 +5,6 @@ import Link from 'next/link';
 import AdminShell from '@/components/admin/AdminShell';
 import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty } from '@/scripts/admin/core';
 
-// Dashboard — port of src/pages/admin/index.astro. The heavy lifting is DOM
-// rendering started after gate() resolves, exactly like the Astro script.
 export default function Dashboard() {
   useEffect(() => {
     void (async () => {
@@ -17,50 +15,58 @@ export default function Dashboard() {
       const attentionEl = document.getElementById('dashboard-attention');
       const enquiriesEl = document.getElementById('dashboard-enquiries');
 
-      const [newEnqRes, { data: subCats }, { data: cats }, { data: variants }, { data: subImgs }, { data: catVars }] =
+      const [newEnqRes, catsRes, seriesRes, sizesRes, versionsRes] =
         await Promise.all([
           supabase.from('enquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-          supabase.from('sub_categories').select('id, category_id, name, is_active, is_featured, image_url'),
           supabase.from('categories').select('id, name, display_order').order('display_order'),
-          supabase.from('sub_category_variants').select('sub_category_id, is_active'),
-          supabase.from('sub_category_images').select('sub_category_id'),
-          supabase.from('category_variants').select('category_id, is_active')
+          supabase.from('series').select('id, category_id, name, is_active, image_url').order('display_order'),
+          supabase.from('size_variants').select('id, series_id, height, is_active'),
+          supabase.from('product_variants').select('id, size_variant_id, is_active')
         ]);
 
-      const subs = (subCats || []) as any[];
-      const catsData = (cats || []) as any[];
-      const varsBySub = new Map<string, number>();
-      (variants || []).forEach((v: any) => {
-        if (v.is_active) varsBySub.set(v.sub_category_id, (varsBySub.get(v.sub_category_id) || 0) + 1);
-      });
-      const varsByCat = new Map<string, number>();
-      (catVars || []).forEach((v: any) => {
-        if (v.is_active) varsByCat.set(v.category_id, (varsByCat.get(v.category_id) || 0) + 1);
-      });
-      const imgsSubIds = new Set((subImgs || []).map((i: any) => i.sub_category_id));
+      const cats = (catsRes.data || []) as any[];
+      const seriesList = (seriesRes.data || []) as any[];
+      const sizes = (sizesRes.data || []) as any[];
+      const versions = (versionsRes.data || []) as any[];
 
-      const activeCount = subs.filter((s) => s.is_active).length;
-      const sizeCount = (id: string) => varsBySub.get(id) || 0;
-      const noSizes = subs.filter((s) => !sizeCount(s.id));
-      const noImages = subs.filter((s) => !s.image_url && !imgsSubIds.has(s.id));
+      const sizesBySeries = new Map<string, number>();
+      sizes.forEach((s) => {
+        if (s.is_active) sizesBySeries.set(s.series_id, (sizesBySeries.get(s.series_id) || 0) + 1);
+      });
+
+      const sizeIdsBySeries = new Map<string, Set<string>>();
+      sizes.forEach((s) => {
+        if (!sizeIdsBySeries.has(s.series_id)) sizeIdsBySeries.set(s.series_id, new Set());
+        sizeIdsBySeries.get(s.series_id)!.add(s.id);
+      });
+
+      const versionsBySize = new Map<string, number>();
+      versions.forEach((v) => {
+        if (v.is_active) versionsBySize.set(v.size_variant_id, (versionsBySize.get(v.size_variant_id) || 0) + 1);
+      });
+
+      const activeSeriesCount = seriesList.filter((s) => s.is_active).length;
+      const noSizes = seriesList.filter((s) => !sizesBySeries.get(s.id));
+      const noImages = seriesList.filter((s) => !s.image_url);
 
       const svg = (paths: string) =>
         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
       const STAT_ICONS: Record<string, string> = {
         products: svg('<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>'),
         active: svg('<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>'),
-        subs: svg('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
+        sizes: svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>'),
         cats: svg('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/>'),
         enquiries: svg('<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'),
-        missing: svg('<path d="M10.3 3.85L1.8 18a2 2 0 001.72 3h16.94a2 2 0 001.72-3L13.7 3.85a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>')
+        models: svg('<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>')
       };
 
       const stats = [
-        { num: subs.length, label: 'Products / Ranges', icon: 'products' },
-        { num: activeCount, label: 'Active', icon: 'active' },
-        { num: noSizes.length, label: 'Missing sizes/shapes', icon: 'missing' },
-        { num: catsData.length, label: 'Categories', icon: 'cats' },
-        { num: newEnqRes.count ?? 0, label: 'New enquiries', icon: 'enquiries' }
+        { num: seriesList.length, label: 'Product Series', icon: 'products' },
+        { num: activeSeriesCount, label: 'Active Series', icon: 'active' },
+        { num: sizes.length, label: 'Height Sizes', icon: 'sizes' },
+        { num: versions.length, label: 'Product Models', icon: 'models' },
+        { num: cats.length, label: 'Categories', icon: 'cats' },
+        { num: newEnqRes.count ?? 0, label: 'New Enquiries', icon: 'enquiries' }
       ];
 
       if (statsEl) {
@@ -80,20 +86,21 @@ export default function Dashboard() {
       }
 
       if (healthEl) {
-        const rows = catsData.map((c) => {
-          const catSubs = subs.filter((s) => s.category_id === c.id);
-          const sizeTotal = catSubs.reduce((n, s) => n + sizeCount(s.id), 0) + (varsByCat.get(c.id) || 0);
-          return { name: c.name, subs: catSubs.length, sizes: sizeTotal };
+        const rows = cats.map((c) => {
+          const catSeries = seriesList.filter((s) => s.category_id === c.id);
+          const sizeCount = catSeries.reduce((sum, s) => sum + (sizesBySeries.get(s.id) || 0), 0);
+          return { name: c.name, seriesCount: catSeries.length, sizesCount: sizeCount };
         });
+
         if (!rows.length) {
-          healthEl.innerHTML = '<li style="color:var(--a-faint);justify-content:flex-start;">No categories yet.</li>';
+          healthEl.innerHTML = '<li style="color:var(--a-faint);justify-content:flex-start;">No categories created yet.</li>';
         } else {
           healthEl.innerHTML = rows
             .map(
               (r) => `
             <li>
-              <span><strong>${esc(r.name)}</strong> &middot; <span style="color:var(--a-muted);font-size:0.8rem;">${esc(r.subs)} sub-categor${r.subs === 1 ? 'y' : 'ies'}</span></span>
-              <span class="a-chip ${r.sizes ? 'a-chip-ok' : ''}">${r.sizes} size${r.sizes === 1 ? '' : 's'}</span>
+              <span><strong>${esc(r.name)}</strong> &middot; <span style="color:var(--a-muted);font-size:0.82rem;">${r.seriesCount} series</span></span>
+              <span class="a-chip ${r.sizesCount ? 'a-chip-ok' : ''}">${r.sizesCount} size${r.sizesCount === 1 ? '' : 's'}</span>
             </li>`
             )
             .join('');
@@ -101,20 +108,20 @@ export default function Dashboard() {
       }
 
       if (attentionEl) {
-        const bothMissing = noSizes.length + noImages.length;
-        if (!bothMissing) {
-          showEmpty(attentionEl, 'Everything looks complete', 'Every product range has photos and size/shape details.');
+        const issuesCount = noSizes.length + noImages.length;
+        if (!issuesCount) {
+          showEmpty(attentionEl, 'Everything looks complete', 'Every series has photos and size/height variants configured.');
         } else {
           const list = (n: any[], label: string, max = 4) =>
             n.length
-              ? `<li><strong>${n.length} ${label}</strong><div style="font-size:0.8rem;color:var(--a-muted);">${n
+              ? `<li><strong>${n.length} ${label}</strong><div style="font-size:0.8rem;color:var(--a-muted);margin-top:2px;">${n
                   .slice(0, max)
                   .map((p) => esc(p.name))
                   .join(', ')}${n.length > max ? ` +${n.length - max} more` : ''}</div></li>`
               : '';
           attentionEl.innerHTML = `<ul class="a-health" style="margin:0;padding:0;list-style:none;">
-            ${list(noSizes, 'ranges missing sizes & shapes')}
-            ${list(noImages, 'ranges missing photos')}
+            ${list(noSizes, 'series missing sizes / heights')}
+            ${list(noImages, 'series missing cover photos')}
           </ul>`;
         }
       }
@@ -122,7 +129,7 @@ export default function Dashboard() {
       if (enquiriesEl) {
         const { data, error } = await supabase
           .from('enquiries')
-          .select('id, name, company, status, created_at')
+          .select('id, name, company, email, phone, status, created_at')
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -132,7 +139,7 @@ export default function Dashboard() {
         }
 
         if (!data?.length) {
-          showEmpty(enquiriesEl, 'No enquiries yet', 'Enquiries from the public website will appear here.');
+          showEmpty(enquiriesEl, 'No enquiries yet', 'Customer inquiries submitted via the website will show up here.');
           return;
         }
 
@@ -142,8 +149,10 @@ export default function Dashboard() {
               .map(
                 (r) => `
               <li>
-                <span><strong>${esc(r.name)}</strong>${r.company ? ` · <span style="color:var(--a-muted);font-size:0.82rem;">${esc(r.company)}</span>` : ''}<br>
-                <span style="font-size:0.76rem;color:var(--a-faint);">${fmtDateTime(r.created_at)}</span></span>
+                <span>
+                  <strong>${esc(r.name)}</strong>${r.company ? ` &middot; <span style="color:var(--a-muted);font-size:0.82rem;">${esc(r.company)}</span>` : ''}<br>
+                  <span style="font-size:0.76rem;color:var(--a-faint);">${fmtDateTime(r.created_at)}</span>
+                </span>
                 ${statusBadge(r.status)}
               </li>`
               )
@@ -156,14 +165,24 @@ export default function Dashboard() {
   return (
     <AdminShell title="Dashboard" current="dashboard">
       <div className="a-page-head">
-        <h2>Overview</h2>
-        <a href="/admin/products/edit/" className="a-btn a-btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-          Add Product
-        </a>
+        <div>
+          <h2>Dashboard Overview</h2>
+          <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--a-muted)' }}>
+            Welcome to the Vinayak Plastics control center. Manage your product catalog and inquiries in real-time.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <a href="/admin/series/edit/?series=new" className="a-btn a-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            + Add Series
+          </a>
+          <a href="/admin/categories/" className="a-btn">
+            + Add Category
+          </a>
+        </div>
       </div>
 
       <div id="dashboard-stats" className="a-stats"></div>
@@ -172,9 +191,9 @@ export default function Dashboard() {
         <div>
           <div className="a-card">
             <div className="a-card-head">
-              <h2>Catalogue Health</h2>
-              <a href="/admin/products/" className="a-btn a-btn-sm">
-                Manage products
+              <h2>Catalogue Summary by Category</h2>
+              <a href="/admin/series/" className="a-btn a-btn-sm">
+                View All Series
               </a>
             </div>
             <div className="a-card-body">
@@ -188,7 +207,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="a-card">
+          <div className="a-card" style={{ marginTop: 20 }}>
             <div className="a-card-head">
               <h2>Needs Attention</h2>
             </div>
@@ -205,7 +224,7 @@ export default function Dashboard() {
             <div className="a-card-head">
               <h2>Recent Enquiries</h2>
               <a href="/admin/enquiries/" className="a-btn a-btn-sm">
-                View all
+                View All
               </a>
             </div>
             <div className="a-card-body" id="dashboard-enquiries">
@@ -217,28 +236,32 @@ export default function Dashboard() {
 
           <div className="a-card">
             <div className="a-card-head">
-              <h2>Shortcuts</h2>
+              <h2>Quick Actions</h2>
             </div>
             <div className="a-card-body">
               <div className="a-quick">
-                <Link href="/admin/products/">
-                  <span>Manage products</span>
+                <Link href="/admin/series/">
+                  <span>Products &amp; Series</span>
                   <span>→</span>
                 </Link>
-                <Link href="/admin/products/edit/">
-                  <span>New product</span>
+                <Link href="/admin/series/edit/?series=new">
+                  <span>+ New Series / Product</span>
                   <span>→</span>
                 </Link>
                 <Link href="/admin/categories/">
-                  <span>Manage categories</span>
-                  <span>→</span>
-                </Link>
-                <Link href="/admin/website/">
-                  <span>Website content</span>
+                  <span>Manage Categories</span>
                   <span>→</span>
                 </Link>
                 <Link href="/admin/enquiries/">
-                  <span>Customer enquiries</span>
+                  <span>Customer Enquiries</span>
+                  <span>→</span>
+                </Link>
+                <Link href="/admin/website/">
+                  <span>Website Hero &amp; Content</span>
+                  <span>→</span>
+                </Link>
+                <Link href="/admin/settings/">
+                  <span>Contact &amp; Social Settings</span>
                   <span>→</span>
                 </Link>
               </div>

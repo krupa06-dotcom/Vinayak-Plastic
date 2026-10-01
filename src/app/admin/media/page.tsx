@@ -1,3 +1,5 @@
-import Media from './Media';
+import { redirect } from 'next/navigation';
 
-export default Media;
+export default function MediaPage() {
+  redirect('/admin/');
+}

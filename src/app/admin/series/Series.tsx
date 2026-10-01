@@ -195,25 +195,33 @@ export default function Series() {
   }, []);
 
   return (
-    <AdminShell title="Series" current="series">
+    <AdminShell title="Products & Series" current="series">
       <div className="a-page-head">
-        <h2>Series</h2>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <a href="/admin/series/edit/" className="a-btn a-btn-primary">+ Series</a>
-          <a href="/admin/categories/" className="a-btn">+ Category</a>
+        <div>
+          <h2>Products &amp; Series</h2>
+          <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--a-muted)' }}>
+            Manage product lines by base footprint (Series), height dimensions (Sizes), and model variants with photos.
+          </p>
         </div>
-      </div>
-
-      <div className="a-guide" style={{ marginBottom: 16 }}>
-        <h4>Footprint = series</h4>
-        <p style={{ margin: 0 }}>One series per base footprint (Length × Width, e.g. "600 × 400"). Each series has height sizes ("220 mm"), and each size can have several versions ("Ribbed Bottom"). Versions are the exact products customers buy.</p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <a href="/admin/series/edit/?series=new" className="a-btn a-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            + New Series
+          </a>
+          <a href="/admin/categories/" className="a-btn">
+            Manage Categories
+          </a>
+        </div>
       </div>
 
       <div className="a-card">
         <div className="a-toolbar" style={{ flexWrap: 'wrap' }}>
-          <input type="search" id="series-search" className="a-input" placeholder="Search categories and series…" />
+          <input type="search" id="series-search" className="a-input" placeholder="Search categories, series, or footprints…" style={{ maxWidth: 360 }} />
           <span style={{ flex: 1 }}></span>
-          <span id="series-count" style={{ fontSize: '0.84rem', color: 'var(--a-muted)' }}></span>
+          <span id="series-count" style={{ fontSize: '0.84rem', color: 'var(--a-muted)', fontWeight: 500 }}></span>
         </div>
         <div className="a-card-body" id="series-list" style={{ padding: '6px 0 0' }}>
           <div className="a-inline-loading" style={{ padding: 30 }}><div className="a-spinner"></div></div>

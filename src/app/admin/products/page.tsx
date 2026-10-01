@@ -1,9 +1,5 @@
-import Products from './Products';
+import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Products'
-};
-
-export default function Page() {
-  return <Products />;
+export default function ProductsPage() {
+  redirect('/admin/series/');
 }

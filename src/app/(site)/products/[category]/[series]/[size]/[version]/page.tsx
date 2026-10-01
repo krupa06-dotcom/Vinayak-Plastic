@@ -64,7 +64,6 @@ function specsFor(ctx: ProductDetailContext): { name: string; value: string }[] 
   add(rows, 'Shape', variant.shape);
   add(rows, 'Inner Size (L × W × H)', joinMm(variant.inner_length, variant.inner_width, variant.inner_height));
   add(rows, 'Series Code', series.product_code);
-  add(rows, 'Price', variant.price);
   return rows;
 }
 
