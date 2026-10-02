@@ -244,12 +244,17 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 let publishTimer: number | null = null;
 
 async function doPublish(): Promise<void> {
+  const savedOk = 'Saved. Triggering site rebuild…';
   try {
-    toast('Changes saved! Live website updated.', 'success');
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     const g = getGlobals();
-    if (!token || !g?.url) return;
+    if (!token || !g?.url) {
+      console.error('[publish] no session token or supabase url');
+      toast(savedOk, 'info');
+      toast('Live site NOT updated — could not reach the rebuild hook.', 'error');
+      return;
+    }
 
     const endpoint = `${g.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
     const res = await fetch(endpoint, {
@@ -258,16 +263,26 @@ async function doPublish(): Promise<void> {
     }).catch(() => null);
 
     if (res && res.ok) {
-      console.log('[publish] website rebuild/cache purge triggered');
+      console.log('[publish] website rebuild triggered');
+      toast(savedOk, 'info');
+      toast('Live site rebuilding — visible in a few minutes.', 'success');
+    } else {
+      const detail = res ? `HTTP ${res.status}` : 'network error';
+      console.error('[publish] rebuild trigger failed:', detail);
+      toast(savedOk, 'info');
+      toast(`Live site NOT updated (${detail}). The change is in the database only.`, 'error');
     }
   } catch (e) {
     console.error('[publish] error', e);
+    toast('Live site NOT updated — rebuild trigger threw an error.', 'error');
   }
 }
 
 /**
- * Notifies admin that changes are saved to Supabase and live on the website.
- * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single notification.
+ * The public site is a static export (next.config.mjs -> output: 'export'), so it
+ * only reflects Supabase content after a rebuild. This asks the deploy-site edge
+ * function to trigger that rebuild and reports honestly whether it worked.
+ * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single attempt.
  */
 export function publishSite(delayMs = 2500): void {
   if (!configured()) return;

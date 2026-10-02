@@ -40,15 +40,23 @@ once it is deployed. Do the following **before/at go-live**:
 - **Never** set `SUPABASE_SECRET_KEY` / service-role in the frontend or in
   GitHub Action build vars.
 
-## 5. Deploying (GitHub Actions)
+## 5. Deploying (Vercel)
 
-1. Repo **Settings → Pages → Source: GitHub Actions**.
-2. Add repo **Variables** (Settings → Secrets and variables → Actions →
-   Variables):
-   - `SUPABASE_URL`
-   - `SUPABASE_PUBLISHABLE_KEY`
-3. Push to `main` (or run the *Build & Deploy to GitHub Pages* workflow
-   manually) → the latest `dist/` is published.
+Vercel builds from the git remote on every push to the production branch, and
+rebuilds again whenever the admin panel saves (via the `deploy-site` edge
+function and a Vercel Deploy Hook).
+
+1. Vercel project **Settings → Deploy Hooks → Create** (branch = production
+   branch). Keep the generated URL.
+2. Vercel project **Settings → Environment Variables**:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   (publishable values only — never the service-role key)
+3. Supabase side, once per project:
+   - `npx supabase functions deploy deploy-site --project-ref <ref>`
+   - `npx supabase secrets set VERCEL_DEPLOY_HOOK=<deploy hook url> --project-ref <ref>`
+
+There is no GitHub Pages deployment.
 
 ## 6. Go-live checklist
 
