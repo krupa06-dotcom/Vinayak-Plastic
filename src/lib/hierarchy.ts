@@ -15,9 +15,21 @@ import type { Category, FallbackDetail } from './db';
 
 // ---- Row shapes (mirrors database.types.ts) ----
 
+export interface SubCategoryRow {
+  id: string;
+  category_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
 export interface SeriesRow {
   id: string;
   category_id: string;
+  sub_category_id?: string | null;
   name: string;
   slug: string;
   base_length: number | null;
@@ -100,6 +112,9 @@ export interface HierarchyVariant extends ProductVariantRow {
   category_slug: string;
   category_name: string;
   category_image: string | null;
+  sub_category_id?: string | null;
+  sub_category_name?: string | null;
+  sub_category_slug?: string | null;
   href: string;
   search: string;
 }
@@ -114,6 +129,9 @@ export interface HierarchySeries extends SeriesRow {
   category_slug: string;
   category_name: string;
   category_image: string | null;
+  sub_category_id?: string | null;
+  sub_category_name?: string | null;
+  sub_category_slug?: string | null;
   series_key: string;
   /** Series image falling back to the category image. */
   image: string | null;
@@ -123,9 +141,16 @@ export interface HierarchySeries extends SeriesRow {
   href: string;
 }
 
+export interface HierarchySubCategory extends SubCategoryRow {
+  image: string | null;
+  series: HierarchySeries[];
+  models_count: number;
+}
+
 export interface HierarchyCategory extends Category {
   image: string | null;
   models_count: number;
+  sub_categories: HierarchySubCategory[];
   series: HierarchySeries[];
   href: string;
 }
@@ -202,9 +227,14 @@ export function normalizeApplications(apps: unknown): { name: string; descriptio
 export async function getHierarchyData(): Promise<HierarchyData> {
   if (!hasSupabase()) return buildFallbackHierarchy();
 
-  const [categoriesRes, seriesRes, sizesRes, variantsRes, imagesRes] = await Promise.all([
+  const [categoriesRes, subCategoriesRes, seriesRes, sizesRes, variantsRes, imagesRes] = await Promise.all([
     supabase
       .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('sub_categories')
       .select('*')
       .eq('is_active', true)
       .order('display_order', { ascending: true }),
@@ -232,6 +262,7 @@ export async function getHierarchyData(): Promise<HierarchyData> {
 
   const allErrors = [
     categoriesRes.error,
+    subCategoriesRes.error,
     seriesRes.error,
     sizesRes.error,
     variantsRes.error,
@@ -244,6 +275,7 @@ export async function getHierarchyData(): Promise<HierarchyData> {
 
   return buildHierarchy(
     (categoriesRes.data || []) as Category[],
+    (subCategoriesRes.data || []) as SubCategoryRow[],
     (seriesRes.data || []) as SeriesRow[],
     (sizesRes.data || []) as SizeVariantRow[],
     (variantsRes.data || []) as ProductVariantRow[],
@@ -253,6 +285,7 @@ export async function getHierarchyData(): Promise<HierarchyData> {
 
 function buildHierarchy(
   categories: Category[],
+  subCategoryRows: SubCategoryRow[],
   seriesRows: SeriesRow[],
   sizeRows: SizeVariantRow[],
   variantRows: ProductVariantRow[],
@@ -279,6 +312,15 @@ function buildHierarchy(
     seriesByCategory.set(s.category_id, list);
   }
 
+  const subCategoriesByCategory = new Map<string, SubCategoryRow[]>();
+  const subCategoryById = new Map<string, SubCategoryRow>();
+  for (const sc of subCategoryRows) {
+    subCategoryById.set(sc.id, sc);
+    const list = subCategoriesByCategory.get(sc.category_id) ?? [];
+    list.push(sc);
+    subCategoriesByCategory.set(sc.category_id, list);
+  }
+
   const imagesByVariant = new Map<string, ProductImageRow[]>();
   for (const img of imageRows) {
     const list = imagesByVariant.get(img.product_variant_id) ?? [];
@@ -300,8 +342,9 @@ function buildHierarchy(
     );
 
     const series: HierarchySeries[] = rawSeries.map((sr) => {
+      const subCat = sr.sub_category_id ? subCategoryById.get(sr.sub_category_id) : null;
       const seriesKey = makeSeriesKey(sr);
-      const seriesImage = resolveFirstImage(sr.image_url) || categoryImage;
+      const seriesImage = resolveFirstImage(sr.image_url) || (subCat?.image_url ? resolveFirstImage(subCat.image_url) : null) || categoryImage;
 
       const rawSizes = (sizesBySeries.get(sr.id) || []).sort(
         (a, b) => a.display_order - b.display_order
@@ -330,6 +373,7 @@ function buildHierarchy(
             displayName,
             vr.model_code,
             cat.name,
+            subCat?.name || '',
             sr.name,
             sz.label,
             `L ${sr.base_length} W ${sr.base_width}`,
@@ -357,6 +401,9 @@ function buildHierarchy(
             category_slug: cat.slug,
             category_name: cat.name,
             category_image: categoryImage,
+            sub_category_id: sr.sub_category_id || null,
+            sub_category_name: subCat?.name || null,
+            sub_category_slug: subCat?.slug || null,
             href,
             search
           };
@@ -376,6 +423,9 @@ function buildHierarchy(
         category_slug: cat.slug,
         category_name: cat.name,
         category_image: categoryImage,
+        sub_category_id: sr.sub_category_id || null,
+        sub_category_name: subCat?.name || null,
+        sub_category_slug: subCat?.slug || null,
         series_key: seriesKey,
         image: seriesImage,
         sizes,
@@ -387,10 +437,25 @@ function buildHierarchy(
       return built;
     });
 
+    const rawSubCats = (subCategoriesByCategory.get(cat.id) || []).sort(
+      (a, b) => a.display_order - b.display_order
+    );
+
+    const sub_categories: HierarchySubCategory[] = rawSubCats.map((sc) => {
+      const subSeries = series.filter((s) => s.sub_category_id === sc.id);
+      return {
+        ...sc,
+        image: resolveFirstImage(sc.image_url) || categoryImage,
+        series: subSeries,
+        models_count: subSeries.reduce((n, s) => n + s.models_count, 0)
+      };
+    });
+
     const catObj: HierarchyCategory = {
       ...cat,
       image: categoryImage,
       models_count: series.reduce((n, s) => n + s.models_count, 0),
+      sub_categories,
       series,
       href: `/products/${cat.slug}`
     };
@@ -644,6 +709,7 @@ function buildFallbackHierarchy(): HierarchyData {
         ...cat,
         image: resolveFirstImage(cat.image_url),
         models_count: series.reduce((n, s) => n + s.models_count, 0),
+        sub_categories: [],
         series,
         href: `/products/${cat.slug}`
       };

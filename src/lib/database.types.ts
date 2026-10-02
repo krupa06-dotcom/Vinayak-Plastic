@@ -345,6 +345,7 @@ export interface Database {
         Row: {
           id: string;
           category_id: string;
+          sub_category_id: string | null;
           name: string;
           slug: string;
           base_length: number | null;
@@ -364,6 +365,7 @@ export interface Database {
         Insert: {
           id?: string;
           category_id: string;
+          sub_category_id?: string | null;
           name: string;
           slug: string;
           base_length?: number | null;
@@ -383,6 +385,7 @@ export interface Database {
         Update: {
           id?: string;
           category_id?: string;
+          sub_category_id?: string | null;
           name?: string;
           slug?: string;
           base_length?: number | null;
@@ -405,6 +408,13 @@ export interface Database {
             columns: ["category_id"],
             isOneToOne: false,
             referencedRelation: "categories",
+            referencedColumns: ["id"],
+          },
+          {
+            foreignKeyName: "series_sub_category_id_fkey",
+            columns: ["sub_category_id"],
+            isOneToOne: false,
+            referencedRelation: "sub_categories",
             referencedColumns: ["id"],
           },
         ];

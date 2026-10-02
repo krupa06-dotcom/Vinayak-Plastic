@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import '@/styles/products.css';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
-import ProductListFilter from '@/components/ProductListFilter';
+import ProductListFilter, { type ProductTypeCardData } from '@/components/ProductListFilter';
 import { CONTACT } from '@/lib/contact';
-import { getHierarchyData } from '@/lib/hierarchy';
+import { formatFootprint, getHierarchyData } from '@/lib/hierarchy';
 
 export const metadata: Metadata = {
   title: { absolute: 'Products | Vinayak Plastics — Plastic Crates, Pallets & Waste Bins' },
@@ -28,7 +28,7 @@ export default async function ProductsPage() {
     href: `/products/${cat.slug}`
   }));
 
-  // Secondary utility — full-catalogue search & filter (deep links stay intact).
+  // Category filter chips
   const rangeCards = hierarchy.categories.map((cat, i) => ({
     index: String(i + 1).padStart(2, '0'),
     name: cat.name,
@@ -41,17 +41,103 @@ export default async function ProductsPage() {
     href: `/products/${cat.slug}`
   }));
 
-  const productCards = hierarchy.variants.map((v) => ({
-    name: v.display_name,
-    slug: `${v.category_slug}-${v.series_key}-${v.size_key}-${v.version_key}`,
-    categoryName: v.category_name,
-    categorySlug: v.category_slug,
-    description: v.description,
-    image: v.card_image,
-    sizesLabel: `${v.series_key} · ${v.size_label} high`,
-    href: v.href,
-    search: v.search
-  }));
+  // Product Types collection with their relative models
+  const productTypes: ProductTypeCardData[] = hierarchy.categories.flatMap((cat) => {
+    const list: ProductTypeCardData[] = [];
+
+    if (cat.sub_categories && cat.sub_categories.length > 0) {
+      for (const sub of cat.sub_categories) {
+        if (sub.series.length > 0) {
+          list.push({
+            id: sub.id,
+            name: sub.name,
+            slug: sub.slug,
+            categoryName: cat.name,
+            categorySlug: cat.slug,
+            description: sub.description || cat.description,
+            image: sub.image || sub.series[0]?.image || cat.image,
+            seriesCount: sub.series.length,
+            modelsCount: sub.models_count,
+            series: sub.series.map((s) => ({
+              id: s.id,
+              name: s.name,
+              slug: s.slug,
+              seriesKey: s.series_key,
+              footprint: formatFootprint(s),
+              image: s.image,
+              description: s.short_description || s.description,
+              modelsCount: s.models_count,
+              heightsCount: s.heights_count,
+              href: s.href,
+              variants: s.sizes.flatMap((sz) =>
+                sz.variants.map((v) => ({
+                  id: v.id,
+                  displayName: v.display_name,
+                  modelCode: v.model_code,
+                  versionName: v.version_name,
+                  sizeLabel: sz.label,
+                  dimensions: `${formatFootprint(s)} × ${sz.height} mm`,
+                  capacity: v.load_capacity,
+                  material: v.material,
+                  image: v.card_image,
+                  href: v.href,
+                  search: v.search
+                }))
+              )
+            }))
+          });
+        }
+      }
+    }
+
+    // Direct series (if category has series without a subcategory)
+    const directSeries = cat.series.filter((s) => !s.sub_category_id);
+    if (directSeries.length > 0) {
+      const hasSubs = cat.sub_categories && cat.sub_categories.some((sc) => sc.series.length > 0);
+      const typeName = hasSubs ? `${cat.name} (Direct / Standard)` : cat.name;
+      const typeSlug = hasSubs ? `${cat.slug}-direct` : cat.slug;
+      list.push({
+        id: `cat-direct-${cat.id}`,
+        name: typeName,
+        slug: typeSlug,
+        categoryName: cat.name,
+        categorySlug: cat.slug,
+        description: cat.description,
+        image: directSeries[0]?.image || cat.image,
+        seriesCount: directSeries.length,
+        modelsCount: directSeries.reduce((n, s) => n + s.models_count, 0),
+        series: directSeries.map((s) => ({
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          seriesKey: s.series_key,
+          footprint: formatFootprint(s),
+          image: s.image,
+          description: s.short_description || s.description,
+          modelsCount: s.models_count,
+          heightsCount: s.heights_count,
+          href: s.href,
+          variants: s.sizes.flatMap((sz) =>
+            sz.variants.map((v) => ({
+              id: v.id,
+              displayName: v.display_name,
+              modelCode: v.model_code,
+              versionName: v.version_name,
+              sizeLabel: sz.label,
+              dimensions: `${formatFootprint(s)} × ${sz.height} mm`,
+              capacity: v.load_capacity,
+              material: v.material,
+              image: v.card_image,
+              href: v.href,
+              search: v.search
+            }))
+          )
+        }))
+      });
+    }
+
+    return list;
+  });
 
   return (
     <main id="main">
@@ -116,8 +202,8 @@ export default async function ProductsPage() {
         </div>
       </section>
 
-      {/* ===== SEARCH THE FULL CATALOGUE (secondary) ===== */}
-      <ProductListFilter rangeCards={rangeCards} productCards={productCards} showRangeIndex={false} />
+      {/* ===== ALL PRODUCTS DRILLDOWN: PRODUCT TYPES → SERIES → RELATIVE PRODUCTS ===== */}
+      <ProductListFilter rangeCards={rangeCards} productTypes={productTypes} showRangeIndex={false} />
 
       {/* ===== CTA ===== */}
       <section className="cta-banner" aria-label="Get a quote">

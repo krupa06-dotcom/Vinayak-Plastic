@@ -34,6 +34,7 @@ export default function EditSeries() {
       const params = new URLSearchParams(window.location.search);
       const seriesParam = params.get('series');
       const preCategory = params.get('category');
+      const preSubCategory = params.get('sub_category');
       const editId = seriesParam && seriesParam !== 'new' ? seriesParam : null;
 
       const formEl = document.getElementById('sr-form') as HTMLFormElement;
@@ -41,6 +42,7 @@ export default function EditSeries() {
       const titleEl = document.getElementById('page-title')!;
       const idEl = document.getElementById('sr-id') as HTMLInputElement;
       const catEl = document.getElementById('sr-category') as HTMLSelectElement;
+      const subCatEl = document.getElementById('sr-subcategory') as HTMLSelectElement;
       const nameEl = document.getElementById('sr-name') as HTMLInputElement;
       const slugEl = document.getElementById('sr-slug') as HTMLInputElement;
       const baseLenEl = document.getElementById('sr-base-len') as HTMLInputElement;
@@ -466,19 +468,39 @@ export default function EditSeries() {
       void (async () => {
         if (!(await gate())) return;
 
-        const { data: cats } = await supabase
-          .from('categories')
-          .select('id, name, slug')
-          .order('display_order');
+        const [catsRes, subsRes] = await Promise.all([
+          supabase.from('categories').select('id, name, slug').order('display_order'),
+          supabase.from('sub_categories').select('id, category_id, name, slug').order('display_order')
+        ]);
 
-        if (cats?.length) {
+        const cats = catsRes.data || [];
+        const allSubs = (subsRes.data || []) as Array<{ id: string; category_id: string; name: string; slug: string }>;
+
+        if (cats.length) {
           catEl.innerHTML = `<option value="">— Select category —</option>` +
             cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
         } else {
           catEl.innerHTML = `<option value="">— No categories yet, create one first —</option>`;
         }
 
-        if (preCategory && cats?.some(c => c.id === preCategory)) catEl.value = preCategory;
+        function updateSubDropdown(selectedCatId: string, currentSubId?: string | null) {
+          if (!subCatEl) return;
+          const catSubs = allSubs.filter(s => s.category_id === selectedCatId);
+          if (!catSubs.length) {
+            subCatEl.innerHTML = `<option value="">— Direct Series (No Product Type) —</option>`;
+          } else {
+            subCatEl.innerHTML = `<option value="">— Direct Series (General / None) —</option>` +
+              catSubs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+            if (currentSubId) subCatEl.value = currentSubId;
+          }
+        }
+
+        catEl.addEventListener('change', () => updateSubDropdown(catEl.value));
+
+        if (preCategory && cats.some(c => c.id === preCategory)) {
+          catEl.value = preCategory;
+          updateSubDropdown(preCategory, preSubCategory);
+        }
 
         if (editId) {
           const { data: s, error } = await supabase
@@ -490,6 +512,7 @@ export default function EditSeries() {
 
           idEl.value = s.id;
           catEl.value = s.category_id;
+          updateSubDropdown(s.category_id, (s as any).sub_category_id);
           nameEl.value = s.name ?? '';
           slugEl.value = s.slug ?? '';
           slugEl.setAttribute('data-manual', '1');
@@ -630,9 +653,11 @@ export default function EditSeries() {
         }
 
         // ---- Save series ----
+        const subCategoryId = subCatEl.value.trim() || null;
         const seriesPayload: Record<string, unknown> = {
           id,
           category_id: categoryId,
+          sub_category_id: subCategoryId,
           name,
           slug,
           base_length: baseLength ? l : null,
@@ -814,11 +839,18 @@ export default function EditSeries() {
               <p style={{ margin: 0 }}>Give the footprint (base Length × base Width) and the series name is auto-derived, e.g. "600 × 400 Series". Heights become sizes, and each size can hold several product versions.</p>
             </div>
             <div className="a-form-grid">
-              <div className="a-field a-field-full">
+              <div className="a-field">
                 <label htmlFor="sr-category">Category <span style={{ color: 'var(--a-danger)' }}>*</span></label>
                 <select id="sr-category" className="a-select" required>
                   <option value="">— Select category —</option>
                 </select>
+              </div>
+              <div className="a-field">
+                <label htmlFor="sr-subcategory">Product Type / Sub-Category</label>
+                <select id="sr-subcategory" className="a-select">
+                  <option value="">— Direct Series (General / None) —</option>
+                </select>
+                <span className="a-hint">Optional: assign to specific type (e.g. Roto Crates, Jumbo Crates)</span>
               </div>
               <div className="a-field">
                 <label htmlFor="sr-base-len">Base length (mm)</label>

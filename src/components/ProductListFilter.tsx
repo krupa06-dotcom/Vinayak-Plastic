@@ -2,6 +2,47 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+export interface RelativeProduct {
+  id: string;
+  displayName: string;
+  modelCode: string;
+  versionName: string | null;
+  sizeLabel: string;
+  dimensions: string;
+  capacity: string | null;
+  material: string | null;
+  image: string | null;
+  href: string;
+  search: string;
+}
+
+export interface TypeSeries {
+  id: string;
+  name: string;
+  slug: string;
+  seriesKey: string;
+  footprint: string;
+  image: string | null;
+  description: string | null;
+  modelsCount: number;
+  heightsCount: number;
+  href: string;
+  variants: RelativeProduct[];
+}
+
+export interface ProductTypeCardData {
+  id: string;
+  name: string;
+  slug: string;
+  categoryName: string;
+  categorySlug: string;
+  description: string | null;
+  image: string | null;
+  seriesCount: number;
+  modelsCount: number;
+  series: TypeSeries[];
+}
+
 export interface RangeCardData {
   index: string;
   name: string;
@@ -28,72 +69,106 @@ export interface ProductCardData {
 
 type ProductListFilterProps = {
   rangeCards: RangeCardData[];
-  productCards: ProductCardData[];
-  /** Hide the "Browse by product range" card grid (used when /products already
-   *  shows large premium category cards as its primary content). Default true. */
+  productTypes?: ProductTypeCardData[];
+  productCards?: ProductCardData[];
   showRangeIndex?: boolean;
 };
 
-// Live search + category filter over the full product range. Ports the
-// original `[is:inline]` script: ?q= pre-populates the search, ?subproduct= /
-// ?category= deep-link straight to a card, and results are shown/hidden in
-// place. Pure progressive enhancement — the grid is server-rendered.
-export default function ProductListFilter({ rangeCards, productCards, showRangeIndex = true }: ProductListFilterProps) {
+export default function ProductListFilter({
+  rangeCards,
+  productTypes = [],
+  showRangeIndex = false
+}: ProductListFilterProps) {
   const [term, setTerm] = useState('');
   const [activeCat, setActiveCat] = useState('');
-  const gridRef = useRef<HTMLDivElement>(null);
+  const [selectedTypeId, setSelectedTypeId] = useState<string>('');
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('');
 
-  // Deep links and ?q= arrive after first paint, once per mount.
-  const hydratedRef = useRef(false);
+  const explorerRef = useRef<HTMLDivElement>(null);
+
+  // Set initial selected product type and series
   useEffect(() => {
-    if (hydratedRef.current) return;
-    hydratedRef.current = true;
+    if (productTypes.length > 0 && !selectedTypeId) {
+      const first = productTypes[0];
+      setSelectedTypeId(first.id);
+      if (first.series.length > 0) {
+        setSelectedSeriesId(first.series[0].id);
+      }
+    }
+  }, [productTypes, selectedTypeId]);
 
+  // Handle URL deep-links
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const cat = (params.get('category') || '').trim();
     const q = (params.get('q') || '').trim();
 
-    const highlight = (el: HTMLElement | null) => {
-      if (!el) return;
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      el.classList.add('is-highlighted');
-      window.setTimeout(() => el.classList.remove('is-highlighted'), 1800);
-    };
-
-    const scrollToSectionAnd = (target: HTMLElement | null) => {
-      const section = document.getElementById('products-section') || document.getElementById('categories-section');
-      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      window.setTimeout(() => highlight(target), 420);
-    };
-
-    const productsSection = () => document.getElementById('products-section') || document.getElementById('categories-section');
-
-    const subLink = document.querySelector<HTMLElement>('[data-sub="' + (params.get('subproduct') || '') + '"]');
-    const catLink = document.querySelector<HTMLElement>('[data-cat="' + (params.get('category') || '') + '"]');
-
-    if (!q) {
-      if (subLink) scrollToSectionAnd(subLink);
-      else if (catLink) scrollToSectionAnd(catLink);
+    if (cat) {
+      setActiveCat(cat);
+      const matchedType = productTypes.find((pt) => pt.categorySlug === cat);
+      if (matchedType) {
+        setSelectedTypeId(matchedType.id);
+        if (matchedType.series.length > 0) {
+          setSelectedSeriesId(matchedType.series[0].id);
+        }
+      }
     }
+    if (q) setTerm(q);
+  }, [productTypes]);
 
-    if (q) {
-      setTerm(q);
-      const section = productsSection();
-      if (section) section.scrollIntoView({ behavior: 'auto', block: 'start' });
-    }
-  }, []);
-
-  const visibleCount = useMemo(() => {
+  // Filter product types by active category and search term
+  const filteredTypes = useMemo(() => {
     const t = term.trim().toLowerCase();
-    return productCards.filter((c) => {
-      const matchCat = !activeCat || c.categorySlug === activeCat;
-      const matchTerm = !t || c.search.indexOf(t) !== -1;
-      return matchCat && matchTerm;
-    }).length;
-  }, [term, activeCat, productCards]);
+    return productTypes.filter((pt) => {
+      const matchCat = !activeCat || pt.categorySlug === activeCat;
+      if (!matchCat) return false;
+      if (!t) return true;
 
-  const searching = Boolean(term.trim() || activeCat);
-  const showGrid = productCards.length > 0;
-  const noResultsVisible = showGrid && searching && visibleCount === 0;
+      const typeMatch =
+        pt.name.toLowerCase().includes(t) ||
+        pt.categoryName.toLowerCase().includes(t) ||
+        (pt.description || '').toLowerCase().includes(t);
+      const seriesMatch = pt.series.some(
+        (s) =>
+          s.name.toLowerCase().includes(t) ||
+          s.footprint.toLowerCase().includes(t) ||
+          s.variants.some((v) => v.search.includes(t))
+      );
+      return typeMatch || seriesMatch;
+    });
+  }, [productTypes, activeCat, term]);
+
+  // Currently selected product type
+  const activeType = useMemo(() => {
+    return (
+      productTypes.find((pt) => pt.id === selectedTypeId) ||
+      filteredTypes[0] ||
+      productTypes[0] ||
+      null
+    );
+  }, [productTypes, filteredTypes, selectedTypeId]);
+
+  // Currently active series inside selected product type
+  const activeSeries = useMemo(() => {
+    if (!activeType || activeType.series.length === 0) return null;
+    return (
+      activeType.series.find((s) => s.id === selectedSeriesId) ||
+      activeType.series[0]
+    );
+  }, [activeType, selectedSeriesId]);
+
+  const onSelectType = (pt: ProductTypeCardData) => {
+    setSelectedTypeId(pt.id);
+    if (pt.series.length > 0) {
+      setSelectedSeriesId(pt.series[0].id);
+    } else {
+      setSelectedSeriesId('');
+    }
+    // Smooth scroll down to the series & relative products explorer
+    setTimeout(() => {
+      explorerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   const clear = () => {
     setTerm('');
@@ -101,87 +176,69 @@ export default function ProductListFilter({ rangeCards, productCards, showRangeI
   };
 
   const toggleCat = (slug: string) => {
-    setActiveCat((cur) => (cur === slug ? '' : slug));
+    setActiveCat((cur) => {
+      const next = cur === slug ? '' : slug;
+      if (next) {
+        const firstMatching = productTypes.find((pt) => pt.categorySlug === next);
+        if (firstMatching) {
+          setSelectedTypeId(firstMatching.id);
+          if (firstMatching.series.length > 0) {
+            setSelectedSeriesId(firstMatching.series[0].id);
+          }
+        }
+      }
+      return next;
+    });
   };
 
   return (
     <div>
-      {/* ===== CATEGORY INDEX ===== */}
-      {showRangeIndex && (
-      <section className="section" id="categories-section">
-        <div className="container">
-          <header className="pl-head reveal">
-            <p className="sec-index">Product Categories</p>
-            <h2 className="display-700">Browse by product range</h2>
-            <p>Every family, from compact crates to industrial pallets — pick a range to see the sizes, colours and products inside.</p>
-          </header>
-
-          {rangeCards.length > 0 ? (
-            <div className="pl-cat-list">
-              {rangeCards.map((card) => (
-                <a key={card.slug} href={card.href} className="pl-cat reveal" data-cat={card.slug} aria-label={`Browse ${card.name}`}>
-                  <div className="pl-cat__index" aria-hidden="true">{card.index}</div>
-                  <div className="pl-cat__img">
-                    {card.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.image} alt={`${card.name} — Vinayak Plastics`} width="480" height="360" loading="lazy" decoding="async" />
-                    ) : (
-                      <span className="pl-cat__img-empty">{card.name}</span>
-                    )}
-                  </div>
-                  <div className="pl-cat__body">
-                    <h3>{card.name}</h3>
-                    {card.description && <p>{card.description}</p>}
-                    <div className="pl-cat__meta">
-                      <span className="pl-chip">{card.count ? `${card.count} · ${card.count === 1 ? 'model' : 'models'}` : 'Range'}</span>
-                      {card.subCount > 0 && <span className="pl-chip">{card.subCount} product{card.subCount === 1 ? '' : 's'}</span>}
-                      {card.sizeNames.slice(0, 3).filter(Boolean).map((name) => (
-                        <span key={name} className="pl-chip pl-chip-outline">{name}</span>
-                      ))}
-                      {card.sizeNames.length > 3 && <span className="pl-chip pl-chip-outline">+{card.sizeNames.length - 3} more</span>}
-                    </div>
-                    <span className="pl-cat__cta">Explore Range <span aria-hidden="true">→</span></span>
-                  </div>
-                  <span className="pl-cat__arrow" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                  </span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="pl-empty reveal">
-              <h3>Product catalogue coming soon</h3>
-              <p>We are currently updating our product listings. Please check back shortly or <a href="/contact">contact us</a> directly for product information.</p>
-            </div>
-          )}
-        </div>
-      </section>
-      )}
-
-      {/* ===== ALL PRODUCTS ===== */}
+      {/* ===== ALL PRODUCTS & DRILLDOWN EXPLORER ===== */}
       <section className="section section-warm" id="products-section">
         <div className="container">
           <header className="pl-head pl-head--left reveal">
             <p className="sec-index">All Products</p>
             <h2 className="display-700">Every product in one place</h2>
-            <p>Search the full range or filter by category — each product shows its available sizes and colours.</p>
+            <p>
+              Explore all types of products — click any product type to reveal its footprint size series and relative product models.
+            </p>
           </header>
 
+          {/* ===== SEARCH & CATEGORY FILTER CHIPS ===== */}
           <div className="pl-filter reveal">
             <div className="pl-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="M21 21l-4.35-4.35"></path>
+              </svg>
               <input
                 type="search"
                 id="pl-search-input"
-                placeholder="Search products…"
+                placeholder="Search product types, footprints, model codes…"
                 aria-label="Search products"
                 autoComplete="off"
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
               />
-              <button type="button" id="pl-search-clear" aria-label="Clear search" hidden={!searching} onClick={clear} style={{ display: searching ? '' : 'none' }}>&times;</button>
+              <button
+                type="button"
+                id="pl-search-clear"
+                aria-label="Clear search"
+                hidden={!term && !activeCat}
+                onClick={clear}
+                style={{ display: term || activeCat ? '' : 'none' }}
+              >
+                &times;
+              </button>
             </div>
             <div className="pl-chips" id="pl-chips" role="group" aria-label="Filter by category">
+              <button
+                type="button"
+                className={!activeCat ? 'pl-chip-btn is-active' : 'pl-chip-btn'}
+                onClick={() => setActiveCat('')}
+              >
+                All Categories ({productTypes.length} Types)
+              </button>
               {rangeCards.map((card) => (
                 <button
                   key={card.slug}
@@ -189,67 +246,96 @@ export default function ProductListFilter({ rangeCards, productCards, showRangeI
                   className={activeCat === card.slug ? 'pl-chip-btn is-active' : 'pl-chip-btn'}
                   data-cat={card.slug}
                   onClick={() => toggleCat(card.slug)}
-                >{card.name}</button>
+                >
+                  {card.name}
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="pl-results-info" id="pl-results-info" hidden={!searching} aria-live="polite">
-            {searching && `Showing ${visibleCount} ${visibleCount === 1 ? 'product' : 'products'}${term.trim() ? ` for "${term.trim()}"` : ''}${activeCat ? ` in ${activeCat}` : ''}`}
+           {/* ===== STEP 1: PRODUCT TYPES GRID ===== */}
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ fontSize: '1.05rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--steel, #5b6472)', margin: '0 0 16px', fontFamily: 'var(--font-mono)' }}>
+              1. Select a Product Type
+            </h3>
           </div>
 
-          {showGrid ? (
-            <div className="pl-grid reveal" id="pl-grid" ref={gridRef}>
-              {productCards.map((card) => {
-                const t = term.trim().toLowerCase();
-                const show = (!activeCat || card.categorySlug === activeCat) && (!t || card.search.indexOf(t) !== -1);
+          {filteredTypes.length > 0 ? (
+            <div className="pl-grid reveal" style={{ marginBottom: 40 }}>
+              {filteredTypes.map((pt) => {
+                const isSelected = activeType?.id === pt.id;
                 return (
-                  <a
-                    key={card.slug}
-                    href={card.href}
-                    className="pl-card"
-                    data-sub={card.slug}
-                    data-cat={card.categorySlug}
-                    data-search={card.search}
-                    hidden={!show}
-                    style={show ? undefined : { display: 'none' }}
+                  <button
+                    key={pt.id}
+                    type="button"
+                    onClick={() => onSelectType(pt)}
+                    className={`pl-card ${isSelected ? 'is-selected-type' : ''}`}
+                    style={{
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      font: 'inherit',
+                      outline: 'none',
+                      border: isSelected ? '2px solid var(--orange, #e8630c)' : '1px solid rgba(18, 42, 78, 0.08)',
+                      borderTop: isSelected ? '4px solid var(--orange, #e8630c)' : '3px solid var(--orange, #e8630c)',
+                      boxShadow: isSelected ? '0 12px 30px rgba(232, 99, 12, 0.16)' : undefined,
+                      transform: isSelected ? 'translateY(-3px)' : undefined
+                    }}
                   >
-                    <div className="pl-card__img">
-                      {card.image ? (
+                    <div className="pl-card__img" style={{ background: '#f6f3ec', position: 'relative' }}>
+                      {pt.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={card.image} alt={`${card.name} — ${card.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
+                        <img src={pt.image} alt={`${pt.name} — ${pt.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
                       ) : (
-                        <span className="pl-card__placeholder">{card.name}</span>
+                        <span className="pl-card__placeholder">{pt.name}</span>
+                      )}
+                      {isSelected && (
+                        <span style={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          background: 'var(--orange, #e8630c)',
+                          color: '#fff',
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          padding: '3px 8px',
+                          borderRadius: '100px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em'
+                        }}>
+                          Selected ✓
+                        </span>
                       )}
                     </div>
                     <div className="pl-card__body">
-                      <span className="pl-card__parent">{card.categoryName}</span>
-                      <h3>{card.name}</h3>
-                      {card.description && <p>{card.description}</p>}
-                      <div className="pl-card__meta">
-                        <span className="pl-card__count">{card.sizesLabel}</span>
-                        <span className="pl-card__cta">View Details <span aria-hidden="true">→</span></span>
-                      </div>
+                      <span className="pl-card__parent">{pt.categoryName}</span>
+                      <h3 style={{ margin: '4px 0 6px', fontSize: '1.25rem' }}>{pt.name}</h3>
+                      {pt.description && <p style={{ fontSize: '0.86rem', margin: '0 0 12px' }}>{pt.description}</p>}
+                       <div className="pl-card__meta" style={{ marginTop: 'auto' }}>
+                         <span className="pl-chip pl-chip-ok" style={{ background: 'rgba(232, 99, 12, 0.1)', color: 'var(--orange-deep, #c84e08)' }}>
+                           {pt.seriesCount} {pt.seriesCount === 1 ? 'Size Series' : 'Size Series'}
+                         </span>
+                         <span className="pl-chip pl-chip-outline">
+                           {pt.modelsCount} {pt.modelsCount === 1 ? 'Model' : 'Models'}
+                         </span>
+                       </div>
                     </div>
-                  </a>
+                  </button>
                 );
               })}
             </div>
           ) : (
-            <div className="pl-empty reveal">
-              <h3>Product types coming soon</h3>
-              <p>We are adding detailed product breakdowns. Please check back or <a href="/contact">contact us</a> for the full range.</p>
+            <div className="pl-empty reveal" style={{ padding: '36px 20px', background: '#fff', borderRadius: 8, textAlign: 'center', marginBottom: 40 }}>
+              <h3>No matching product types</h3>
+              <p>Try searching with another keyword or selecting All Categories.</p>
+              <button type="button" className="btn btn-secondary" onClick={clear} style={{ marginTop: 12 }}>
+                Clear Filters
+              </button>
             </div>
           )}
 
-          <div className="pl-empty" id="pl-no-results" hidden={!noResultsVisible}>
-            <h3>No matching products</h3>
-            <p id="pl-no-results-text">
-              {activeCat && !term.trim()
-                ? 'No products in this range yet. Choose another category or ask us directly.'
-                : 'No products match your search. Try a different term or clear the filters.'}
-            </p>
-          </div>
+
         </div>
       </section>
     </div>
