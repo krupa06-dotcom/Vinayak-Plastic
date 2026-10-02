@@ -62,7 +62,6 @@ export interface ProductVariantRow {
   model_code: string;
   description: string | null;
   material: string | null;
-  weight: string | null;
   load_capacity: string | null;
   outer_length: number | null;
   outer_width: number | null;
@@ -204,6 +203,15 @@ export function formatSize(
 ): string {
   const fp = formatFootprint(series);
   return fp ? `${fp} × ${height} mm` : `${height} mm`;
+}
+
+/** Human-readable inner size, e.g. "550 × 350 × 200 mm", or '' when any axis is missing. */
+export function formatInnerSize(
+  variant: { inner_length: number | null; inner_width: number | null; inner_height: number | null }
+): string {
+  const { inner_length: l, inner_width: w, inner_height: h } = variant;
+  if (l == null || w == null || h == null) return '';
+  return `${l} × ${w} × ${h} mm`;
 }
 
 /** Normalise the series `applications` JSON column into renderable rows. */
@@ -613,7 +621,6 @@ function buildFallbackSeries(cat: Category, detail: FallbackDetail, order: numbe
             model_code: m.model,
             description: null,
             material: m.material || null,
-            weight: null,
             load_capacity: m.capacity || null,
             outer_length: L || null,
             outer_width: W || null,

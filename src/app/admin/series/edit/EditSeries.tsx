@@ -149,7 +149,7 @@ export default function EditSeries() {
         id: string | null;
         key: string;
         version_name: string; version_code: string; model_code: string;
-        description: string; material: string; weight: string; load_capacity: string;
+        description: string; material: string; load_capacity: string;
         outer_l: string; outer_w: string; outer_h: string;
         inner_l: string; inner_w: string; inner_h: string;
         colours: string; shape: string;
@@ -172,7 +172,7 @@ export default function EditSeries() {
       }
       function newVerRow(): VerRow {
         return { id: null, key: crypto.randomUUID(), version_name: '', version_code: '', model_code: '',
-          description: '', material: '', weight: '', load_capacity: '',
+          description: '', material: '', load_capacity: '',
           outer_l: '', outer_w: '', outer_h: '', inner_l: '', inner_w: '', inner_h: '',
           colours: '', shape: '', is_active: true, order: 0, images: [] };
       }
@@ -227,10 +227,6 @@ export default function EditSeries() {
             <div class="a-field">
               <label>Material</label>
               ${f('v-material', ver.material, ' placeholder="e.g. PP / HDPE"')}
-            </div>
-            <div class="a-field">
-              <label>Weight</label>
-              ${f('v-weight', ver.weight, ' placeholder="e.g. 2.5 kg"')}
             </div>
             <div class="a-field">
               <label>Load capacity</label>
@@ -435,7 +431,7 @@ export default function EditSeries() {
         BIND('v-ver-code', r => v => { r.version_code = v; });
         BIND('v-model-code', r => v => { r.model_code = v; });
         BIND('v-material', r => v => { r.material = v; });
-        BIND('v-weight', r => v => { r.weight = v; });
+        
         BIND('v-load-capacity', r => v => { r.load_capacity = v; });
         BIND('v-outer-l', r => v => { r.outer_l = v; });
         BIND('v-outer-w', r => v => { r.outer_w = v; });
@@ -538,7 +534,7 @@ export default function EditSeries() {
               versions: versions.map((pv: any): VerRow => ({
                 id: pv.id, key: pv.id,
                 version_name: pv.version_name ?? '', version_code: pv.version_code ?? '', model_code: pv.model_code ?? '',
-                description: pv.description ?? '', material: pv.material ?? '', weight: pv.weight ?? '', load_capacity: pv.load_capacity ?? '',
+                description: pv.description ?? '', material: pv.material ?? '', load_capacity: pv.load_capacity ?? '',
                 outer_l: pv.outer_length != null ? String(pv.outer_length) : '', outer_w: pv.outer_width != null ? String(pv.outer_width) : '',
                 outer_h: pv.outer_height != null ? String(pv.outer_height) : '',
                 inner_l: pv.inner_length != null ? String(pv.inner_length) : '', inner_w: pv.inner_width != null ? String(pv.inner_width) : '',
@@ -731,7 +727,7 @@ export default function EditSeries() {
               model_code: ver.model_code.trim(),
               description: ver.description.trim() || null,
               material: ver.material.trim() || null,
-              weight: ver.weight.trim() || null,
+              
               load_capacity: ver.load_capacity.trim() || null,
               outer_length: num(ver.outer_l), outer_width: num(ver.outer_w), outer_height: num(ver.outer_h),
               inner_length: num(ver.inner_l), inner_width: num(ver.inner_w), inner_height: num(ver.inner_h),

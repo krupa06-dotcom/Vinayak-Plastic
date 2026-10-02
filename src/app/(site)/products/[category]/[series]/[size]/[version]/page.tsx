@@ -59,7 +59,6 @@ function specsFor(ctx: ProductDetailContext): { name: string; value: string }[] 
   );
   add(rows, 'Material', variant.material);
   add(rows, 'Load Capacity', variant.load_capacity);
-  add(rows, 'Weight', variant.weight);
   add(rows, 'Colours', variant.colours);
   add(rows, 'Shape', variant.shape);
   add(rows, 'Inner Size (L × W × H)', joinMm(variant.inner_length, variant.inner_width, variant.inner_height));
@@ -121,7 +120,6 @@ export default async function ProductDetailPage({
     { tag: 'Height', value: `${sz.height} mm` },
     { tag: 'Material', value: variant.material },
     { tag: 'Load', value: variant.load_capacity },
-    { tag: 'Weight', value: variant.weight },
     { tag: 'Colours', value: variant.colours }
   ].filter((f): f is { tag: string; value: string } => Boolean(f.value));
 

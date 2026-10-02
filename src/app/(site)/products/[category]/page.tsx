@@ -124,13 +124,6 @@ export default async function CategoryPage({
                             {(s.short_description || s.description) && (
                               <p className="px-series__desc">{s.short_description || s.description}</p>
                             )}
-                            <div className="px-series__meta">
-                              <span className="pl-chip">{s.heights_count} {s.heights_count === 1 ? 'size' : 'sizes'}</span>
-                              <span className="pl-chip">{s.models_count} {s.models_count === 1 ? 'model' : 'models'}</span>
-                              {s.sizes.slice(0, 4).map((sz) => (
-                                <span key={sz.size_key} className="pl-chip pl-chip-outline">{sz.height} mm</span>
-                              ))}
-                            </div>
                             <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
                           </div>
                         </a>
@@ -183,13 +176,6 @@ export default async function CategoryPage({
                             {(s.short_description || s.description) && (
                               <p className="px-series__desc">{s.short_description || s.description}</p>
                             )}
-                            <div className="px-series__meta">
-                              <span className="pl-chip">{s.heights_count} {s.heights_count === 1 ? 'size' : 'sizes'}</span>
-                              <span className="pl-chip">{s.models_count} {s.models_count === 1 ? 'model' : 'models'}</span>
-                              {s.sizes.slice(0, 4).map((sz) => (
-                                <span key={sz.size_key} className="pl-chip pl-chip-outline">{sz.height} mm</span>
-                              ))}
-                            </div>
                             <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
                           </div>
                         </a>
@@ -232,13 +218,6 @@ export default async function CategoryPage({
                       {(s.short_description || s.description) && (
                         <p className="px-series__desc">{s.short_description || s.description}</p>
                       )}
-                      <div className="px-series__meta">
-                        <span className="pl-chip">{s.heights_count} {s.heights_count === 1 ? 'size' : 'sizes'}</span>
-                        <span className="pl-chip">{s.models_count} {s.models_count === 1 ? 'model' : 'models'}</span>
-                        {s.sizes.slice(0, 4).map((sz) => (
-                          <span key={sz.size_key} className="pl-chip pl-chip-outline">{sz.height} mm</span>
-                        ))}
-                      </div>
                       <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
                     </div>
                   </a>

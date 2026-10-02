@@ -469,7 +469,6 @@ export interface Database {
           model_code: string;
           description: string | null;
           material: string | null;
-          weight: string | null;
           load_capacity: string | null;
           outer_length: number | null;
           outer_width: number | null;
@@ -493,7 +492,6 @@ export interface Database {
           model_code: string;
           description?: string | null;
           material?: string | null;
-          weight?: string | null;
           load_capacity?: string | null;
           outer_length?: number | null;
           outer_width?: number | null;
@@ -517,7 +515,6 @@ export interface Database {
           model_code?: string;
           description?: string | null;
           material?: string | null;
-          weight?: string | null;
           load_capacity?: string | null;
           outer_length?: number | null;
           outer_width?: number | null;

@@ -10,6 +10,7 @@ import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
   formatFootprint,
+  formatInnerSize,
   formatSize,
   getHierarchySeriesPaths,
   getSeriesByKey,
@@ -91,32 +92,40 @@ export default async function SeriesPage({
               {s.sizes.length > 0 ? (
                 <div className="st-catalog reveal">
                   {s.sizes.flatMap((sz) =>
-                    sz.variants.map((v) => (
-                      <a key={`${sz.size_key}-${v.version_key}`} href={v.href} className="px-version">
-                        <div className="px-version__img">
-                          {v.card_image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
-                          ) : (
-                            <span className="px-version__placeholder">{v.model_code}</span>
-                          )}
-                        </div>
-                        <div className="px-version__body">
-                          <span className="px-version__code">{v.model_code}</span>
-                          <h3 className="px-version__name">{v.display_name}</h3>
-                          <span className="px-version__dims">
-                            {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height} mm
-                          </span>
-                          {v.load_capacity && <span className="st-catalog__load">{v.load_capacity}</span>}
-                          {v.version_code && v.version_code !== v.display_name && (
-                            <span className="st-catalog__ver">{v.version_code}</span>
-                          )}
-                          <div className="px-version__foot">
-                            <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
+                    sz.variants.map((v) => {
+                      const innerSize = formatInnerSize(v);
+                      return (
+                        <a key={`${sz.size_key}-${v.version_key}`} href={v.href} className="px-version">
+                          <div className="px-version__img">
+                            {v.card_image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
+                            ) : (
+                              <span className="px-version__placeholder">{v.model_code}</span>
+                            )}
                           </div>
-                        </div>
-                      </a>
-                    ))
+                          <div className="px-version__body">
+                            <span className="px-version__code">{v.model_code}</span>
+                            <h3 className="px-version__name">{v.display_name}</h3>
+                            <span className="px-version__dims">
+                              {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height} mm
+                            </span>
+                            {innerSize && (
+                              <span className="px-version__dims px-version__dims--inner">
+                                Inner {innerSize}
+                              </span>
+                            )}
+                            {v.load_capacity && <span className="st-catalog__load">{v.load_capacity}</span>}
+                            {v.version_code && v.version_code !== v.display_name && (
+                              <span className="st-catalog__ver">{v.version_code}</span>
+                            )}
+                            <div className="px-version__foot">
+                              <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
+                            </div>
+                          </div>
+                        </a>
+                      );
+                    })
                   )}
                 </div>
               ) : (
