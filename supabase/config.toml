@@ -1,0 +1,5 @@
+project_id = "eysponcqvylopmfskevu"
+
+[functions.deploy-site]
+verify_jwt = false
+
