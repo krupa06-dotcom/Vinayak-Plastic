@@ -8,7 +8,8 @@ import { SITE_URL } from '@/lib/site';
 import {
   formatFootprint,
   getHierarchyCategoryPaths,
-  getCategoryBySlug
+  getCategoryBySlug,
+  type HierarchySeries
 } from '@/lib/hierarchy';
 
 export const dynamicParams = false;
@@ -35,12 +36,78 @@ export async function generateMetadata({
   };
 }
 
+function SeriesCard({
+  series,
+  index,
+  label,
+  contextName
+}: {
+  series: HierarchySeries;
+  index: number;
+  label: string;
+  contextName: string;
+}) {
+  const footprint = formatFootprint(series);
+  return (
+    <a href={series.href} className="px-series">
+      <div className="px-series__media">
+        {series.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={series.image}
+            alt={`${series.name} — ${contextName}`}
+            width="560"
+            height="400"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="px-series__placeholder">{footprint || series.name}</span>
+        )}
+      </div>
+      <div className="px-series__body">
+        <div className="px-series__topline">
+          <span className="px-series__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <span className="px-series__label">{label}</span>
+        </div>
+        <div className="px-series__title">
+          {footprint && <span className="px-series__dims">{footprint}</span>}
+          <span className="px-series__name">{series.name}</span>
+        </div>
+        {(series.short_description || series.description) && (
+          <p className="px-series__desc">{series.short_description || series.description}</p>
+        )}
+        <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  );
+}
+
 export default async function CategoryPage({
-  params
-}: { params: Promise<{ category: string }> }) {
+  params,
+  searchParams
+}: {
+  params: Promise<{ category: string }>;
+  searchParams: Promise<{ type?: string | string[] }>;
+}) {
   const { category } = await params;
+  const { type } = await searchParams;
   const cat = await getCategoryBySlug(category);
   if (!cat) notFound();
+
+  // Series sitting directly on the category (no product type assigned).
+  const directSeries = cat.series.filter((s) => !s.sub_category_id);
+  const directModels = directSeries.reduce((n, s) => n + s.models_count, 0);
+
+  // `?type=<slug>` narrows the listing down to a single product type; the
+  // category's direct series stay visible underneath it.
+  const requestedType = (Array.isArray(type) ? type[0] : type || '').trim();
+  const activeType = requestedType
+    ? cat.sub_categories.find((sc) => sc.slug === requestedType && sc.series.length > 0) ?? null
+    : null;
+  const visibleTypes = (activeType ? [activeType] : cat.sub_categories).filter(
+    (sc) => sc.series.length > 0
+  );
 
   return (
     <main id="main">
@@ -77,14 +144,27 @@ export default async function CategoryPage({
             <p>Each series covers a single footprint — pick one to walk through the available heights and construction types.</p>
           </header>
 
-          {cat.sub_categories && cat.sub_categories.some(sc => sc.series.length > 0) ? (
+          {activeType && (
+            <div className="reveal" style={{ marginBottom: 24 }}>
+              <a
+                href={`${cat.href}#series`}
+                className="pl-chip pl-chip-ok"
+                style={{ background: 'rgba(232, 99, 12, 0.1)', color: 'var(--orange-deep, #c84e08)' }}
+              >
+                Showing: {activeType.name} <span aria-hidden="true">×</span>
+              </a>
+            </div>
+          )}
+
+          {visibleTypes.length > 0 || directSeries.length > 0 ? (
             <div className="cat-subcategories-wrap">
-              {cat.sub_categories.filter(sc => sc.series.length > 0).map((subCat) => (
-                <div key={subCat.id} className="cat-subtype-section" style={{ marginBottom: 48 }}>
+              {visibleTypes.map((subCat) => (
+                <div key={subCat.id} id={`type-${subCat.slug}`} className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
                   <div className="reveal" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>
                       <h3 className="display-600" style={{ margin: 0 }}>{subCat.name}</h3>
-                      <span className="pl-chip pl-chip-outline">{subCat.series.length} {subCat.series.length === 1 ? 'series' : 'series'}</span>
+                      <span className="pl-chip pl-chip-outline">{subCat.series.length} series</span>
                       <span className="pl-chip">{subCat.models_count} {subCat.models_count === 1 ? 'model' : 'models'}</span>
                     </div>
                     {subCat.description && (
@@ -93,136 +173,42 @@ export default async function CategoryPage({
                   </div>
 
                   <div className="px-series-grid reveal">
-                    {subCat.series.map((s, i) => {
-                      const footprint = formatFootprint(s);
-                      return (
-                        <a href={s.href} className="px-series" key={s.series_key}>
-                          <div className="px-series__media">
-                            {s.image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={s.image}
-                                alt={`${s.name} — ${subCat.name}`}
-                                width="560"
-                                height="400"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : (
-                              <span className="px-series__placeholder">{footprint || s.name}</span>
-                            )}
-                          </div>
-                          <div className="px-series__body">
-                            <div className="px-series__topline">
-                              <span className="px-series__index" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                              <span className="px-series__label">{subCat.name}</span>
-                            </div>
-                            <div className="px-series__title">
-                              {footprint && <span className="px-series__dims">{footprint}</span>}
-                              <span className="px-series__name">{s.name}</span>
-                            </div>
-                            {(s.short_description || s.description) && (
-                              <p className="px-series__desc">{s.short_description || s.description}</p>
-                            )}
-                            <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
-                          </div>
-                        </a>
-                      );
-                    })}
+                    {subCat.series.map((s, i) => (
+                      <SeriesCard
+                        key={s.series_key}
+                        series={s}
+                        index={i}
+                        label={subCat.name}
+                        contextName={subCat.name}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
 
-              {/* Direct Series under Category without a subcategory */}
-              {cat.series.some(s => !s.sub_category_id) && (
-                <div className="cat-subtype-section" style={{ marginBottom: 48 }}>
+              {directSeries.length > 0 && (
+                <div id="direct-series" className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
                   <div className="reveal" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <h3 className="display-600" style={{ margin: 0 }}>General &amp; Standard Series</h3>
-                      <span className="pl-chip pl-chip-outline">
-                        {cat.series.filter(s => !s.sub_category_id).length} series
-                      </span>
+                      <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>
+                      <span className="pl-chip pl-chip-outline">{directSeries.length} series</span>
+                      <span className="pl-chip">{directModels} {directModels === 1 ? 'model' : 'models'}</span>
                     </div>
                   </div>
+
                   <div className="px-series-grid reveal">
-                    {cat.series.filter(s => !s.sub_category_id).map((s, i) => {
-                      const footprint = formatFootprint(s);
-                      return (
-                        <a href={s.href} className="px-series" key={s.series_key}>
-                          <div className="px-series__media">
-                            {s.image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={s.image}
-                                alt={`${s.name} — ${cat.name}`}
-                                width="560"
-                                height="400"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : (
-                              <span className="px-series__placeholder">{footprint || s.name}</span>
-                            )}
-                          </div>
-                          <div className="px-series__body">
-                            <div className="px-series__topline">
-                              <span className="px-series__index" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                              <span className="px-series__label">{cat.name} Series</span>
-                            </div>
-                            <div className="px-series__title">
-                              {footprint && <span className="px-series__dims">{footprint}</span>}
-                              <span className="px-series__name">{s.name}</span>
-                            </div>
-                            {(s.short_description || s.description) && (
-                              <p className="px-series__desc">{s.short_description || s.description}</p>
-                            )}
-                            <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
-                          </div>
-                        </a>
-                      );
-                    })}
+                    {directSeries.map((s, i) => (
+                      <SeriesCard
+                        key={s.series_key}
+                        series={s}
+                        index={i}
+                        label={`${cat.name} Series`}
+                        contextName={cat.name}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-          ) : cat.series.length > 0 ? (
-            <div className="px-series-grid reveal">
-              {cat.series.map((s, i) => {
-                const footprint = formatFootprint(s);
-                return (
-                  <a href={s.href} className="px-series" key={s.series_key}>
-                    <div className="px-series__media">
-                      {s.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={s.image}
-                          alt={`${s.name} — ${cat.name}`}
-                          width="560"
-                          height="400"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <span className="px-series__placeholder">{footprint || s.name}</span>
-                      )}
-                    </div>
-                    <div className="px-series__body">
-                      <div className="px-series__topline">
-                        <span className="px-series__index" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                        <span className="px-series__label">{cat.name} Series</span>
-                      </div>
-                      <div className="px-series__title">
-                        {footprint && <span className="px-series__dims">{footprint}</span>}
-                        <span className="px-series__name">{s.name}</span>
-                      </div>
-                      {(s.short_description || s.description) && (
-                        <p className="px-series__desc">{s.short_description || s.description}</p>
-                      )}
-                      <span className="px-series__cta">Explore Series <span aria-hidden="true">→</span></span>
-                    </div>
-                  </a>
-                );
-              })}
             </div>
           ) : (
             <div className="empty-state reveal">

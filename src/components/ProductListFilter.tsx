@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export interface RelativeProduct {
   id: string;
@@ -40,6 +40,7 @@ export interface ProductTypeCardData {
   image: string | null;
   seriesCount: number;
   modelsCount: number;
+  href: string;
   series: TypeSeries[];
 }
 
@@ -76,26 +77,10 @@ type ProductListFilterProps = {
 
 export default function ProductListFilter({
   rangeCards,
-  productTypes = [],
-  showRangeIndex = false
+  productTypes = []
 }: ProductListFilterProps) {
   const [term, setTerm] = useState('');
   const [activeCat, setActiveCat] = useState('');
-  const [selectedTypeId, setSelectedTypeId] = useState<string>('');
-  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('');
-
-  const explorerRef = useRef<HTMLDivElement>(null);
-
-  // Set initial selected product type and series
-  useEffect(() => {
-    if (productTypes.length > 0 && !selectedTypeId) {
-      const first = productTypes[0];
-      setSelectedTypeId(first.id);
-      if (first.series.length > 0) {
-        setSelectedSeriesId(first.series[0].id);
-      }
-    }
-  }, [productTypes, selectedTypeId]);
 
   // Handle URL deep-links
   useEffect(() => {
@@ -103,18 +88,9 @@ export default function ProductListFilter({
     const cat = (params.get('category') || '').trim();
     const q = (params.get('q') || '').trim();
 
-    if (cat) {
-      setActiveCat(cat);
-      const matchedType = productTypes.find((pt) => pt.categorySlug === cat);
-      if (matchedType) {
-        setSelectedTypeId(matchedType.id);
-        if (matchedType.series.length > 0) {
-          setSelectedSeriesId(matchedType.series[0].id);
-        }
-      }
-    }
+    if (cat) setActiveCat(cat);
     if (q) setTerm(q);
-  }, [productTypes]);
+  }, []);
 
   // Filter product types by active category and search term
   const filteredTypes = useMemo(() => {
@@ -138,57 +114,13 @@ export default function ProductListFilter({
     });
   }, [productTypes, activeCat, term]);
 
-  // Currently selected product type
-  const activeType = useMemo(() => {
-    return (
-      productTypes.find((pt) => pt.id === selectedTypeId) ||
-      filteredTypes[0] ||
-      productTypes[0] ||
-      null
-    );
-  }, [productTypes, filteredTypes, selectedTypeId]);
-
-  // Currently active series inside selected product type
-  const activeSeries = useMemo(() => {
-    if (!activeType || activeType.series.length === 0) return null;
-    return (
-      activeType.series.find((s) => s.id === selectedSeriesId) ||
-      activeType.series[0]
-    );
-  }, [activeType, selectedSeriesId]);
-
-  const onSelectType = (pt: ProductTypeCardData) => {
-    setSelectedTypeId(pt.id);
-    if (pt.series.length > 0) {
-      setSelectedSeriesId(pt.series[0].id);
-    } else {
-      setSelectedSeriesId('');
-    }
-    // Smooth scroll down to the series & relative products explorer
-    setTimeout(() => {
-      explorerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
-  };
-
   const clear = () => {
     setTerm('');
     setActiveCat('');
   };
 
   const toggleCat = (slug: string) => {
-    setActiveCat((cur) => {
-      const next = cur === slug ? '' : slug;
-      if (next) {
-        const firstMatching = productTypes.find((pt) => pt.categorySlug === next);
-        if (firstMatching) {
-          setSelectedTypeId(firstMatching.id);
-          if (firstMatching.series.length > 0) {
-            setSelectedSeriesId(firstMatching.series[0].id);
-          }
-        }
-      }
-      return next;
-    });
+    setActiveCat((cur) => (cur === slug ? '' : slug));
   };
 
   return (
@@ -200,7 +132,7 @@ export default function ProductListFilter({
             <p className="sec-index">All Products</p>
             <h2 className="display-700">Every product in one place</h2>
             <p>
-              Explore all types of products — click any product type to reveal its footprint size series and relative product models.
+              Explore all types of products — click any product type to open its footprint size series and relative product models.
             </p>
           </header>
 
@@ -263,24 +195,12 @@ export default function ProductListFilter({
           {filteredTypes.length > 0 ? (
             <div className="pl-grid reveal" style={{ marginBottom: 40 }}>
               {filteredTypes.map((pt) => {
-                const isSelected = activeType?.id === pt.id;
                 return (
-                  <button
+                  <a
                     key={pt.id}
-                    type="button"
-                    onClick={() => onSelectType(pt)}
-                    className={`pl-card ${isSelected ? 'is-selected-type' : ''}`}
-                    style={{
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                      font: 'inherit',
-                      outline: 'none',
-                      border: isSelected ? '2px solid var(--orange, #e8630c)' : '1px solid rgba(18, 42, 78, 0.08)',
-                      borderTop: isSelected ? '4px solid var(--orange, #e8630c)' : '3px solid var(--orange, #e8630c)',
-                      boxShadow: isSelected ? '0 12px 30px rgba(232, 99, 12, 0.16)' : undefined,
-                      transform: isSelected ? 'translateY(-3px)' : undefined
-                    }}
+                    href={pt.href}
+                    className="pl-card"
+                    aria-label={`Explore ${pt.name} series`}
                   >
                     <div className="pl-card__img" style={{ background: '#f6f3ec', position: 'relative' }}>
                       {pt.image ? (
@@ -288,24 +208,6 @@ export default function ProductListFilter({
                         <img src={pt.image} alt={`${pt.name} — ${pt.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
                       ) : (
                         <span className="pl-card__placeholder">{pt.name}</span>
-                      )}
-                      {isSelected && (
-                        <span style={{
-                          position: 'absolute',
-                          top: 10,
-                          right: 10,
-                          background: 'var(--orange, #e8630c)',
-                          color: '#fff',
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          fontFamily: 'var(--font-mono)',
-                          padding: '3px 8px',
-                          borderRadius: '100px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em'
-                        }}>
-                          Selected ✓
-                        </span>
                       )}
                     </div>
                     <div className="pl-card__body">
@@ -320,8 +222,11 @@ export default function ProductListFilter({
                            {pt.modelsCount} {pt.modelsCount === 1 ? 'Model' : 'Models'}
                          </span>
                        </div>
+                       <span className="pl-card__cta" style={{ marginTop: 12 }}>
+                         View Series <span aria-hidden="true">→</span>
+                       </span>
                     </div>
-                  </button>
+                  </a>
                 );
               })}
             </div>

@@ -58,6 +58,7 @@ export default async function ProductsPage() {
             image: sub.image || sub.series[0]?.image || cat.image,
             seriesCount: sub.series.length,
             modelsCount: sub.models_count,
+            href: `/products/${cat.slug}?type=${sub.slug}#type-${sub.slug}`,
             series: sub.series.map((s) => ({
               id: s.id,
               name: s.name,
@@ -106,6 +107,7 @@ export default async function ProductsPage() {
         image: directSeries[0]?.image || cat.image,
         seriesCount: directSeries.length,
         modelsCount: directSeries.reduce((n, s) => n + s.models_count, 0),
+        href: `/products/${cat.slug}#direct-series`,
         series: directSeries.map((s) => ({
           id: s.id,
           name: s.name,
