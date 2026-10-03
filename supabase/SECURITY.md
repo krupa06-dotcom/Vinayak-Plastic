@@ -56,6 +56,14 @@ function and a Vercel Deploy Hook).
    - `npx supabase functions deploy deploy-site --project-ref <ref>`
    - `npx supabase secrets set VERCEL_DEPLOY_HOOK=<deploy hook url> --project-ref <ref>`
 
+`deploy-site` must be deployed with `--no-verify-jwt` (or `verify_jwt = false` in
+`supabase/config.toml`) and must verify the caller's session token itself. The
+platform's built-in JWT check also runs on the browser's CORS preflight, which
+carries no `Authorization` header, so it answers 401 and the admin panel reports a
+CORS error instead of reaching the function.
+
+See [DEPLOY_SITE.md](DEPLOY_SITE.md) for the function source and setup steps.
+
 There is no GitHub Pages deployment.
 
 ## 6. Go-live checklist
