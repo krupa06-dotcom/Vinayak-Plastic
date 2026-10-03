@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import {
   gate,
@@ -13,18 +13,42 @@ import {
   toast,
   publicUrl,
   deleteFile,
-  publishSite
+  publishSite,
+  configured
 } from '@/scripts/admin/core';
 
 // Series list — the complete 4-level hierarchy:
 // Category → Product Type (Sub-category) → Series (Footprint) → Sizes & Model Variants.
 export default function Series() {
+  const [isStaticExport, setIsStaticExport] = useState(false);
+
   useEffect(() => {
     let disposed = false;
     let searchInput: HTMLInputElement | null = null;
     let catFilterSelect: HTMLSelectElement | null = null;
 
     void (async () => {
+      // Check if we're in a static export environment
+      if (!configured()) {
+        setIsStaticExport(true);
+        const listEl = document.getElementById('series-list');
+        if (listEl) {
+          listEl.innerHTML = `
+            <div class="a-empty">
+              <h3>Admin Panel Not Available</h3>
+              <p>The admin panel requires a dynamic server environment. This appears to be a static export deployment.</p>
+              <p>To use admin functionality:</p>
+              <ul style="text-align: left; margin: 16px 0;">
+                <li>Deploy to a server environment (not static export)</li>
+                <li>Ensure Supabase environment variables are configured</li>
+                <li>Or use the Supabase dashboard directly for data management</li>
+              </ul>
+              <a href="https://supabase.com" class="a-btn a-btn-primary" target="_blank" rel="noopener">Open Supabase Dashboard</a>
+            </div>`;
+        }
+        return;
+      }
+
       if (!(await gate())) return;
       if (disposed) return;
 

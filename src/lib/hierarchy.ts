@@ -278,7 +278,8 @@ export async function getHierarchyData(): Promise<HierarchyData> {
   ].filter(Boolean);
   if (allErrors.length) {
     console.error('Error fetching hierarchy data:', allErrors[0]);
-    return EMPTY_HIERARCHY;
+    console.warn('Falling back to static data due to database error');
+    return buildFallbackHierarchy();
   }
 
   return buildHierarchy(
