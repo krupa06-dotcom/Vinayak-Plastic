@@ -84,14 +84,11 @@ function SeriesCard({
 }
 
 export default async function CategoryPage({
-  params,
-  searchParams
+  params
 }: {
   params: Promise<{ category: string }>;
-  searchParams: Promise<{ type?: string | string[] }>;
 }) {
   const { category } = await params;
-  const { type } = await searchParams;
   const cat = await getCategoryBySlug(category);
   if (!cat) notFound();
 
@@ -99,15 +96,8 @@ export default async function CategoryPage({
   const directSeries = cat.series.filter((s) => !s.sub_category_id);
   const directModels = directSeries.reduce((n, s) => n + s.models_count, 0);
 
-  // `?type=<slug>` narrows the listing down to a single product type; the
-  // category's direct series stay visible underneath it.
-  const requestedType = (Array.isArray(type) ? type[0] : type || '').trim();
-  const activeType = requestedType
-    ? cat.sub_categories.find((sc) => sc.slug === requestedType && sc.series.length > 0) ?? null
-    : null;
-  const visibleTypes = (activeType ? [activeType] : cat.sub_categories).filter(
-    (sc) => sc.series.length > 0
-  );
+  // For static export, show all product types
+  const visibleTypes = cat.sub_categories.filter((sc) => sc.series.length > 0);
 
   return (
     <main id="main">
@@ -143,18 +133,6 @@ export default async function CategoryPage({
             <h2 className="display-700">Choose your {cat.name.toLowerCase()} series</h2>
             <p>Each series covers a single footprint — pick one to walk through the available heights and construction types.</p>
           </header>
-
-          {activeType && (
-            <div className="reveal" style={{ marginBottom: 24 }}>
-              <a
-                href={`${cat.href}#series`}
-                className="pl-chip pl-chip-ok"
-                style={{ background: 'rgba(232, 99, 12, 0.1)', color: 'var(--orange-deep, #c84e08)' }}
-              >
-                Showing: {activeType.name} <span aria-hidden="true">×</span>
-              </a>
-            </div>
-          )}
 
           {visibleTypes.length > 0 || directSeries.length > 0 ? (
             <div className="cat-subcategories-wrap">
