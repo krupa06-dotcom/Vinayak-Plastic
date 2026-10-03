@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  trailingSlash: true,
   images: {
     // Remote/db images are served as-is; unoptimized allows external storage URLs without custom loaders
     unoptimized: true

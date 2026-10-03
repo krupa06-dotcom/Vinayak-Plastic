@@ -270,11 +270,11 @@ async function doPublish(): Promise<void> {
       const detail = res ? `HTTP ${res.status}` : 'network error';
       console.error('[publish] rebuild failed:', detail);
       toast(savedOk, 'info');
-      toast(`Live site NOT updated (${detail}). The change is saved in the database.`, 'warning');
+      toast(`Live site NOT updated (${detail}). The change is saved in the database.`, 'error');
     }
   } catch (e) {
     console.error('[publish] error', e);
-    toast('Site rebuild failed — saved to database only.', 'warning');
+    toast('Site rebuild failed — saved to database only.', 'error');
   }
 }
 
