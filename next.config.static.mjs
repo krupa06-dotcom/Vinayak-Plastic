@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removed 'export' to enable API routes for admin functionality
+  output: 'export',
   images: {
     // Remote/db images are served as-is; unoptimized allows external storage URLs without custom loaders
     unoptimized: true

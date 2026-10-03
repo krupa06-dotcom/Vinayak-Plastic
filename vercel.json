@@ -1,3 +1,8 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "src/app/api/revalidate/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }
