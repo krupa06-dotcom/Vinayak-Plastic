@@ -243,7 +243,7 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 
 let publishTimer: number | null = null;
 
-async function doPublish(): Promise<void> {
+async function doPublish(paths: string[] = ['/']): Promise<void> {
   const savedOk = 'Saved. Triggering site rebuild…';
   try {
     const { data } = await supabase.auth.getSession();
@@ -259,13 +259,25 @@ async function doPublish(): Promise<void> {
     // or the revalidation API (which will be ignored but won't error)
     const res = await fetch('/api/revalidate', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ paths })
     }).catch(() => null);
 
     if (res && res.ok) {
-      console.log('[publish] rebuild triggered');
+      const result = await res.json().catch(() => ({}));
+      console.log('[publish] response:', result);
       toast('Saved ✓', 'success');
-      toast('Site rebuild triggered — changes will be live in 2-3 minutes.', 'info');
+      
+      if (result.rebuild) {
+        toast('Site rebuild triggered — changes will be live in 2-3 minutes.', 'info');
+      } else if (result.revalidated) {
+        toast('Site updated — changes are live now!', 'success');
+      } else {
+        toast('Changes saved to database.', 'info');
+      }
     } else {
       const detail = res ? `HTTP ${res.status}` : 'network error';
       console.error('[publish] rebuild failed:', detail);
@@ -284,18 +296,21 @@ async function doPublish(): Promise<void> {
  * only reflects Supabase content after a rebuild. This asks the deploy-site edge
  * function to trigger that rebuild and reports honestly whether it worked.
  * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single attempt.
+ * 
+ * @param delayMs Delay before triggering publish (default: 2500ms)
+ * @param paths Optional array of specific paths to revalidate (for SSR mode)
  */
-export function publishSite(delayMs = 2500): void {
+export function publishSite(delayMs = 2500, paths: string[] = ['/']): void {
   if (!configured()) return;
   if (publishTimer !== null) window.clearTimeout(publishTimer);
   if (delayMs <= 0) {
     publishTimer = null;
-    void doPublish();
+    void doPublish(paths);
     return;
   }
   publishTimer = window.setTimeout(() => {
     publishTimer = null;
-    void doPublish();
+    void doPublish(paths);
   }, delayMs);
 }
 

@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -45,7 +45,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. For static export, trigger a rebuild via Vercel's deploy hook if configured
+    // 4. Get paths to revalidate from request body
+    const body = await req.json().catch(() => ({}));
+    const { paths = ['/'], tags = [] } = body;
+
+    // 5. For static export, trigger a rebuild via Vercel's deploy hook if configured
     const deployHookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
     
     if (deployHookUrl) {
@@ -56,7 +60,7 @@ export async function POST(req: Request) {
             ok: true, 
             revalidated: false, 
             rebuild: true, 
-            message: 'Site rebuild triggered',
+            message: 'Site rebuild triggered - changes will be live in ~2 minutes',
             ts: Date.now() 
           });
         }
@@ -65,12 +69,45 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Fallback: Just acknowledge the request (for static export, no actual revalidation occurs)
+    // 6. For server-side rendering, revalidate specific paths and tags
+    const revalidatedPaths = [];
+    const revalidatedTags = [];
+
+    for (const path of paths) {
+      try {
+        revalidatePath(path, 'page');
+        revalidatedPaths.push(path);
+      } catch (revalidateError) {
+        console.error(`[revalidate] failed to revalidate path ${path}:`, revalidateError);
+      }
+    }
+
+    for (const tag of tags) {
+      try {
+        revalidateTag(tag, 'page');
+        revalidatedTags.push(tag);
+      } catch (revalidateError) {
+        console.error(`[revalidate] failed to revalidate tag ${tag}:`, revalidateError);
+      }
+    }
+
+    if (revalidatedPaths.length > 0 || revalidatedTags.length > 0) {
+      return NextResponse.json({ 
+        ok: true, 
+        revalidated: true, 
+        paths: revalidatedPaths,
+        tags: revalidatedTags,
+        message: `Revalidated ${revalidatedPaths.length} path(s) and ${revalidatedTags.length} tag(s) - changes should be live immediately`,
+        ts: Date.now() 
+      });
+    }
+
+    // 7. Fallback: Just acknowledge the request
     return NextResponse.json({ 
       ok: true, 
       revalidated: false, 
       rebuild: false,
-      message: 'Changes saved to database. Manual deployment required for static site.',
+      message: 'Changes saved to database. Revalidation method not configured.',
       ts: Date.now() 
     });
   } catch (err) {

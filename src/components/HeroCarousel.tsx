@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 export interface HeroSlide {
-  img: string;
+  img: string | null;
   alt: string;
   tag: string;
   title: string;
@@ -151,14 +151,18 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
             aria-hidden={i !== 0}
           >
             <div className="hero__img-wrap">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="hero__img"
-                src={s.img}
-                alt={s.alt}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-              />
+              {s.img && (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="hero__img"
+                    src={s.img}
+                    alt={s.alt}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                </>
+              )}
             </div>
             <div className="hero__shade" aria-hidden="true"></div>
             <div className="container hero__container">
