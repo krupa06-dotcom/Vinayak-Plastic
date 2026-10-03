@@ -291,6 +291,7 @@ export async function getHierarchyData(): Promise<HierarchyData> {
   );
 }
 
+
 function buildHierarchy(
   categories: Category[],
   subCategoryRows: SubCategoryRow[],

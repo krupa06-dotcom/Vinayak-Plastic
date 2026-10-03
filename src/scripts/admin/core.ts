@@ -244,31 +244,30 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 let publishTimer: number | null = null;
 
 async function doPublish(): Promise<void> {
-  const savedOk = 'Saved. Triggering site rebuild…';
+  const savedOk = 'Saved. Refreshing live site…';
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    const g = getGlobals();
-    if (!token || !g?.url) {
-      console.error('[publish] no session token or supabase url');
+    if (!token) {
+      console.error('[publish] no session token');
       toast(savedOk, 'info');
-      toast('Live site NOT updated — could not reach the rebuild hook.', 'error');
+      toast('Live site NOT updated — not signed in.', 'error');
       return;
     }
 
-    const endpoint = `${g.url.replace(/\/$/, '')}/functions/v1/deploy-site`;
-    const res = await fetch(endpoint, {
+    // Call the Next.js revalidation API (fast — no rebuild needed)
+    const res = await fetch('/api/revalidate', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     }).catch(() => null);
 
     if (res && res.ok) {
-      console.log('[publish] website rebuild triggered');
-      toast(savedOk, 'info');
-      toast('Live site rebuilding — visible in a few minutes.', 'success');
+      console.log('[publish] cache revalidated');
+      toast('Saved ✓', 'success');
+      toast('Live site updated — refresh the page in a few seconds.', 'success');
     } else {
       const detail = res ? `HTTP ${res.status}` : 'network error';
-      console.error('[publish] rebuild trigger failed:', detail);
+      console.error('[publish] revalidate failed:', detail);
       toast(savedOk, 'info');
       toast(`Live site NOT updated (${detail}). The change is in the database only.`, 'error');
     }
@@ -277,6 +276,7 @@ async function doPublish(): Promise<void> {
     toast('Live site NOT updated — rebuild trigger threw an error.', 'error');
   }
 }
+
 
 /**
  * The public site is a static export (next.config.mjs -> output: 'export'), so it
