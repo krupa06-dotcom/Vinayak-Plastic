@@ -1,4 +1,4 @@
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -46,9 +46,8 @@ export async function POST(req: Request) {
     }
 
     // 4. Revalidate all product/catalogue pages
-    revalidatePath('/', 'layout');          // home page
-    revalidatePath('/products', 'layout'); // all product pages
-    revalidateTag('hierarchy');            // tagged fetches
+    revalidatePath('/');
+    revalidatePath('/products');
 
     return NextResponse.json({ ok: true, revalidated: true, ts: Date.now() });
   } catch (err) {
