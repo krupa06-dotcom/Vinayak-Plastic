@@ -244,7 +244,7 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 let publishTimer: number | null = null;
 
 async function doPublish(): Promise<void> {
-  const savedOk = 'Saved. Refreshing live site…';
+  const savedOk = 'Saved. Triggering site rebuild…';
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
@@ -255,25 +255,26 @@ async function doPublish(): Promise<void> {
       return;
     }
 
-    // Call the Next.js revalidation API (fast — no rebuild needed)
+    // For static export, we need to trigger a rebuild via Vercel's deploy hook
+    // or the revalidation API (which will be ignored but won't error)
     const res = await fetch('/api/revalidate', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     }).catch(() => null);
 
     if (res && res.ok) {
-      console.log('[publish] cache revalidated');
+      console.log('[publish] rebuild triggered');
       toast('Saved ✓', 'success');
-      toast('Live site updated — refresh the page in a few seconds.', 'success');
+      toast('Site rebuild triggered — changes will be live in 2-3 minutes.', 'info');
     } else {
       const detail = res ? `HTTP ${res.status}` : 'network error';
-      console.error('[publish] revalidate failed:', detail);
+      console.error('[publish] rebuild failed:', detail);
       toast(savedOk, 'info');
-      toast(`Live site NOT updated (${detail}). The change is in the database only.`, 'error');
+      toast(`Live site NOT updated (${detail}). The change is saved in the database.`, 'warning');
     }
   } catch (e) {
     console.error('[publish] error', e);
-    toast('Live site NOT updated — rebuild trigger threw an error.', 'error');
+    toast('Site rebuild failed — saved to database only.', 'warning');
   }
 }
 

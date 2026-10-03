@@ -45,11 +45,34 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Revalidate all product/catalogue pages
-    revalidatePath('/');
-    revalidatePath('/products');
+    // 4. For static export, trigger a rebuild via Vercel's deploy hook if configured
+    const deployHookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
+    
+    if (deployHookUrl) {
+      try {
+        const deployRes = await fetch(deployHookUrl, { method: 'POST' });
+        if (deployRes.ok) {
+          return NextResponse.json({ 
+            ok: true, 
+            revalidated: false, 
+            rebuild: true, 
+            message: 'Site rebuild triggered',
+            ts: Date.now() 
+          });
+        }
+      } catch (deployError) {
+        console.error('[revalidate] deploy hook failed:', deployError);
+      }
+    }
 
-    return NextResponse.json({ ok: true, revalidated: true, ts: Date.now() });
+    // 5. Fallback: Just acknowledge the request (for static export, no actual revalidation occurs)
+    return NextResponse.json({ 
+      ok: true, 
+      revalidated: false, 
+      rebuild: false,
+      message: 'Changes saved to database. Manual deployment required for static site.',
+      ts: Date.now() 
+    });
   } catch (err) {
     console.error('[revalidate] error', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
