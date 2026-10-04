@@ -136,6 +136,30 @@ export default async function CategoryPage({
 
           {visibleTypes.length > 0 || directSeries.length > 0 ? (
             <div className="cat-subcategories-wrap">
+              {directSeries.length > 0 && (
+                <div id="direct-series" className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
+                  <div className="reveal" style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>
+                      <span className="pl-chip pl-chip-outline">{directSeries.length} series</span>
+                      <span className="pl-chip">{directModels} {directModels === 1 ? 'model' : 'models'}</span>
+                    </div>
+                  </div>
+
+                  <div className="px-series-grid reveal">
+                    {directSeries.map((s, i) => (
+                      <SeriesCard
+                        key={s.series_key}
+                        series={s}
+                        index={i}
+                        label={`${cat.name} Series`}
+                        contextName={cat.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {visibleTypes.map((subCat) => (
                 <div key={subCat.id} id={`type-${subCat.slug}`} className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
                   <div className="reveal" style={{ marginBottom: 20 }}>
@@ -163,30 +187,6 @@ export default async function CategoryPage({
                   </div>
                 </div>
               ))}
-
-              {directSeries.length > 0 && (
-                <div id="direct-series" className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
-                  <div className="reveal" style={{ marginBottom: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>
-                      <span className="pl-chip pl-chip-outline">{directSeries.length} series</span>
-                      <span className="pl-chip">{directModels} {directModels === 1 ? 'model' : 'models'}</span>
-                    </div>
-                  </div>
-
-                  <div className="px-series-grid reveal">
-                    {directSeries.map((s, i) => (
-                      <SeriesCard
-                        key={s.series_key}
-                        series={s}
-                        index={i}
-                        label={`${cat.name} Series`}
-                        contextName={cat.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="empty-state reveal">
