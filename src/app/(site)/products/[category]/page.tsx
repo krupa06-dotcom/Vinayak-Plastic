@@ -12,7 +12,7 @@ import {
   type HierarchySeries
 } from '@/lib/hierarchy';
 
-export const dynamicParams = false;
+export const revalidate = 3600;
 
 export const generateStaticParams = getHierarchyCategoryPaths;
 

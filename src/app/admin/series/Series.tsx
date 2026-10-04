@@ -6,6 +6,7 @@ import {
   gate,
   supabase,
   esc,
+  href,
   activeBadge,
   showError,
   showEmpty,
@@ -51,9 +52,6 @@ export default function Series() {
 
       if (!(await gate())) return;
       if (disposed) return;
-
-      const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
-      const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
 
       interface CatRow { id: string; name: string; slug: string; image_url?: string | null }
       interface SubCatRow { id: string; category_id: string; name: string; slug: string; image_url?: string | null }

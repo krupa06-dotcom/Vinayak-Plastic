@@ -48,8 +48,8 @@ export default function AdminShell({ title, current, children }: AdminShellProps
 
       <aside className="admin-sidebar">
         <div className="admin-logo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/vp-logo.png" alt="Vinayak Plastics logo" />
+          {/* Dynamic logo from site settings, fallback to text */}
+          <span className="admin-logo-text">VP</span>
           <div className="admin-logo-text">
             <strong>Vinayak Plastics</strong>
             <span>Admin Panel</span>

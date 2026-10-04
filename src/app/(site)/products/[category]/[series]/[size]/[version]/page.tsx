@@ -20,7 +20,7 @@ import {
 } from '@/lib/hierarchy';
 import type { ProductDetailContext } from '@/lib/hierarchy';
 
-export const dynamicParams = false;
+export const revalidate = 3600;
 
 export const generateStaticParams = getHierarchyVersionPaths;
 

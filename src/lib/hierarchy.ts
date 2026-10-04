@@ -7,6 +7,7 @@ import {
   variantSlug
 } from './db';
 import type { Category, FallbackDetail } from './db';
+import { cached, CACHE_TAGS } from './cache';
 
 // ============================================================
 // Phase 3 — New catalogue hierarchy (categories → series → sizes → versions)
@@ -233,64 +234,72 @@ export function normalizeApplications(apps: unknown): { name: string; descriptio
 // ============================================================
 
 export async function getHierarchyData(): Promise<HierarchyData> {
-  if (!hasSupabase()) return buildFallbackHierarchy();
-
-  const [categoriesRes, subCategoriesRes, seriesRes, sizesRes, variantsRes, imagesRes] = await Promise.all([
-    supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    supabase
-      .from('sub_categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    supabase
-      .from('series')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    supabase
-      .from('size_variants')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    supabase
-      .from('product_variants')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    supabase
-      .from('product_images')
-      .select('*')
-      .order('is_main', { ascending: false })
-      .order('display_order', { ascending: true })
-  ]);
-
-  const allErrors = [
-    categoriesRes.error,
-    subCategoriesRes.error,
-    seriesRes.error,
-    sizesRes.error,
-    variantsRes.error,
-    imagesRes.error
-  ].filter(Boolean);
-  if (allErrors.length) {
-    console.error('Error fetching hierarchy data:', allErrors[0]);
-    console.warn('Falling back to static data due to database error');
-    return buildFallbackHierarchy();
-  }
-
-  return buildHierarchy(
-    (categoriesRes.data || []) as Category[],
-    (subCategoriesRes.data || []) as SubCategoryRow[],
-    (seriesRes.data || []) as SeriesRow[],
-    (sizesRes.data || []) as SizeVariantRow[],
-    (variantsRes.data || []) as ProductVariantRow[],
-    (imagesRes.data || []) as ProductImageRow[]
-  );
+  return loadHierarchyData();
 }
+
+const loadHierarchyData = cached(
+  ['hierarchy'],
+  [CACHE_TAGS.hierarchy],
+  async (): Promise<HierarchyData> => {
+    if (!hasSupabase()) return buildFallbackHierarchy();
+
+    const [categoriesRes, subCategoriesRes, seriesRes, sizesRes, variantsRes, imagesRes] = await Promise.all([
+      supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('sub_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('series')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('size_variants')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('product_variants')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('product_images')
+        .select('*')
+        .order('is_main', { ascending: false })
+        .order('display_order', { ascending: true })
+    ]);
+
+    const allErrors = [
+      categoriesRes.error,
+      subCategoriesRes.error,
+      seriesRes.error,
+      sizesRes.error,
+      variantsRes.error,
+      imagesRes.error
+    ].filter(Boolean);
+    if (allErrors.length) {
+      console.error('Error fetching hierarchy data:', allErrors[0]);
+      console.warn('Falling back to static data due to database error');
+      return buildFallbackHierarchy();
+    }
+
+    return buildHierarchy(
+      (categoriesRes.data || []) as Category[],
+      (subCategoriesRes.data || []) as SubCategoryRow[],
+      (seriesRes.data || []) as SeriesRow[],
+      (sizesRes.data || []) as SizeVariantRow[],
+      (variantsRes.data || []) as ProductVariantRow[],
+      (imagesRes.data || []) as ProductImageRow[]
+    );
+  }
+);
 
 
 function buildHierarchy(

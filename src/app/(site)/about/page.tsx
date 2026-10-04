@@ -3,7 +3,7 @@ import '@/styles/about.css';
 import BackButton from '@/components/BackButton';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
 import { CONTACT } from '@/lib/contact';
-import { getCatalogueData, getSiteSetting, resolveFirstImage } from '@/lib/db';
+import { getCatalogueData, getSiteSetting, getSiteImage, resolveFirstImage } from '@/lib/db';
 
 export const metadata: Metadata = {
   title: { absolute: 'About Vinayak Plastics | Material Handling & Packaging' },
@@ -11,10 +11,11 @@ export const metadata: Metadata = {
     'About Vinayak Plastics — business house supplying material handling & packaging products — plastic crates, pallets, waste bins and hand pallet trucks — to warehouses, dairy and municipal buyers across India.'
 };
 
-export const dynamicParams = false;
+export const revalidate = 3600;
 
 export default async function AboutPage() {
   const catalogue = await getCatalogueData();
+  const warehouseImage = await getSiteImage('warehouse');
 
   const aboutSetting = await getSiteSetting('about') as Record<string, unknown> | null;
   const aboutDescription =
@@ -98,8 +99,12 @@ export default async function AboutPage() {
         <div className="container">
           <div className="about-who__grid">
             <div className="about-who__media reveal">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling equipment" width={1125} height={750} loading="lazy" />
+              {warehouseImage ? (
+                <img src={warehouseImage} alt="Spacious warehouse with organized storage and material handling equipment" width={1125} height={750} loading="lazy" />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling equipment" width={1125} height={750} loading="lazy" />
+              )}
             </div>
             <div className="about-who__body reveal">
               <p className="sec-index">Who We Are</p>

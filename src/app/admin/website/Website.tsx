@@ -25,6 +25,11 @@ export default function Website() {
       const waMission = document.getElementById('wa-mission') as HTMLTextAreaElement;
       const waVision = document.getElementById('wa-vision') as HTMLTextAreaElement;
       const waWhy = document.getElementById('wa-why') as HTMLTextAreaElement;
+      
+      // Image settings
+      const logoUrl = document.getElementById('logo-url') as HTMLInputElement;
+      const warehouseUrl = document.getElementById('warehouse-url') as HTMLInputElement;
+      const heroImagesText = document.getElementById('hero-images') as HTMLTextAreaElement;
 
       function showError(msg: string) {
         if (errorEl) { errorEl.textContent = msg; errorEl.style.display = ''; }
@@ -45,6 +50,17 @@ export default function Website() {
       waMission.value = a.mission ?? '';
       waVision.value = a.vision ?? '';
       waWhy.value = Array.isArray(a.why_choose_us) ? a.why_choose_us.join('\n') : (a.why_choose_us ?? '');
+
+      // Load image settings
+      const logo = settings.logo || {};
+      logoUrl.value = logo.url ?? '';
+      
+      const siteImages = settings.site_images || {};
+      warehouseUrl.value = siteImages.warehouse ?? '';
+      
+      const heroImages = settings.hero_images || {};
+      const heroImagesList = Array.isArray(heroImages.images) ? heroImages.images : [];
+      heroImagesText.value = heroImagesList.join('\n');
 
       loadingEl.remove();
       formEl.style.display = '';
@@ -69,13 +85,29 @@ export default function Website() {
           why_choose_us: waWhy.value.split('\n').map(l => l.trim()).filter(Boolean)
         };
 
+        // Image settings values
+        const logoValue = {
+          url: logoUrl.value.trim() || null
+        };
+        
+        const siteImagesValue = {
+          warehouse: warehouseUrl.value.trim() || null
+        };
+        
+        const heroImagesValue = {
+          images: heroImagesText.value.split('\n').map(l => l.trim()).filter(Boolean)
+        };
+
         const { error: err1 } = await supabase.from('site_settings').upsert({ key: 'homepage', value: homepageValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
         const { error: err2 } = await supabase.from('site_settings').upsert({ key: 'about', value: aboutValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        const { error: err3 } = await supabase.from('site_settings').upsert({ key: 'logo', value: logoValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        const { error: err4 } = await supabase.from('site_settings').upsert({ key: 'site_images', value: siteImagesValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        const { error: err5 } = await supabase.from('site_settings').upsert({ key: 'hero_images', value: heroImagesValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
 
         submitBtn?.removeAttribute('disabled');
         submitBtn.textContent = 'Save changes';
 
-        const err = err1 || err2;
+        const err = err1 || err2 || err3 || err4 || err5;
         if (err) { showError(err.message); return; }
         toast('Website content updated.', 'success');
         publishSite();
@@ -141,6 +173,32 @@ export default function Website() {
               <div className="a-field a-field-full">
                 <label htmlFor="wa-why">Why Choose Us (one point per line)</label>
                 <textarea id="wa-why" className="a-textarea" rows={4} placeholder="ISO 9001 certified\nFast turnaround\nEco-friendly materials"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="a-card">
+          <div className="a-card-head">
+            <h2>Images & Media</h2>
+            <p>Manage dynamic images served from Supabase storage. Use full URLs from your Supabase storage bucket.</p>
+          </div>
+          <div className="a-card-body">
+            <div className="a-form-grid">
+              <div className="a-field a-field-full">
+                <label htmlFor="logo-url">Company Logo URL</label>
+                <input id="logo-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
+                <small className="a-hint">Logo used in header, footer, and admin areas. Leave empty for text-only branding.</small>
+              </div>
+              <div className="a-field a-field-full">
+                <label htmlFor="warehouse-url">Warehouse Interior Image URL</label>
+                <input id="warehouse-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
+                <small className="a-hint">Warehouse image shown on homepage and about page. Leave empty for placeholder.</small>
+              </div>
+              <div className="a-field a-field-full">
+                <label htmlFor="hero-images">Hero Carousel Images (one URL per line)</label>
+                <textarea id="hero-images" className="a-textarea" rows={6} placeholder="https://your-project.supabase.co/storage/v1/object/public/image1.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image2.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image3.jpg"></textarea>
+                <small className="a-hint">Images for homepage hero carousel. Leave empty for text-only hero. Each line should be a complete URL.</small>
               </div>
             </div>
           </div>

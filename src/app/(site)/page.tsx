@@ -3,7 +3,7 @@ import '@/styles/home.css';
 import Hero from '@/components/Hero';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
 import { CONTACT } from '@/lib/contact';
-import { getSiteSetting } from '@/lib/db';
+import { getSiteSetting, getSiteImage } from '@/lib/db';
 import { getHierarchyData } from '@/lib/hierarchy';
 
 export const metadata: Metadata = {
@@ -12,10 +12,11 @@ export const metadata: Metadata = {
     'Vinayak Plastics manufactures and supplies plastic crates, plastic pallets, waste bins / dustbins and hand pallet trucks. Industrial-grade HDPE & PP material handling equipment across India.'
 };
 
-export const dynamicParams = false;
+export const revalidate = 3600;
 
 export default async function HomePage() {
   const hierarchy = await getHierarchyData();
+  const warehouseImage = await getSiteImage('warehouse');
 
   const homepageSetting = await getSiteSetting('homepage') as Record<string, string> | null;
   const featuredTagline =
@@ -120,8 +121,12 @@ export default async function HomePage() {
         <div className="container">
           <div className="about-home__grid">
             <div className="about-home__media reveal">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling" width={1125} height={750} loading="lazy" />
+              {warehouseImage ? (
+                <img src={warehouseImage} alt="Spacious warehouse with organized storage and material handling" width={1125} height={750} loading="lazy" />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling" width={1125} height={750} loading="lazy" />
+              )}
             </div>
             <div className="about-home__body reveal">
               <p className="sec-index">About Us</p>

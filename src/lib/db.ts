@@ -1,9 +1,6 @@
 import { supabase, hasSupabase } from './supabase';
 import { path } from './site';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-
-const PUBLIC_DIR = join(process.cwd(), 'public');
+import { cached, CACHE_TAGS } from './cache';
 
 // ============================================================
 // Types
@@ -133,27 +130,6 @@ const EMPTY_CATALOGUE: CatalogueData = { categories: [], subCategories: [] };
 // Category Queries
 // ============================================================
 
-function getSubCategoryPath(sub: CatalogueSubCategory): { category: string; sub: string } {
-  return { category: sub.category_slug, sub: sub.slug };
-}
-
-/** Pairs (category slug, sub slug) for the sub-category detail pages. */
-export async function getSubCategoryPaths(): Promise<{ category: string; sub: string }[]> {
-  const catalogue = await getCatalogueData();
-  return catalogue.subCategories
-    .filter(s => s.is_active && s.category_slug)
-    .map(getSubCategoryPath);
-}
-
-export async function getSubCategoryBySlug(categorySlug: string, subSlug: string): Promise<CatalogueSubCategory | null> {
-  const catalogue = await getCatalogueData();
-  return catalogue.subCategories.find(s => s.slug === subSlug && s.category_slug === categorySlug) ?? null;
-}
-
-// ============================================================
-// Category variant (per-size / model) queries — Level-3 pages
-// ============================================================
-
 /** Slugify a variant name into a URL-safe identifier (variants have no slug column). */
 export function variantSlug(name: string): string {
   return (name || '')
@@ -163,66 +139,31 @@ export function variantSlug(name: string): string {
     .replace(/^-+|-+$/g, '') || 'size';
 }
 
-export interface CategoryVariantDetail extends CategoryVariant {
-  category_slug: string;
-  category_name: string;
-  category_description: string | null;
-  /** Gallery images attached specifically to this size/model. */
-  images: CategoryImage[];
-  /** Fallback image for the parent range when this size has no own photo. */
-  category_image_url: string | null;
-}
-
-function getCategoryVariantPath(categorySlug: string, variant: string): { category: string; variant: string } {
-  return { category: categorySlug, variant };
-}
-
-/** (category slug, variant slug) pairs for the per-size detail pages. */
-export async function getCategoryVariantPaths(): Promise<{ category: string; variant: string }[]> {
-  const catalogue = await getCatalogueData();
-  const out: { category: string; variant: string }[] = [];
-  for (const cat of catalogue.categories) {
-    for (const v of cat.variants) {
-      out.push(getCategoryVariantPath(cat.slug, variantSlug(v.name || v.size || 'size')));
-    }
-  }
-  return out;
-}
-
-export async function getCategoryVariantBySlug(categorySlug: string, variant: string): Promise<CategoryVariantDetail | null> {
-  const catalogue = await getCatalogueData();
-  const cat = catalogue.categories.find(c => c.slug === categorySlug);
-  if (!cat) return null;
-  const v = cat.variants.find(v => variantSlug(v.name || v.size || 'size') === variant);
-  if (!v) return null;
-  return {
-    ...v,
-    category_slug: cat.slug,
-    category_name: cat.name,
-    category_description: cat.description,
-    images: cat.images.filter(i => i.category_variant_id === v.id),
-    category_image_url: cat.image_url
-  };
-}
-
 // ============================================================
 // Site Settings Queries
 // ============================================================
 
+export type SiteSettings = Record<string, unknown>;
+
+const loadSiteSettings = cached(
+  ['site-settings'],
+  [CACHE_TAGS.settings],
+  async (): Promise<SiteSettings> => {
+    const { data, error } = await supabase.from('site_settings').select('key, value');
+
+    if (error) {
+      console.error('Error fetching site settings:', error);
+      return {};
+    }
+
+    return Object.fromEntries((data ?? []).map((row) => [row.key, row.value]));
+  }
+);
+
 export async function getSiteSetting(key: string): Promise<unknown> {
   if (!hasSupabase()) return null;
-  const { data, error } = await supabase
-    .from('site_settings')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching site setting:', error);
-    return null;
-  }
-
-  return data?.value ?? null;
+  const settings = await loadSiteSettings();
+  return settings[key] ?? null;
 }
 
 // ============================================================
@@ -256,7 +197,14 @@ function sortCategoryImages(images: CategoryImage[]): CategoryImage[] {
 }
 
 export function getCatalogueData(): Promise<CatalogueData> {
-  if (!hasSupabase()) return Promise.resolve(getFallbackCatalogueData());
+  return loadCatalogueData();
+}
+
+const loadCatalogueData = cached(
+  ['catalogue'],
+  [CACHE_TAGS.hierarchy],
+  async (): Promise<CatalogueData> => {
+    if (!hasSupabase()) return getFallbackCatalogueData();
 
   const [categoriesQuery, subCategoriesQuery, categoryVariantsQuery, categoryImagesQuery] = [
     supabase
@@ -357,7 +305,8 @@ export function getCatalogueData(): Promise<CatalogueData> {
       return EMPTY_CATALOGUE;
     }
   );
-}
+  }
+);
 
 // ============================================================
 // Static fallback catalogue (used when Supabase is not configured)
@@ -615,13 +564,7 @@ function getFallbackCatalogueData(): CatalogueData {
 export function resolveImageUrl(image: string | null): string | null {
   if (!image) return null;
   if (/^https?:\/\//i.test(image)) return image;
-  if (image.startsWith('/')) {
-    // Root-relative DB values (legacy "/images/..." entries) only resolve when
-    // the file actually exists locally — otherwise fall back to null so pages
-    // render a placeholder instead of a broken image.
-    const localFile = join(PUBLIC_DIR, image.slice(1));
-    return existsSync(localFile) ? path(image) : null;
-  }
+  if (image.startsWith('/')) return path(image);
   return getProductImageUrl(image);
 }
 
@@ -650,4 +593,51 @@ function getProductImageUrl(path: string): string {
     .getPublicUrl(path);
 
   return `${data.publicUrl}?width=1200&format=webp&quality=80`;
+}
+
+/**
+ * Get company logo URL from site settings, with fallback
+ */
+export async function getLogoUrl(): Promise<string | null> {
+  try {
+    const logoSetting = await getSiteSetting('logo') as { url?: string } | null;
+    if (logoSetting?.url) {
+      return resolveImageUrl(logoSetting.url);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get hero/carousel images from site settings
+ */
+export async function getHeroImages(): Promise<string[]> {
+  try {
+    const heroSetting = await getSiteSetting('hero_images') as { images?: string[] } | null;
+    if (heroSetting?.images && Array.isArray(heroSetting.images)) {
+      return heroSetting.images
+        .map(img => resolveImageUrl(img))
+        .filter(Boolean) as string[];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get site images (like warehouse interior) from settings
+ */
+export async function getSiteImage(key: string): Promise<string | null> {
+  try {
+    const siteSetting = await getSiteSetting('site_images') as Record<string, string> | null;
+    if (siteSetting?.[key]) {
+      return resolveImageUrl(siteSetting[key]);
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

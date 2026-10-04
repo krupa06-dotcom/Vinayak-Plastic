@@ -7,6 +7,7 @@ import {
   supabase,
   esc,
   slugify,
+  href,
   activeBadge,
   showError,
   showEmpty,
@@ -25,9 +26,6 @@ export default function Categories() {
     void (async () => {
       if (!(await gate())) return;
       if (disposed) return;
-
-      const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
-      const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
 
       interface CatRow {
         id: string;

@@ -1,109 +1,64 @@
 # Deployment & Admin Workflow
 
-## Current Setup
+## Architecture
 
-The Vinayak Plastics website uses **Static Export** deployment to Vercel. This means the site is pre-built as static HTML files for optimal performance and SEO.
+A standard Next.js App Router application deployed to Vercel. There is no static
+export and no separate rebuild step.
 
-## How Admin Changes Work
+```
+Admin panel (client components)
+  └─ writes directly to Supabase
+  └─ then calls the revalidateSite() Server Action
+        └─ updateTag('hierarchy'), updateTag('settings')
+        └─ revalidatePath('/', 'layout')
 
-### Database Updates
-- Admin panel changes (categories, series, products) are saved to Supabase immediately
-- These changes are stored in the database but **do not automatically appear on the website**
-
-### Website Updates
-For changes to appear on the live website, a **rebuild is required** because the site is statically generated.
-
-## Deployment Options
-
-### Option 1: Automatic Rebuilds (Recommended)
-
-Set up automatic rebuilds by configuring a Vercel Deploy Hook:
-
-1. **In Vercel Dashboard:**
-   - Go to Project Settings → Git → Deploy Hooks
-   - Create a new deploy hook named "Admin Panel Rebuild"
-   - Copy the webhook URL
-
-2. **Add Environment Variable:**
-   ```
-   VERCEL_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/...
-   ```
-
-3. **How it Works:**
-   - Admin makes changes → clicks save
-   - System automatically triggers Vercel rebuild
-   - Website updates in 2-3 minutes
-
-### Option 2: Manual Deployment
-
-If automatic rebuilds aren't configured:
-
-1. Admin makes changes in the admin panel
-2. Changes are saved to database
-3. **Manual step:** Go to Vercel dashboard and trigger a new deployment
-4. Website updates once deployment completes
-
-## Current Behavior
-
-- ✅ Admin changes save to database immediately
-- ⚠️ Website requires rebuild to show changes
-- 📱 Admin panel shows appropriate messages about rebuild status
-
-## Technical Details
-
-### Static Export Configuration
-```javascript
-// next.config.mjs
-const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
-  // ...
-};
+Public pages (server components)
+  └─ read through unstable_cache with those tags
+  └─ export const revalidate = 3600 as a background-refresh fallback
 ```
 
-### Build Process
-1. Fetches data from Supabase during build
-2. Generates static HTML for all 100+ product pages
-3. Deploys to Vercel's global CDN
+## Why admin changes appear immediately
 
-### Admin Panel Integration
-- Uses Supabase for real-time database updates
-- Calls `/api/revalidate` endpoint after changes
-- Shows appropriate messaging based on rebuild capability
+Public page data is wrapped in `unstable_cache` (see `src/lib/cache.ts`). Tag
+entries are dropped by `revalidateSite()` in `src/app/admin/actions.ts`, and
+`revalidatePath('/', 'layout')` clears the rendered route cache. The next request
+to any public page re-renders from fresh database rows.
+
+The `revalidate = 3600` value on each route is only a fallback for the case where
+no admin write has happened — it is not what makes updates appear.
+
+## Environment variables
+
+```env
+# Required
+NEXT_PUBLIC_SUPABASE_URL=https://...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+No deploy hook, no revalidation secret, and no `VERCEL_*` variables are needed.
+Any previously configured `VERCEL_DEPLOY_HOOK_URL` or `REVALIDATE_SECRET` in the
+Vercel project can be deleted.
+
+## Adding a new admin write
+
+Call `publishSite()` from `@/scripts/admin/core` after a successful write. If the
+page navigates immediately afterwards, use `await publishSiteNow()` instead so
+the request is not aborted by the unload.
 
 ## Troubleshooting
 
-### If Changes Don't Appear
-1. Check if VERCEL_DEPLOY_HOOK_URL is configured
-2. Verify admin panel shows successful save message
-3. Wait 2-3 minutes for rebuild to complete
-4. Hard refresh the browser (Ctrl+F5)
+**Change saved but not visible**
+Confirm the admin toast says "Saved - website updated". If it reports
+"Website not refreshed", the Server Action was rejected — check that the signed-in
+account uses an `@vinayakplastics.com` email.
 
-### If Admin Panel Errors
-1. Check network connectivity
-2. Verify Supabase connection
-3. Check browser console for errors
-4. Ensure admin user has proper permissions
+**New product returns 404**
+Product routes no longer set `dynamicParams = false`, so newly created
+categories, series and versions resolve as soon as the data cache is dropped.
+Confirm the write actually succeeded in the admin panel.
 
-## Environment Variables Required
-
-```env
-# Supabase (required)
-NEXT_PUBLIC_SUPABASE_URL=https://...
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-
-# Deploy Hook (optional but recommended)
-VERCEL_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/...
-
-# Revalidation Secret (optional)
-REVALIDATE_SECRET=your-secret-key
-```
-
-## Performance Benefits
-
-- ⚡ **Fast Loading**: Static files served from CDN
-- 🔍 **SEO Optimized**: Fully crawlable HTML pages
-- 💰 **Cost Effective**: No server compute costs
-- 🛡️ **Secure**: No server-side vulnerabilities
-
-The tradeoff is that changes require rebuilds, but for a catalog website, this is usually acceptable since product updates are infrequent.
+**Build fails to fetch Supabase data**
+`next build` reads live from Supabase. Ensure the build environment has
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` set in the
+Vercel project. Requests are never served from a stale build cache, but a failed
+query falls back to the bundled sample catalogue.

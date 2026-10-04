@@ -1,4 +1,4 @@
-import { getSiteSetting } from '@/lib/db';
+import { getSiteSetting, getHeroImages } from '@/lib/db';
 import HeroCarousel from '@/components/HeroCarousel';
 import slide1 from '@/assets/images/stack-crates.jpeg';
 import slide2 from '@/assets/images/plastic-pallets.jpeg';
@@ -7,8 +7,10 @@ import slide4 from '@/assets/images/dustbins.jpeg';
 
 export default async function Hero() {
   const heroSetting = (await getSiteSetting('homepage')) as Record<string, string> | null;
+  const heroImages = await getHeroImages();
 
-  const slides = [
+  // Static slides used whenever no hero images are configured in the database.
+  const staticSlides = [
     {
       img: slide1.src,
       alt: 'Stacked plastic crates in an industrial warehouse',
@@ -39,6 +41,20 @@ export default async function Hero() {
       sub: 'Robust, UV-stabilised dustbins and waste containers designed for municipal contracts, commercial complexes and factory campuses.'
     }
   ];
+
+  if (heroImages.length === 0) {
+    return <HeroCarousel slides={staticSlides} />;
+  }
+
+  // Use dynamic images from database
+  const slides = heroImages.map((imageUrl, index) => ({
+    img: imageUrl,
+    alt: `Vinayak Plastics - Material Handling Products ${index + 1}`,
+    tag: heroSetting?.hero_tag || 'Storage Solutions',
+    title: heroSetting?.hero_title || 'Engineered Plastic Solutions for Industry',
+    sub: heroSetting?.hero_description ||
+      'Manufacturing durable crates, pallets, waste bins and material handling equipment for warehouses, logistics and municipal operations across India.'
+  }));
 
   return <HeroCarousel slides={slides} />;
 }

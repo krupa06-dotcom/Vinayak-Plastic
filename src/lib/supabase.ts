@@ -4,7 +4,8 @@ import type { Database } from './database.types';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-// Check if Supabase is properly configured (not placeholder values)
+export type Supabase = ReturnType<typeof createClient<Database>>;
+
 export function hasSupabase(): boolean {
   return Boolean(
     supabaseUrl &&
@@ -16,18 +17,30 @@ export function hasSupabase(): boolean {
 
 if (!hasSupabase()) {
   console.warn(
-    'Supabase is not configured. Falling back to static data. ' +
-    'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in your .env file to enable database integration.'
+    'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.'
   );
 }
 
-type Supabase = ReturnType<typeof createClient<Database>>;
+export const supabase = (
+  hasSupabase()
+    ? createClient<Database>(supabaseUrl, supabasePublishableKey, {
+        auth: { persistSession: false }
+      })
+    : null
+) as Supabase;
 
-export const supabase = hasSupabase()
-  ? (createClient<Database>(supabaseUrl as string, supabasePublishableKey as string, {
-      auth: {
-        persistSession: false
-      }
-    }) as Supabase)
-  : (null as unknown as Supabase);
+/**
+ * Supabase client bound to a signed-in admin's access token. Used by Server
+ * Actions so writes run with that admin's RLS permissions instead of the
+ * anonymous role.
+ */
+export function createAdminSupabase(accessToken: string): Supabase {
+  if (!hasSupabase()) {
+    throw new Error('Supabase is not configured.');
+  }
 
+  return createClient<Database>(supabaseUrl, supabasePublishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } }
+  });
+}

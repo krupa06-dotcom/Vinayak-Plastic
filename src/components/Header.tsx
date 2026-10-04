@@ -1,27 +1,15 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
-import vpLogo from '@/assets/images/vp-logo.webp';
-import { CONTACT } from '@/lib/contact';
-import NavSearch from '@/components/NavSearch';
+import { getLogoUrl } from '@/lib/db';
 import type { SearchItem } from '@/components/NavSearch';
-import HeaderMobileMenu from '@/components/HeaderMobileMenu';
+import HeaderClient from '@/components/HeaderClient';
 
 type HeaderProps = {
   searchItems: SearchItem[];
 };
 
-function isActive(templatePath: string, currentPage: string): boolean {
-  if (templatePath === '/' && currentPage === '/') return true;
-  if (templatePath !== '/' && currentPage.startsWith(templatePath)) return true;
-  return false;
-}
-
-export default function Header({ searchItems }: HeaderProps) {
-  const pathname = usePathname();
-  const isProducts = pathname.startsWith('/products');
-
+export default async function Header({ searchItems }: HeaderProps) {
+  const logoUrl = await getLogoUrl();
+  
   return (
-    <HeaderMobileMenu currentPage={pathname} searchItems={searchItems} isProducts={isProducts} />
+    <HeaderClient searchItems={searchItems} logoUrl={logoUrl} />
   );
 }

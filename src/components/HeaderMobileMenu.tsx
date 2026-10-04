@@ -10,6 +10,7 @@ type HeaderMobileMenuProps = {
   currentPage: string;
   searchItems: SearchItem[];
   isProducts: boolean;
+  logoUrl?: string | null;
 };
 
 function isActive(templatePath: string, currentPage: string): boolean {
@@ -18,7 +19,7 @@ function isActive(templatePath: string, currentPage: string): boolean {
   return false;
 }
 
-export default function HeaderMobileMenu({ currentPage, searchItems, isProducts }: HeaderMobileMenuProps) {
+export default function HeaderMobileMenu({ currentPage, searchItems, isProducts, logoUrl }: HeaderMobileMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -51,7 +52,11 @@ export default function HeaderMobileMenu({ currentPage, searchItems, isProducts 
       >
         <div className="container">
           <a href="/" className="nav-logo">
-            <img src={vpLogo.src} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="eager" decoding="sync" />
+            {logoUrl ? (
+              <img src={logoUrl} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="eager" decoding="sync" />
+            ) : (
+              <img src={vpLogo.src} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="eager" decoding="sync" />
+            )}
             <span className="logo-text">Vinayak Plastics</span>
           </a>
 

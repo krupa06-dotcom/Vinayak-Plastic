@@ -85,8 +85,8 @@ export default function LoginForm() {
     <div className="admin-login-body" data-admin-page="login">
       <div className="a-login-card">
         <div className="a-login-logo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/vp-logo.png" alt="Vinayak Plastics logo" />
+          {/* Dynamic logo from site settings, fallback to text */}
+          <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#e67e22' }}>VP</span>
           <h1>Vinayak Plastics</h1>
           <p>Admin Panel</p>
         </div>

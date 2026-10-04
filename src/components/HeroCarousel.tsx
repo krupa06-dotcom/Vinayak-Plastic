@@ -10,13 +10,12 @@ export interface HeroSlide {
   sub: string;
 }
 
-const SLIDE_COUNT = 4;
-
 // The hero carousel is a progressive enhancement over the static slide markup:
 // the first slide is always server-rendered so the page works without JS, and
 // this component only wires up the slideshow (autoplay, arrows, dots, swipe).
 export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const rootRef = useRef<HTMLElement>(null);
+  const slideCount = slides.length;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -147,7 +146,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
             key={i}
             className={i === 0 ? 'hero__slide is-active' : 'hero__slide'}
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${SLIDE_COUNT}: ${s.tag}`}
+            aria-label={`${i + 1} of ${slideCount}: ${s.tag}`}
             aria-hidden={i !== 0}
           >
             <div className="hero__img-wrap">
@@ -208,7 +207,7 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         <div className="hero__counter" aria-hidden="true">
           <span className="hero__counter-cur">01</span>
           <span className="hero__counter-sep">/</span>
-          <span className="hero__counter-total">04</span>
+          <span className="hero__counter-total">{String(slideCount).padStart(2, '0')}</span>
         </div>
       </div>
     </section>

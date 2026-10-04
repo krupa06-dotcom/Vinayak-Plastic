@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "cp next.config.static.mjs next.config.mjs && next build && cp next.config.mjs next.config.static.mjs",
-    "build:server": "next build",
-    "preview": "npx serve out",
+    "start": "next start",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

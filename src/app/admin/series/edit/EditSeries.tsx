@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { gate, supabase, esc, slugify, toast, publicUrl, uploadFile, deleteFile, publishSite, confirmDialog } from '@/scripts/admin/core';
+import { gate, supabase, esc, slugify, href, toast, publicUrl, uploadFile, deleteFile, publishSiteNow, confirmDialog } from '@/scripts/admin/core';
 import { createImagePicker } from '@/scripts/admin/imagePicker';
 
 // Edit series — the Phase 2 catalog editor. Port of the hand-rolled admin style
@@ -25,8 +25,6 @@ export default function EditSeries() {
       if (!(await gate())) return;
       if (disposed) return;
 
-      const BASE: string = (window as any).__VP_SUPABASE__?.base ?? '/';
-      const href = (p: string) => `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`.replace(/\/+/g, '/');
       const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
         const r = new FileReader(); r.onload = () => resolve(r.result as string); r.onerror = reject; r.readAsDataURL(file);
       });
@@ -793,7 +791,7 @@ export default function EditSeries() {
         } else {
           toast(editId ? 'Saved.' : 'Created.', 'success');
         }
-        publishSite(100);
+        await publishSiteNow();
         window.location.href = href('admin/series/');
       };
 

@@ -6,6 +6,8 @@ import ProductListFilter, { type ProductTypeCardData } from '@/components/Produc
 import { CONTACT } from '@/lib/contact';
 import { formatFootprint, getHierarchyData } from '@/lib/hierarchy';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: { absolute: 'Products | Vinayak Plastics — Plastic Crates, Pallets & Waste Bins' },
   description:

@@ -9,7 +9,7 @@ const organizationSchema = `{
   "@type": "Organization",
   "name": "Vinayak Plastics",
   "url": "${SITE_URL}",
-  "logo": "${SITE_URL}${'/'}images/vp-logo.png",
+  "logo": "${SITE_URL}/images/vp-logo.png",
   "description": "Business house supplying material handling and packaging products — plastic crates, pallets, waste bins and hand pallet trucks.",
   "contactPoint": {
     "@type": "ContactPoint",

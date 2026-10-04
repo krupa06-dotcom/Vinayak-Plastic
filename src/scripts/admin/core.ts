@@ -1,72 +1,54 @@
+'use client';
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../lib/database.types';
+import { revalidateSite } from '@/app/admin/actions';
 
-declare global {
-  interface Window {
-    __VP_SUPABASE__: {
-      url: string;
-      key: string;
-      base: string;
-      configured: boolean;
-    };
-  }
-}
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 
-function getGlobals() {
-  if (typeof window === 'undefined') return undefined;
-  return window.__VP_SUPABASE__;
-}
+export type AdminSupabase = ReturnType<typeof createClient<Database>>;
 
-function getBase() {
-  return getGlobals()?.base ?? '/';
-}
-
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
-
-export function getSupabase() {
-  if (!isConfigured()) return null;
-  if (!supabaseInstance) {
-    const g = getGlobals()!;
-    supabaseInstance = createClient<Database>(g.url, g.key);
-  }
-  return supabaseInstance;
-}
-
-export function isConfigured() {
-  const g = getGlobals();
-  return Boolean(g && g.url && g.key && g.configured);
+export function isConfigured(): boolean {
+  return Boolean(SUPABASE_URL && SUPABASE_KEY);
 }
 
 export const configured = isConfigured;
 
-export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
+let client: AdminSupabase | null = null;
+
+export function getSupabase(): AdminSupabase | null {
+  if (!isConfigured()) return null;
+  if (!client) {
+    client = createClient<Database>(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return client;
+}
+
+export const supabase = new Proxy({} as AdminSupabase, {
   get(_target, prop) {
-    const client = getSupabase();
-    if (!client) {
+    const instance = getSupabase();
+    if (!instance) {
       throw new Error('Supabase is not configured. Check environment variables.');
     }
-    return (client as any)[prop];
+    return (instance as unknown as Record<string | symbol, unknown>)[prop];
   }
-}) as ReturnType<typeof createClient<Database>>;
-
-const BASE: string = getBase();
+}) as AdminSupabase;
 
 // ============================================================
 // URL helpers
 // ============================================================
 
-/** Build a root-relative href aware of the site base path. */
-function href(p: string): string {
-  const clean = p.startsWith('/') ? p.slice(1) : p;
-  return `${BASE.replace(/\/$/, '')}/${clean}`.replace(/\/+/g, '/');
-}
-
 export function loginHref(): string {
-  return href('admin/login/');
+  return '/admin/login/';
 }
 
 export function dashboardHref(): string {
-  return href('admin/');
+  return '/admin/';
+}
+
+export function href(p: string): string {
+  return `/${p.replace(/^\/+/, '')}`;
 }
 
 // ============================================================
@@ -238,80 +220,61 @@ export function toast(msg: string, type: 'success' | 'error' | 'info' = 'info'):
 }
 
 // ============================================================
-// Site publish / rebuild trigger
+// Site refresh trigger
 // ============================================================
 
 let publishTimer: number | null = null;
 
-async function doPublish(paths: string[] = ['/']): Promise<void> {
-  const savedOk = 'Saved. Triggering site rebuild…';
+async function doPublish(): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
+
     if (!token) {
-      console.error('[publish] no session token');
-      toast(savedOk, 'info');
-      toast('Live site NOT updated — not signed in.', 'error');
+      toast('Saved to database.', 'info');
+      toast('Website not refreshed - not signed in.', 'error');
       return;
     }
 
-    // For static export, we need to trigger a rebuild via Vercel's deploy hook
-    // or the revalidation API (which will be ignored but won't error)
-    const res = await fetch('/api/revalidate', {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ paths })
-    }).catch(() => null);
+    const result = await revalidateSite(token);
 
-    if (res && res.ok) {
-      const result = await res.json().catch(() => ({}));
-      console.log('[publish] response:', result);
-      toast('Saved ✓', 'success');
-      
-      if (result.rebuild) {
-        toast('Site rebuild triggered — changes will be live in 2-3 minutes.', 'info');
-      } else if (result.revalidated) {
-        toast('Site updated — changes are live now!', 'success');
-      } else {
-        toast('Changes saved to database.', 'info');
-      }
+    if (result.ok) {
+      toast('Saved - website updated.', 'success');
     } else {
-      const detail = res ? `HTTP ${res.status}` : 'network error';
-      console.error('[publish] rebuild failed:', detail);
-      toast(savedOk, 'info');
-      toast(`Live site NOT updated (${detail}). The change is saved in the database.`, 'error');
+      toast('Saved to database.', 'info');
+      toast(`Website not refreshed (${result.error ?? 'unknown error'}).`, 'error');
     }
   } catch (e) {
     console.error('[publish] error', e);
-    toast('Site rebuild failed — saved to database only.', 'error');
+    toast('Saved to database, but the website was not refreshed.', 'error');
   }
 }
 
-
 /**
- * The public site is a static export (next.config.mjs -> output: 'export'), so it
- * only reflects Supabase content after a rebuild. This asks the deploy-site edge
- * function to trigger that rebuild and reports honestly whether it worked.
- * Debounced so rapid saves (image upload + insert, bulk updates, etc.) produce a single attempt.
- * 
- * @param delayMs Delay before triggering publish (default: 2500ms)
- * @param paths Optional array of specific paths to revalidate (for SSR mode)
+ * Invalidates the public site caches after an admin write, so the change is
+ * visible on the next request. Debounced because a single save often performs
+ * several writes (storage uploads plus row inserts).
  */
-export function publishSite(delayMs = 2500, paths: string[] = ['/']): void {
+export function publishSite(delayMs = 1500): void {
   if (!configured()) return;
   if (publishTimer !== null) window.clearTimeout(publishTimer);
-  if (delayMs <= 0) {
-    publishTimer = null;
-    void doPublish(paths);
-    return;
-  }
   publishTimer = window.setTimeout(() => {
     publishTimer = null;
-    void doPublish(paths);
+    void doPublish();
   }, delayMs);
+}
+
+/**
+ * Refreshes immediately and resolves when the site cache has been dropped. Use
+ * this instead of publishSite() when the page navigates straight afterwards, so
+ * the in-flight request is not aborted by the unload.
+ */
+export async function publishSiteNow(): Promise<void> {
+  if (publishTimer !== null) {
+    window.clearTimeout(publishTimer);
+    publishTimer = null;
+  }
+  await doPublish();
 }
 
 // ============================================================

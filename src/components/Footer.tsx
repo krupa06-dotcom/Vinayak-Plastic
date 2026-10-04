@@ -1,9 +1,11 @@
 import vpLogo from '@/assets/images/vp-logo.webp';
 import { CONTACT, normalizedNumber } from '@/lib/contact';
-import { getSiteSetting } from '@/lib/db';
+import { getSiteSetting, getLogoUrl } from '@/lib/db';
 
 export default async function Footer() {
   const contactSetting = (await getSiteSetting('contact')) as Record<string, string> | null;
+  const logoUrl = await getLogoUrl();
+  
   const display = {
     phone: contactSetting?.phone || CONTACT.phoneDisplay,
     email: contactSetting?.email || CONTACT.email,
@@ -26,7 +28,11 @@ export default async function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <a href="/" className="nav-logo">
-              <img src={vpLogo.src} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="lazy" />
+              {logoUrl ? (
+                <img src={logoUrl} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="lazy" />
+              ) : (
+                <img src={vpLogo.src} alt="Vinayak Plastics" className="logo-img" width={120} height={92} loading="lazy" />
+              )}
             </a>
             <p>Business House Engaged In Supply of All Type of Material Handling & Packaging Products — Crates, Dustbin, Ice Box, Storage Bins, Racking System, Hand Pallet Truck Etc.</p>
           </div>
