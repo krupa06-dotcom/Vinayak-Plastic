@@ -180,25 +180,25 @@ export default function Website() {
 
         <div className="a-card">
           <div className="a-card-head">
-            <h2>Images & Media</h2>
-            <p>Manage dynamic images served from Supabase storage. Use full URLs from your Supabase storage bucket.</p>
+            <h2>Images &amp; Media</h2>
+            <p>Override the images shipped with the site. Paste a full URL from your Supabase storage bucket &mdash; anything left blank falls back to the built-in default.</p>
           </div>
           <div className="a-card-body">
             <div className="a-form-grid">
               <div className="a-field a-field-full">
                 <label htmlFor="logo-url">Company Logo URL</label>
                 <input id="logo-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
-                <small className="a-hint">Logo used in header, footer, and admin areas. Leave empty for text-only branding.</small>
+                <span className="a-hint">Used in the website header, footer and admin sidebar. Leave blank to keep the default Vinayak Plastics logo.</span>
               </div>
               <div className="a-field a-field-full">
                 <label htmlFor="warehouse-url">Warehouse Interior Image URL</label>
                 <input id="warehouse-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
-                <small className="a-hint">Warehouse image shown on homepage and about page. Leave empty for placeholder.</small>
+                <span className="a-hint">Shown on the homepage and about page. Leave blank to keep the default warehouse photo.</span>
               </div>
               <div className="a-field a-field-full">
                 <label htmlFor="hero-images">Hero Carousel Images (one URL per line)</label>
                 <textarea id="hero-images" className="a-textarea" rows={6} placeholder="https://your-project.supabase.co/storage/v1/object/public/image1.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image2.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image3.jpg"></textarea>
-                <small className="a-hint">Images for homepage hero carousel. Leave empty for text-only hero. Each line should be a complete URL.</small>
+                <span className="a-hint">Replaces the four built-in hero slides. Leave blank to keep them. Use up to 4 full URLs, one per line.</span>
               </div>
             </div>
           </div>

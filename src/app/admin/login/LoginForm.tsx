@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { supabase, configured, loginHref, dashboardHref } from '@/scripts/admin/core';
+import vpLogo from '@/assets/images/vp-logo.webp';
 
 // Login — port of src/pages/admin/login.astro. Event wiring lives in a
 // useEffect since there are no inline handlers in the hand-rolled markup.
@@ -85,8 +86,8 @@ export default function LoginForm() {
     <div className="admin-login-body" data-admin-page="login">
       <div className="a-login-card">
         <div className="a-login-logo">
-          {/* Dynamic logo from site settings, fallback to text */}
-          <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#e67e22' }}>VP</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={vpLogo.src} alt="Vinayak Plastics" width={58} height={58} />
           <h1>Vinayak Plastics</h1>
           <p>Admin Panel</p>
         </div>

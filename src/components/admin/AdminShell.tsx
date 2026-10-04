@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useEffect, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ensureAdmin } from '@/scripts/admin/core';
+import { ensureAdmin, isConfigured, readSiteSetting, imageSrc } from '@/scripts/admin/core';
+import staticLogo from '@/assets/images/vp-logo.webp';
 
 export type AdminNavKey =
   | 'dashboard'
@@ -38,8 +39,19 @@ const navItems: Array<{
 // page when there is no valid @vinayakplastics.com session, fills the user
 // bar, and wires the mobile burger + logout button.
 export default function AdminShell({ title, current, children }: AdminShellProps) {
+  const [logoSrc, setLogoSrc] = useState<string>(staticLogo.src);
+
   useEffect(() => {
     void ensureAdmin();
+  }, []);
+
+  useEffect(() => {
+    if (!isConfigured()) return;
+    void (async () => {
+      const logo = await readSiteSetting('logo');
+      const src = imageSrc(logo);
+      if (src) setLogoSrc(src);
+    })();
   }, []);
 
   return (
@@ -48,8 +60,8 @@ export default function AdminShell({ title, current, children }: AdminShellProps
 
       <aside className="admin-sidebar">
         <div className="admin-logo">
-          {/* Dynamic logo from site settings, fallback to text */}
-          <span className="admin-logo-text">VP</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoSrc} alt="" width={36} height={36} />
           <div className="admin-logo-text">
             <strong>Vinayak Plastics</strong>
             <span>Admin Panel</span>
@@ -77,11 +89,11 @@ export default function AdminShell({ title, current, children }: AdminShellProps
         </nav>
 
         <div className="admin-sidebar-foot">
-          <a href="/" className="admin-nav-link" target="_blank" rel="noopener">
+          <Link href="/" className="admin-nav-link" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
             View Website
-          </a>
-          <button type="button" className="admin-nav-link" id="admin-logout" style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left' }}>
+          </Link>
+          <button type="button" className="admin-nav-link" id="admin-logout">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
             Logout
           </button>
@@ -90,12 +102,12 @@ export default function AdminShell({ title, current, children }: AdminShellProps
 
       <div className="admin-main">
         <header className="admin-topbar">
-          <button className="admin-burger" id="admin-burger" aria-label="Toggle menu" aria-expanded="false">
+          <button type="button" className="admin-burger" id="admin-burger" aria-label="Toggle menu" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
           <h1>{title}</h1>
           <div className="admin-topbar-user">
-            <span id="admin-user-email" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>&nbsp;</span>
+            <span id="admin-user-email" className="admin-user-email">&nbsp;</span>
             <span className="admin-avatar" id="admin-avatar">VP</span>
           </div>
         </header>

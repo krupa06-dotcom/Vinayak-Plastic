@@ -51,6 +51,34 @@ export function href(p: string): string {
   return `/${p.replace(/^\/+/, '')}`;
 }
 
+/**
+ * Reads a single site_settings row from the browser session. Used by the admin
+ * chrome (which is client-rendered) to pick up the configured logo, so the shell
+ * matches whatever the Website Content screen has saved.
+ */
+export async function readSiteSetting<T = Record<string, unknown>>(key: string): Promise<T | null> {
+  if (!isConfigured()) return null;
+  const { data } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', key)
+    .maybeSingle();
+  return (data?.value as T) ?? null;
+}
+
+/** Turns a stored image value into something an <img src> can load. */
+export function imageSrc(value: unknown): string | null {
+  const raw =
+    typeof value === 'string'
+      ? value
+      : Array.isArray(value)
+        ? ''
+        : ((value as Record<string, unknown> | null)?.url as string | undefined) ?? '';
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('/') || raw.startsWith('data:')) return raw;
+  return publicUrl(raw, 200) || null;
+}
+
 // ============================================================
 // Auth helpers
 // ============================================================

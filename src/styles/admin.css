@@ -73,13 +73,26 @@
   --a-font-mono: 'JetBrains Mono', monospace;
 }
 
-html.admin,
-html.admin body {
+/* The admin layout wraps every page in .admin. html/body live above that wrapper,
+   so :has() is what lets the page-level background and font reach them. */
+html:has(.admin),
+html:has(.admin) body {
   margin: 0;
   background: var(--a-bg);
+}
+
+html:has(.admin) body,
+.admin {
   font-family: var(--a-font);
   color: var(--a-ink);
   -webkit-font-smoothing: antialiased;
+}
+
+.admin {
+  min-height: 100vh;
+  background: var(--a-bg);
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .admin *,
@@ -90,13 +103,28 @@ html.admin body {
 
 .admin img { display: block; max-width: 100%; }
 .admin a { color: inherit; text-decoration: none; }
-.admin button { font-family: inherit; cursor: pointer; }
+.admin button { font-family: inherit; color: inherit; cursor: pointer; }
+.admin button:disabled { cursor: not-allowed; }
 .admin input,
 .admin textarea,
 .admin select {
   font-family: inherit;
   font-size: 0.9rem;
+  color: inherit;
 }
+.admin h1, .admin h2, .admin h3, .admin h4, .admin p, .admin ul, .admin ol, .admin figure {
+  margin: 0;
+}
+.admin ul, .admin ol { padding: 0; list-style: none; }
+/* Opt back in to a bulleted list where the markup asks for one. */
+.admin ul.a-bullets,
+.admin ol.a-bullets {
+  padding-left: 22px;
+  list-style: disc;
+}
+.admin ul.a-bullets li,
+.admin ol.a-bullets li { margin-bottom: 6px; }
+.admin strong { font-weight: 600; }
 
 /* ============ Layout shell ============ */
 .admin-shell {
@@ -240,6 +268,12 @@ html.admin body {
   font-size: 0.84rem;
   color: var(--a-muted);
 }
+.admin-user-email {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .admin-avatar {
   width: 34px;
   height: 34px;
@@ -328,13 +362,19 @@ html.admin body {
   color: var(--a-ink);
   padding: 9px 16px;
   border-radius: var(--a-radius);
+  font-family: var(--a-font);
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.2;
-  transition: all 0.16s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 .a-btn:hover { border-color: var(--a-navy); background: #faf7f1; color: var(--a-navy); }
-.a-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.a-btn:active { transform: translateY(1px); }
+.a-btn:focus-visible { outline: 2px solid var(--a-orange); outline-offset: 2px; }
+.a-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 .a-btn-primary {
   background: linear-gradient(135deg, var(--a-orange), var(--a-orange-light));
   border-color: transparent;
@@ -392,6 +432,14 @@ html.admin body {
   border-radius: 3px;
   background: linear-gradient(135deg, var(--a-orange), var(--a-orange-light));
   display: inline-block;
+}
+.a-card-head p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--a-muted);
+  max-width: 64ch;
+  flex: 1 1 260px;
 }
 .a-card-body { padding: 20px; }
 
@@ -505,8 +553,10 @@ html.admin body {
   border: none;
   border-radius: 7px;
   padding: 8px 15px;
+  font-family: var(--a-font);
   font-size: 0.8rem;
   font-weight: 600;
+  line-height: 1.2;
   background: rgba(255, 255, 255, 0.96);
   color: var(--a-ink);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
@@ -540,19 +590,24 @@ html.admin body {
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
-.a-field .a-hint { font-size: 0.72rem; color: var(--a-faint); }
+.a-field .a-hint { font-size: 0.72rem; line-height: 1.5; color: var(--a-faint); }
 .a-input,
 .a-textarea,
 .a-select {
   border: 1px solid var(--a-border-strong);
   border-radius: 8px;
   padding: 9px 12px;
+  font-family: var(--a-font);
   font-size: 0.9rem;
+  line-height: 1.45;
   color: var(--a-ink);
   background: #fff;
   width: 100%;
+  box-sizing: border-box;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
+.a-input::placeholder,
+.a-textarea::placeholder { color: var(--a-faint); }
 .a-input:focus,
 .a-textarea:focus,
 .a-select:focus {
@@ -560,8 +615,19 @@ html.admin body {
   border-color: var(--a-orange);
   box-shadow: 0 0 0 3px rgba(232, 99, 12, 0.14);
 }
+.a-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b6472' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 15px;
+  cursor: pointer;
+}
 .a-textarea { min-height: 90px; resize: vertical; }
 .a-textarea-sm { min-height: 60px; }
+.a-input-sm { padding: 5px 9px; font-size: 0.78rem; }
 .a-check {
   display: flex;
   align-items: center;
@@ -570,8 +636,24 @@ html.admin body {
   font-weight: 500;
   cursor: pointer;
 }
-.a-check input { width: 16px; height: 16px; accent-color: var(--a-orange); }
+.a-check input { width: 16px; height: 16px; accent-color: var(--a-orange); cursor: pointer; }
 .a-form-row { margin-bottom: 16px; }
+
+/* Inline text link used inside table cells and lists. */
+.a-link {
+  color: var(--a-navy);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(18, 42, 78, 0.28);
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.a-link:hover { color: var(--a-orange-deep); text-decoration-color: currentColor; }
+.a-link:focus-visible { outline: 2px solid var(--a-orange); outline-offset: 2px; border-radius: 3px; }
+
+/* Muted secondary line under a primary label. */
+.a-sub { font-size: 0.74rem; color: var(--a-faint); line-height: 1.45; }
+.a-sub-inline { font-size: 0.82rem; color: var(--a-muted); }
 
 /* ============ Badges / status ============ */
 .a-badge {
@@ -723,9 +805,11 @@ html.admin body {
 .a-modal-close {
   background: none;
   border: none;
+  padding: 0 4px;
+  font-family: var(--a-font);
   font-size: 1.3rem;
-  color: var(--a-faint);
   line-height: 1;
+  color: var(--a-faint);
   cursor: pointer;
 }
 .a-modal-close:hover { color: var(--a-danger); }
@@ -849,9 +933,12 @@ html.admin body {
   border-radius: 6px;
   width: 26px;
   height: 26px;
+  padding: 0;
+  font-family: var(--a-font-mono);
   font-size: 0.7rem;
   color: var(--a-muted);
   line-height: 1;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 .a-tree-toggle:hover { color: var(--a-navy); border-color: var(--a-orange); background: #fdf4e8; }
@@ -938,15 +1025,19 @@ html.admin body {
 .a-img-row .a-thumb { width: 90px; height: 60px; }
 .a-row-tools { display: flex; gap: 4px; }
 .a-row-tools button {
-  background: none;
+  background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 6px;
   width: 28px;
   height: 28px;
+  padding: 0;
+  font-family: var(--a-font);
   font-size: 0.85rem;
+  line-height: 1;
   color: var(--a-muted);
+  transition: all 0.15s ease;
 }
-.a-row-tools button:hover { color: var(--a-danger); border-color: var(--a-danger); }
+.a-row-tools button:hover { color: var(--a-danger); border-color: var(--a-danger); background: var(--a-danger-bg); }
 
 /* ============ Sticky form actions ============ */
 .a-sticky-actions {
@@ -1008,8 +1099,13 @@ html.admin body {
   background: #fff;
   border-radius: 6px;
   padding: 5px 10px;
+  font-family: var(--a-font);
   font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--a-ink);
+  transition: all 0.15s ease;
 }
+.a-pagination button:hover:not(:disabled) { border-color: var(--a-navy); color: var(--a-navy); }
 .a-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ============ Login ============ */

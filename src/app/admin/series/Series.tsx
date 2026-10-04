@@ -39,7 +39,7 @@ export default function Series() {
               <h3>Admin Panel Not Available</h3>
               <p>The admin panel requires a dynamic server environment. This appears to be a static export deployment.</p>
               <p>To use admin functionality:</p>
-              <ul style="text-align: left; margin: 16px 0;">
+              <ul class="a-bullets">
                 <li>Deploy to a server environment (not static export)</li>
                 <li>Ensure Supabase environment variables are configured</li>
                 <li>Or use the Supabase dashboard directly for data management</li>
@@ -186,8 +186,8 @@ export default function Series() {
                             <div style="display:flex;align-items:center;gap:10px;padding-left:52px;">
                               ${s.image_url ? `<img src="${esc(publicUrl(s.image_url, 100))}" alt="" class="a-thumb" style="width:38px;height:30px;border-radius:4px;flex-shrink:0;" loading="lazy" />` : '<div style="width:38px;height:30px;border-radius:4px;background:var(--a-border);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--a-faint);flex-shrink:0;">No img</div>'}
                               <div>
-                                <a href="${href('admin/series/edit/?series=' + s.id)}" style="font-weight:600;color:var(--a-navy);text-decoration:underline;text-underline-offset:2px;">${esc(s.name)}</a>
-                                <div style="font-size:0.72rem;color:var(--a-faint);">${esc(s.slug)}</div>
+                                <a href="${href('admin/series/edit/?series=' + s.id)}" class="a-link">${esc(s.name)}</a>
+                                <div class="a-sub">${esc(s.slug)}</div>
                               </div>
                             </div>
                           </td>
@@ -234,8 +234,8 @@ export default function Series() {
                             <div style="display:flex;align-items:center;gap:10px;padding-left:${padLeft}px;">
                               ${s.image_url ? `<img src="${esc(publicUrl(s.image_url, 100))}" alt="" class="a-thumb" style="width:38px;height:30px;border-radius:4px;flex-shrink:0;" loading="lazy" />` : '<div style="width:38px;height:30px;border-radius:4px;background:var(--a-border);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--a-faint);flex-shrink:0;">No img</div>'}
                               <div>
-                                <a href="${href('admin/series/edit/?series=' + s.id)}" style="font-weight:600;color:var(--a-navy);text-decoration:underline;text-underline-offset:2px;">${esc(s.name)}</a>
-                                <div style="font-size:0.72rem;color:var(--a-faint);">${esc(s.slug)}</div>
+                                <a href="${href('admin/series/edit/?series=' + s.id)}" class="a-link">${esc(s.name)}</a>
+                                <div class="a-sub">${esc(s.slug)}</div>
                               </div>
                             </div>
                           </td>

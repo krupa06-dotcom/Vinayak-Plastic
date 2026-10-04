@@ -194,12 +194,12 @@ export default function EditSeries() {
                   : `<span class="a-var-photo-empty">No photo</span>`}
               </div>
               <div style="display:flex;flex-direction:column;gap:6px;">
-                <input type="file" class="a-input" data-sr-up="${si}|${vi}|${ii}" accept="image/*" style="font-size:0.75rem;padding:4px" />
-                <input type="text" class="a-input sr-alt" data-si="${si}" data-vi="${vi}" data-ii="${ii}" value="${esc(img.alt)}" placeholder="Alt text (optional)" style="font-size:0.75rem;padding:4px" />
+                <input type="file" class="a-input a-input-sm" data-sr-up="${si}|${vi}|${ii}" accept="image/*" />
+                <input type="text" class="a-input a-input-sm sr-alt" data-si="${si}" data-vi="${vi}" data-ii="${ii}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
               </div>
               <label class="a-check" style="font-size:0.75rem;justify-content:flex-start"><input type="radio" name="sr-main-${si}-${vi}" class="sr-main" data-si="${si}" data-vi="${vi}" data-ii="${ii}" ${img.main ? 'checked' : ''} /> Main</label>
               <div class="a-row-tools">
-                <button type="button" data-sr-img-del="${si}|${vi}|${ii}" title="Remove photo" style="width:28px;height:28px;">&times;</button>
+                <button type="button" data-sr-img-del="${si}|${vi}|${ii}" title="Remove photo">&times;</button>
               </div>
             </div>`;
         }).join('');
