@@ -221,6 +221,32 @@ export function formatSize(
   return fp ? `${fp} × ${height} mm` : `${height} mm`;
 }
 
+/**
+ * Human-readable size for a product card / detail header, e.g.
+ * "600 × 400 × 220 mm". Series built around a single footprint (crates,
+ * pallets) keep using footprint × height. Product families that have no single
+ * footprint — e.g. waste bins, where one product type carries several footprints
+ * or a tapered body — fall back to the model's own external dimensions.
+ */
+export function formatVariantSize(
+  series: { base_length: number | null; base_width: number | null },
+  height: number,
+  variant?: {
+    outer_length: number | null;
+    outer_width: number | null;
+    outer_height: number | null;
+  }
+): string {
+  const fp = formatFootprint(series);
+  if (fp) return `${fp} × ${height} mm`;
+
+  const l = variant?.outer_length;
+  const w = variant?.outer_width;
+  const h = variant?.outer_height ?? height;
+  if (l != null && w != null) return `${l} × ${w} × ${h} mm`;
+  return `${h} mm`;
+}
+
 /** Human-readable inner size, e.g. "550 × 350 × 200 mm", or '' when any axis is missing. */
 export function formatInnerSize(
   variant: { inner_length: number | null; inner_width: number | null; inner_height: number | null }
@@ -403,6 +429,10 @@ function buildHierarchy(
             .filter((x): x is HierarchyImage => x !== null);
 
           const href = `/products/${cat.slug}/${seriesKey}/${sizeKey}/${versionKey}`;
+          // Searchable haystack for the catalogue search box: names, model code,
+          // size step and the model's own dimensions. Uses the variant's external
+          // size so families without a single series footprint (waste bins) are
+          // still findable by their dimensions.
           const search = [
             displayName,
             vr.model_code,
@@ -410,7 +440,9 @@ function buildHierarchy(
             subCat?.name || '',
             sr.name,
             sz.label,
-            `L ${sr.base_length} W ${sr.base_width}`,
+            formatVariantSize(sr, sz.height, vr),
+            vr.colours || '',
+            vr.load_capacity || '',
             sr.short_description || '',
             vr.description || ''
           ]

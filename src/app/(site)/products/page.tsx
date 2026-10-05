@@ -4,7 +4,7 @@ import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import ProductListFilter, { type ProductTypeCardData } from '@/components/ProductListFilter';
 import { CONTACT } from '@/lib/contact';
-import { formatFootprint, getHierarchyData } from '@/lib/hierarchy';
+import { formatFootprint, formatVariantSize, getHierarchyData } from '@/lib/hierarchy';
 
 export const revalidate = 3600;
 
@@ -79,7 +79,7 @@ export default async function ProductsPage() {
                   modelCode: v.model_code,
                   versionName: v.version_name,
                   sizeLabel: sz.label,
-                  dimensions: `${formatFootprint(s)} × ${sz.height} mm`,
+                  dimensions: formatVariantSize(s, sz.height, v),
                   capacity: v.load_capacity,
                   material: v.material,
                   image: v.card_image,
@@ -128,7 +128,7 @@ export default async function ProductsPage() {
               modelCode: v.model_code,
               versionName: v.version_name,
               sizeLabel: sz.label,
-              dimensions: `${formatFootprint(s)} × ${sz.height} mm`,
+              dimensions: formatVariantSize(s, sz.height, v),
               capacity: v.load_capacity,
               material: v.material,
               image: v.card_image,

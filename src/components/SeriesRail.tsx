@@ -28,7 +28,7 @@ export default function SeriesRail({ category, activeSeriesKey, activeSizeKey, s
           return (
             <div key={s.series_key} className={isActive ? 'sr-rail__item is-active' : 'sr-rail__item'}>
               <a href={s.href} className="sr-rail__link" aria-current={isActive ? 'page' : undefined}>
-                <span className="sr-rail__fp">{footprint}</span>
+                <span className="sr-rail__fp">{footprint || s.name}</span>
                 <span className="sr-rail__meta">
                   {s.heights_count} {s.heights_count === 1 ? 'height' : 'heights'}
                 </span>

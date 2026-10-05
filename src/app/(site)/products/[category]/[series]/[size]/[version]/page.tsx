@@ -13,7 +13,7 @@ import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
   formatFootprint,
-  formatSize,
+  formatVariantSize,
   getHierarchyVersionPaths,
   getProductDetail,
   normalizeApplications
@@ -73,7 +73,7 @@ export async function generateMetadata({
   const ctx = await getProductDetail(category, series, size, version);
   if (!ctx) return {};
   const { category: cat, series: s, size: sz, variant } = ctx;
-  const fullName = `${variant.display_name} — ${formatSize(s, sz.height)}`;
+  const fullName = `${variant.display_name} — ${formatVariantSize(s, sz.height, variant)}`;
   const name = `${variant.display_name} — ${s.name}`;
   const description =
     variant.description || s.short_description || `${name} from the ${cat.name} range.`.slice(0, 160);
@@ -102,7 +102,7 @@ export default async function ProductDetailPage({
   const features = (variant.description ? [variant.description] : []).concat(s.features || []);
   const applications = normalizeApplications(s.applications);
   const specs = specsFor(ctx);
-  const fullSize = formatSize(s, sz.height);
+  const fullSize = formatVariantSize(s, sz.height, variant);
   const footprint = formatFootprint(s);
 
   const siblingSizeHref = (sib: { size_key: string; variants: { href: string }[] }) =>
@@ -116,7 +116,14 @@ export default async function ProductDetailPage({
         : [];
 
   const quickFacts = [
-    { tag: 'Size', value: joinMm(s.base_length, s.base_width, sz.height) },
+    // Series footprint × height when the series has one; otherwise the model's
+    // own external size (waste bins carry their dimensions per model).
+    {
+      tag: 'Size',
+      value:
+        joinMm(s.base_length, s.base_width, sz.height) ??
+        joinMm(variant.outer_length, variant.outer_width, variant.outer_height)
+    },
     { tag: 'Height', value: `${sz.height} mm` },
     { tag: 'Material', value: variant.material },
     { tag: 'Load', value: variant.load_capacity },
@@ -229,7 +236,7 @@ export default async function ProductDetailPage({
                 <span className="cat-detail__chip cat-detail__chip--current" aria-current="true">{fullSize}</span>
                 {siblingSizes.map((sib) => (
                   <a key={sib.size_key} href={siblingSizeHref(sib)} className="cat-detail__chip">
-                    {formatSize(s, sib.height)}
+                    {formatVariantSize(s, sib.height, sib.variants[0])}
                   </a>
                 ))}
               </div>

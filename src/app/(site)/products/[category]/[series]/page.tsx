@@ -11,7 +11,7 @@ import { SITE_URL } from '@/lib/site';
 import {
   formatFootprint,
   formatInnerSize,
-  formatSize,
+  formatVariantSize,
   getHierarchySeriesPaths,
   getSeriesByKey,
   normalizeApplications
@@ -86,8 +86,8 @@ export default async function SeriesPage({
                   {s.name} — complete size range
                 </h2>
                 <p>
-                  All standard heights for the {formatFootprint(s) || s.name} footprint with model codes,
-                  external dimensions and load capacity at a glance.
+                  All standard heights for the {formatFootprint(s) ? `${formatFootprint(s)} footprint` : s.name} with model
+                  codes, external dimensions and load capacity at a glance.
                 </p>
               </header>
 
@@ -110,7 +110,7 @@ export default async function SeriesPage({
                             <span className="px-version__code">{v.model_code}</span>
                             <h3 className="px-version__name">{v.display_name}</h3>
                             <span className="px-version__dims">
-                              {v.outer_length ?? s.base_length} × {v.outer_width ?? s.base_width} × {v.outer_height ?? sz.height} mm
+                              {formatVariantSize(s, sz.height, v)}
                             </span>
                             {innerSize && (
                               <span className="px-version__dims px-version__dims--inner">

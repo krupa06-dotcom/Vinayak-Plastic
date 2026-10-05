@@ -1111,7 +1111,9 @@ a.hx-chip:focus-visible {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1rem;
-  line-height: 1;
+  /* Footprints are one line, but series without a footprint fall back to their
+     name (e.g. "Waste Bins With Swing Lid") and wrap to two lines here. */
+  line-height: 1.2;
 }
 
 .sr-rail__meta {
