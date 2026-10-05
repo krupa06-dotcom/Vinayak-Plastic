@@ -625,6 +625,26 @@
 .px-version:hover .px-version__cta { color: var(--orange); }
 .px-version:hover .px-version__cta span { transform: translateX(3px); }
 
+/* Non-clickable accessory card (e.g. the crate lid, which has no height
+   variants of its own). Visually matches .px-version but stays inert. */
+.px-version--static {
+  border-top-color: var(--steel);
+}
+
+.px-version--static:hover {
+  transform: none;
+  box-shadow: 0 1px 2px rgba(18, 42, 78, 0.04);
+}
+
+.px-version__cta--muted {
+  color: var(--steel);
+  letter-spacing: 0.04em;
+}
+
+.px-version--static .px-version__code::after {
+  background: var(--steel);
+}
+
 /* ---------- Product detail page ---------- */
 .page-hero__dims {
   font-family: var(--font-display);

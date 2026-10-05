@@ -54,6 +54,8 @@ export default async function SeriesPage({
   const features = (s.features || []).filter(Boolean);
   const applications = normalizeApplications(s.applications);
   const description = s.short_description || s.description;
+  /** One lid per series — the same lid fits every height in the footprint. */
+  const showLid = Boolean(s.lid_image) && s.base_length != null && s.base_width != null;
 
   return (
     <main id="main">
@@ -89,7 +91,7 @@ export default async function SeriesPage({
                 </p>
               </header>
 
-              {s.sizes.length > 0 ? (
+              {s.sizes.length > 0 || showLid ? (
                 <div className="st-catalog reveal">
                   {s.sizes.flatMap((sz) =>
                     sz.variants.map((v) => {
@@ -126,6 +128,36 @@ export default async function SeriesPage({
                         </a>
                       );
                     })
+                  )}
+                  {showLid && (
+                    <div className="px-version px-version--static" role="group" aria-label={`${s.lid_title} for ${s.name}`}>
+                      <div className="px-version__img">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={s.lid_image!}
+                          alt={`${s.lid_title} fitting the ${formatFootprint(s) || s.name} series`}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div className="px-version__body">
+                        <span className="px-version__code">Lid</span>
+                        <h3 className="px-version__name">{s.lid_title}</h3>
+                        <span className="px-version__dims">
+                          {s.base_length} × {s.base_width} mm footprint
+                        </span>
+                        {s.lid_note && (
+                          <span className="px-version__dims px-version__dims--inner">
+                            {s.lid_note}
+                          </span>
+                        )}
+                        <div className="px-version__foot">
+                          <span className="px-version__cta px-version__cta--muted">
+                            Available with all models
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (

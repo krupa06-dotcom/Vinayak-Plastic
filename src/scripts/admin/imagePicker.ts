@@ -28,7 +28,10 @@ function validate(file: File): string | null {
 }
 
 /** Builds a drag-&-drop / click-to-choose image field that uploads from the local drive. */
-export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {}): ImagePicker {
+export function createImagePicker(
+  root: HTMLElement,
+  opts: { hint?: string; onChange?: (v: ImagePickerValue) => void } = {}
+): ImagePicker {
   let existing: string | null = null;
   let file: File | null = null;
   let previewUrl = '';
@@ -36,6 +39,10 @@ export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {
   function clearPreview() {
     file = null;
     if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = ''; }
+  }
+
+  function notify() {
+    opts.onChange?.({ existing, file });
   }
 
   function render() {
@@ -87,10 +94,11 @@ export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {
     clearPreview();
     file = chosen;
     previewUrl = buildObjectUrl(chosen);
+    notify();
     // Only re-render once we know the file decodes as an image.
     const img = new Image();
     img.onload = () => render();
-    img.onerror = () => { clearPreview(); toast('That file could not be opened as an image.', 'error'); render(); };
+    img.onerror = () => { clearPreview(); toast('That file could not be opened as an image.', 'error'); render(); notify(); };
     img.src = previewUrl;
   }
 
@@ -122,6 +130,7 @@ export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {
       clearPreview();
       existing = null;
       render();
+      notify();
     });
 
     box?.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('a-imgpicker-dragging'); });
@@ -144,6 +153,7 @@ export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {
       existing = v.existing || null;
       file = v.file || null;
       render();
+      notify();
     },
     async upload(pathPrefix: string): Promise<{ url: string } | { error: string }> {
       if (!file) return { error: 'No image selected.' };
@@ -152,6 +162,7 @@ export function createImagePicker(root: HTMLElement, opts: { hint?: string } = {
       clearPreview();
       existing = result.path;
       render();
+      notify();
       return { url: result.path };
     }
   };

@@ -356,6 +356,9 @@ export interface Database {
           features: string[] | null;
           applications: Json | null;
           image_url: string | null;
+          lid_image_url: string | null;
+          lid_label: string | null;
+          lid_note: string | null;
           is_featured: boolean;
           is_active: boolean;
           display_order: number;
@@ -376,6 +379,9 @@ export interface Database {
           features?: string[] | null;
           applications?: Json | null;
           image_url?: string | null;
+          lid_image_url?: string | null;
+          lid_label?: string | null;
+          lid_note?: string | null;
           is_featured?: boolean;
           is_active?: boolean;
           display_order?: number;
@@ -396,6 +402,9 @@ export interface Database {
           features?: string[] | null;
           applications?: Json | null;
           image_url?: string | null;
+          lid_image_url?: string | null;
+          lid_label?: string | null;
+          lid_note?: string | null;
           is_featured?: boolean;
           is_active?: boolean;
           display_order?: number;

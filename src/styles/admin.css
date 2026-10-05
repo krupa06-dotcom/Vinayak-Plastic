@@ -591,6 +591,8 @@ html:has(.admin) body,
   letter-spacing: 0.6px;
 }
 .a-field .a-hint { font-size: 0.72rem; line-height: 1.5; color: var(--a-faint); }
+/* Fields greyed out because their enabler (e.g. an image picker) is empty. */
+.a-field.is-disabled { opacity: 0.45; pointer-events: none; }
 .a-input,
 .a-textarea,
 .a-select {

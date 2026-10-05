@@ -53,6 +53,8 @@ export default function EditSeries() {
       const orderEl = document.getElementById('sr-order') as HTMLInputElement;
       const activeEl = document.getElementById('sr-active') as HTMLInputElement;
       const featuredEl = document.getElementById('sr-featured') as HTMLInputElement;
+      const lidLabelEl = document.getElementById('sr-lid-label') as HTMLInputElement;
+      const lidNoteEl = document.getElementById('sr-lid-note') as HTMLInputElement;
       const sizesEl = document.getElementById('sr-sizes-container')!;
       const errorEl = document.getElementById('form-error');
       const submitBtn = document.getElementById('sr-submit') as HTMLButtonElement;
@@ -60,6 +62,21 @@ export default function EditSeries() {
 
       const picker = createImagePicker(document.getElementById('sr-image-picker')!, {
         hint: 'The main cover image for this series (shown across the website).'
+      });
+
+      /** Mirror the lid fields' enabled state to the lid label/note inputs. */
+      function syncLidFields() {
+        const { existing, file } = lidPicker.getValue();
+        const hasLid = Boolean(existing || file);
+        lidLabelEl.disabled = !hasLid;
+        lidNoteEl.disabled = !hasLid;
+        lidLabelEl.closest('.a-field')!.classList.toggle('is-disabled', !hasLid);
+        lidNoteEl.closest('.a-field')!.classList.toggle('is-disabled', !hasLid);
+      }
+
+      const lidPicker = createImagePicker(document.getElementById('sr-lid-image-picker')!, {
+        hint: 'Optional. Shows one extra "Lid" card on the series page. The same lid fits every height in the footprint, so it is stored once per series. Clear it to hide the card.',
+        onChange: () => syncLidFields()
       });
 
       titleEl.textContent = editId ? 'Edit Series' : 'New Series';
@@ -520,6 +537,10 @@ export default function EditSeries() {
           activeEl.checked = s.is_active ?? true;
           featuredEl.checked = (s as any).is_featured ?? false;
           picker.setValue({ existing: s.image_url ?? null, file: null });
+          lidPicker.setValue({ existing: (s as any).lid_image_url ?? null, file: null });
+          lidLabelEl.value = (s as any).lid_label ?? '';
+          lidNoteEl.value = (s as any).lid_note ?? '';
+          syncLidFields();
 
           appsState = Array.isArray((s as any).applications) ? [...((s as any).applications as unknown as AppRow[])] : [];
           renderApps();
@@ -553,6 +574,7 @@ export default function EditSeries() {
         loadingEl.remove();
         formEl.style.display = '';
         saveTopBtn!.style.display = '';
+        syncLidFields();
       })();
 
       // ================= SAVE =================
@@ -617,6 +639,19 @@ export default function EditSeries() {
           imageUrl = result.url;
         }
 
+        // Lid / cover accessory — stored once per series, not per height.
+        const lidValue = lidPicker.getValue();
+        const previousLidImage = lidValue.existing;
+        let lidImageUrl: string | null = lidValue.existing;
+        if (lidValue.file) {
+          const result = await lidPicker.upload(`media/series/${slug}-lid-${Date.now()}`);
+          if ('error' in result) { resetBtn(); showError(result.error); return; }
+          lidImageUrl = result.url;
+        }
+        // No lid image selected means no lid card, so drop the copy too.
+        const lidLabel = lidImageUrl ? lidLabelEl.value.trim() || null : null;
+        const lidNote = lidImageUrl ? lidNoteEl.value.trim() || null : null;
+
         // Pre-check unique constraints: series slug (category-scoped) and footprint if given
         {
           const baseL = baseLength ? l : null;
@@ -660,6 +695,9 @@ export default function EditSeries() {
           product_code: codeEl.value.trim() || null,
           short_description: shortEl.value.trim() || null,
           image_url: imageUrl,
+          lid_image_url: lidImageUrl,
+          lid_label: lidLabel,
+          lid_note: lidNote,
           features: featuresEl.value.split('\n').map(x => x.trim()).filter(Boolean),
           applications: appsState.filter(a => a.name.trim()),
           is_featured: featuredEl.checked,
@@ -670,6 +708,7 @@ export default function EditSeries() {
         const { error: sErr } = await supabase.from('series').upsert(seriesPayload as never, { onConflict: 'id' });
         if (sErr) { resetBtn(); showError(sErr.message); return; }
         if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
+        if (previousLidImage && previousLidImage !== lidImageUrl) await deleteFile(previousLidImage);
 
         // ---- Save sizes (delete removed) ----
         {
@@ -882,6 +921,22 @@ export default function EditSeries() {
               <div className="a-field a-field-full">
                 <label>Cover image</label>
                 <div id="sr-image-picker"></div>
+              </div>
+              <div className="a-field a-field-full">
+                <label>Lid / cover image</label>
+                <div id="sr-lid-image-picker"></div>
+                <div className="a-form-grid" style={{ marginTop: 12 }}>
+                  <div className="a-field">
+                    <label htmlFor="sr-lid-label">Lid label</label>
+                    <input id="sr-lid-label" className="a-input" autoComplete="off" placeholder="e.g. Crate Lid" />
+                    <span className="a-hint">Card heading. Leave blank for "Crate Lid".</span>
+                  </div>
+                  <div className="a-field">
+                    <label htmlFor="sr-lid-note">Lid note</label>
+                    <input id="sr-lid-note" className="a-input" autoComplete="off" placeholder="e.g. Fits every height in this series" />
+                    <span className="a-hint">Optional line under the footprint size.</span>
+                  </div>
+                </div>
               </div>
               <div className="a-field a-field-full">
                 <label htmlFor="sr-short">Short description</label>

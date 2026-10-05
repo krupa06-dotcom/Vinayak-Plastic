@@ -41,6 +41,12 @@ export interface SeriesRow {
   features: string[] | null;
   applications: unknown;
   image_url: string | null;
+  /** Photo of the lid / cover fitting this footprint. Height-independent. */
+  lid_image_url?: string | null;
+  /** Heading for the lid card, e.g. "Crate Lid". */
+  lid_label?: string | null;
+  /** Short note for the lid card, e.g. "Fits every height in this series". */
+  lid_note?: string | null;
   is_featured: boolean;
   is_active: boolean;
   display_order: number;
@@ -135,6 +141,12 @@ export interface HierarchySeries extends SeriesRow {
   series_key: string;
   /** Series image falling back to the category image. */
   image: string | null;
+  /** Resolved lid photo, or null when the series has no lid. */
+  lid_image: string | null;
+  /** Lid heading with a sensible default applied. */
+  lid_title: string;
+  /** Optional lid fitment note, '' when not set. */
+  lid_note: string;
   sizes: HierarchySize[];
   heights_count: number;
   models_count: number;
@@ -162,6 +174,9 @@ export interface HierarchyData {
 }
 
 const EMPTY_HIERARCHY: HierarchyData = { categories: [], series: [], variants: [] };
+
+/** Fallback heading for the per-series lid card when the admin leaves it blank. */
+export const DEFAULT_LID_TITLE = 'Crate Lid';
 
 // ============================================================
 // Key derivations (URL segments). Numbers keep keys ASCII-safe.
@@ -447,6 +462,9 @@ function buildHierarchy(
         sub_category_slug: subCat?.slug || null,
         series_key: seriesKey,
         image: seriesImage,
+        lid_image: resolveFirstImage(sr.lid_image_url),
+        lid_title: (sr.lid_label || '').trim() || DEFAULT_LID_TITLE,
+        lid_note: (sr.lid_note || '').trim(),
         sizes,
         heights_count: sizes.length,
         models_count: sizes.reduce((n, s) => n + s.variants.length, 0),
@@ -699,6 +717,9 @@ function buildFallbackSeries(cat: Category, detail: FallbackDetail, order: numbe
       category_image: catImage,
       series_key: seriesKey,
       image: resolveFirstImage(detail.image_url) || catImage,
+      lid_image: null,
+      lid_title: DEFAULT_LID_TITLE,
+      lid_note: '',
       sizes,
       heights_count: sizes.length,
       models_count: sizes.reduce((n, s) => n + s.variants.length, 0),
