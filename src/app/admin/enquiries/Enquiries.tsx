@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
-import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty, toast } from '@/scripts/admin/core';
+import { gate, supabase, esc, fmtDateTime, statusBadge, showError, showEmpty, toast, confirmDialog } from '@/scripts/admin/core';
 
 // Enquiries — port of src/pages/admin/enquiries/index.astro. The heavy lifting
 // is DOM rendering started after gate() resolves, exactly like the Astro script.
@@ -62,7 +62,7 @@ export default function Enquiries() {
           <div class="a-table-wrap">
             <table class="a-table">
               <thead><tr>
-                <th>Name</th><th>Company</th><th>Product / Range</th><th>Message</th><th>Status</th><th>Date</th><th style="width:100px">Actions</th>
+                <th>Name</th><th>Company</th><th>Product / Range</th><th>Message</th><th>Status</th><th>Date</th><th style="width:150px">Actions</th>
               </tr></thead>
               <tbody>${rows.map((r: any) => `
                 <tr>
@@ -77,6 +77,7 @@ export default function Enquiries() {
                   <td style="white-space:nowrap;font-size:0.82rem;">${fmtDateTime(r.created_at)}</td>
                   <td class="a-actions">
                     <button type="button" class="a-btn a-btn-sm" data-view-id="${r.id}">View</button>
+                    <button type="button" class="a-btn a-btn-sm a-btn-danger" data-delete-id="${r.id}" data-name="${esc(r.name)}">Delete</button>
                   </td>
                 </tr>`).join('')}</tbody>
             </table>
@@ -84,6 +85,24 @@ export default function Enquiries() {
 
         listEl.querySelectorAll<HTMLButtonElement>('[data-view-id]').forEach(btn => {
           btn.addEventListener('click', () => openDetail(btn.dataset.viewId!, rows));
+        });
+
+        listEl.querySelectorAll<HTMLButtonElement>('[data-delete-id]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.deleteId!;
+            const name = btn.dataset.name || 'this enquiry';
+            const ok = await confirmDialog(
+              `Delete enquiry from "${name}"?`,
+              'This permanently removes the enquiry and cannot be undone.'
+            );
+            if (!ok) return;
+
+            btn.disabled = true;
+            const { error } = await supabase.from('enquiries').delete().eq('id', id);
+            if (error) { toast(error.message, 'error'); btn.disabled = false; return; }
+            toast('Enquiry deleted.', 'success');
+            await load();
+          });
         });
       }
 
