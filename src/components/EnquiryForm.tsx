@@ -22,8 +22,8 @@ export interface EnquiryPrefill {
   modelCode?: string;
 }
 
-// Enquiry form — public submission straight to Supabase. The RLS policy allows
-// public insert for the enquiries table, so this runs fully client-side.
+// Enquiry form — submits to /api/send-enquiry, which validates the input,
+// stores the enquiry in Supabase, and emails the team via Resend.
 export default function EnquiryForm({ prefill }: { prefill?: EnquiryPrefill }) {
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -69,34 +69,33 @@ export default function EnquiryForm({ prefill }: { prefill?: EnquiryPrefill }) {
         phone: formData.get('phone'),
         email: formData.get('email') || null,
         quantity: formData.get('quantity') || null,
-        message: formData.get('message') || null
+        message: formData.get('message') || null,
+        website: formData.get('website') || null, // honeypot — must stay empty
+        category:  prefill?.category  || null,
+        series:    prefill?.series    || null,
+        size:      prefill?.size      || null,
+        version:   prefill?.version   || null,
+        modelCode: prefill?.modelCode || null
       };
 
       try {
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Supabase configuration missing');
-        }
-
-        const response = await fetch(`${supabaseUrl}/rest/v1/enquiries`, {
+        // Single server-side endpoint: validates, saves to Supabase, emails the team.
+        const response = await fetch('/api/send-enquiry', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: supabaseKey,
-            Prefer: 'return=minimal'
-          },
-          body: JSON.stringify({
-            ...data,
-            status: 'new'
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
         });
 
-        if (response.ok) {
+        const result = await response.json().catch(() => null);
+
+        if (response.ok && result?.success) {
           formMessage.textContent = 'Thank you for your enquiry! We will contact you soon.';
           formMessage.className = 'form-message success';
           formMessage.style.display = 'block';
+          form.reset();
         } else {
-          const error = await response.json();
-          formMessage.textContent = error.message || 'Something went wrong. Please try again.';
+          formMessage.textContent =
+            result?.error || 'Something went wrong. Please try again.';
           formMessage.className = 'form-message error';
           formMessage.style.display = 'block';
         }
@@ -127,6 +126,12 @@ export default function EnquiryForm({ prefill }: { prefill?: EnquiryPrefill }) {
       <form id="enquiry-form" className="enquiry-form" ref={formRef}>
         <input type="hidden" id="sub-category-id" name="sub_category_id" value="" />
         <input type="hidden" id="product-variant-id" name="product_variant_id" value={prefill?.productVariantId ?? ''} />
+
+        {/* Honeypot — hidden from humans, bots that fill it are rejected server-side */}
+        <div style={{ position: 'absolute', left: '-9999px', top: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+          <label htmlFor="website">Website</label>
+          <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" />
+        </div>
 
         {hasPrefill && (
           <div className="enquiry-prefill">

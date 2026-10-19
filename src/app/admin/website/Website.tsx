@@ -181,25 +181,60 @@ export default function Website() {
         <div className="a-card">
           <div className="a-card-head">
             <h2>Images &amp; Media</h2>
-            <p>Override the images shipped with the site. Paste a full URL from your Supabase storage bucket &mdash; anything left blank falls back to the built-in default.</p>
+            <p>
+              Paste a full image URL for each field below. Each field shows exactly <strong>where</strong> that image appears on your website.
+              Leave any field blank to keep the built-in default image.
+            </p>
           </div>
           <div className="a-card-body">
             <div className="a-form-grid">
+
+              {/* ── Logo ── */}
               <div className="a-field a-field-full">
-                <label htmlFor="logo-url">Company Logo URL</label>
+                <label htmlFor="logo-url">Company Logo</label>
+                {/* location badges */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: 'var(--a-accent-soft, #e8f0fe)', color: 'var(--a-accent, #1a73e8)', border: '1px solid var(--a-accent, #1a73e8)' }}>
+                    📌 Top navigation bar (header)
+                  </span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: 'var(--a-accent-soft, #e8f0fe)', color: 'var(--a-accent, #1a73e8)', border: '1px solid var(--a-accent, #1a73e8)' }}>
+                    📌 Footer
+                  </span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: 'var(--a-accent-soft, #e8f0fe)', color: 'var(--a-accent, #1a73e8)', border: '1px solid var(--a-accent, #1a73e8)' }}>
+                    📌 Admin sidebar
+                  </span>
+                </div>
                 <input id="logo-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
-                <span className="a-hint">Used in the website header, footer and admin sidebar. Leave blank to keep the default Vinayak Plastics logo.</span>
+                <span className="a-hint">Leave blank to keep the default Vinayak Plastics logo.</span>
               </div>
+
+              {/* ── Warehouse / About photo ── */}
               <div className="a-field a-field-full">
-                <label htmlFor="warehouse-url">Warehouse Interior Image URL</label>
+                <label htmlFor="warehouse-url">Warehouse / Factory Photo</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b' }}>
+                    📌 Homepage — "About us" section (right-side image)
+                  </span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b' }}>
+                    📌 About page — banner photo
+                  </span>
+                </div>
                 <input id="warehouse-url" className="a-input" placeholder="https://your-project.supabase.co/storage/v1/object/public/..." />
-                <span className="a-hint">Shown on the homepage and about page. Leave blank to keep the default warehouse photo.</span>
+                <span className="a-hint">Leave blank to keep the default warehouse interior photo.</span>
               </div>
+
+              {/* ── Hero carousel ── */}
               <div className="a-field a-field-full">
-                <label htmlFor="hero-images">Hero Carousel Images (one URL per line)</label>
-                <textarea id="hero-images" className="a-textarea" rows={6} placeholder="https://your-project.supabase.co/storage/v1/object/public/image1.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image2.jpg&#10;https://your-project.supabase.co/storage/v1/object/public/image3.jpg"></textarea>
-                <span className="a-hint">Replaces the four built-in hero slides. Leave blank to keep them. Use up to 4 full URLs, one per line.</span>
+                <label htmlFor="hero-images">Hero Carousel Slides (one URL per line, up to 4)</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#f0fdf4', color: '#166534', border: '1px solid #22c55e' }}>
+                    📌 Homepage — full-width hero slideshow (top of the page)
+                  </span>
+                </div>
+                <textarea id="hero-images" className="a-textarea" rows={6} placeholder={"https://…/slide1.jpg\nhttps://…/slide2.jpg\nhttps://…/slide3.jpg\nhttps://…/slide4.jpg"}></textarea>
+                <span className="a-hint">Line 1 = Slide 1, Line 2 = Slide 2, etc. Leave blank to keep the 4 built-in hero images.</span>
               </div>
+
             </div>
           </div>
         </div>
