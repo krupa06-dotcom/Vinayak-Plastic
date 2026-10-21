@@ -60,6 +60,13 @@ export default function EditSeries() {
       const submitBtn = document.getElementById('sr-submit') as HTMLButtonElement;
       const saveTopBtn = document.getElementById('sr-save-top') as HTMLButtonElement;
 
+      // The per-series lid columns ship in migration 20261004000000_series_lid_image.sql.
+      // Until that migration has been applied to the database, PostgREST rejects every
+      // write that mentions them ("Could not find the 'lid_image_url' column"), so probe
+      // once and keep the rest of the form working without the lid card.
+      const { error: lidProbeError } = await supabase.from('series').select('lid_image_url').limit(1);
+      const lidColumnsAvailable = !lidProbeError;
+
       const picker = createImagePicker(document.getElementById('sr-image-picker')!, {
         hint: 'The main cover image for this series (shown across the website).'
       });
@@ -78,6 +85,15 @@ export default function EditSeries() {
         hint: 'Optional. Shows one extra "Lid" card on the series page. The same lid fits every height in the footprint, so it is stored once per series. Clear it to hide the card.',
         onChange: () => syncLidFields()
       });
+
+      if (!lidColumnsAvailable) {
+        const lidField = document.getElementById('sr-lid-image-picker')?.closest('.a-field');
+        lidField?.classList.add('is-disabled');
+        const warn = document.createElement('span');
+        warn.className = 'a-hint';
+        warn.textContent = 'Lid image is unavailable: this database has no series.lid_image_url column. Apply supabase/migrations/20261004000000_series_lid_image.sql to enable it.';
+        lidField?.appendChild(warn);
+      }
 
       titleEl.textContent = editId ? 'Edit Series' : 'New Series';
       if (!editId) {
@@ -643,7 +659,7 @@ export default function EditSeries() {
         const lidValue = lidPicker.getValue();
         const previousLidImage = lidValue.existing;
         let lidImageUrl: string | null = lidValue.existing;
-        if (lidValue.file) {
+        if (lidValue.file && lidColumnsAvailable) {
           const result = await lidPicker.upload(`media/series/${slug}-lid-${Date.now()}`);
           if ('error' in result) { resetBtn(); showError(result.error); return; }
           lidImageUrl = result.url;
@@ -695,9 +711,6 @@ export default function EditSeries() {
           product_code: codeEl.value.trim() || null,
           short_description: shortEl.value.trim() || null,
           image_url: imageUrl,
-          lid_image_url: lidImageUrl,
-          lid_label: lidLabel,
-          lid_note: lidNote,
           features: featuresEl.value.split('\n').map(x => x.trim()).filter(Boolean),
           applications: appsState.filter(a => a.name.trim()),
           is_featured: featuredEl.checked,
@@ -705,6 +718,12 @@ export default function EditSeries() {
           display_order: Number(orderEl.value) || 0,
           updated_at: new Date().toISOString()
         };
+        // Only send the lid columns when the database actually has them.
+        if (lidColumnsAvailable) {
+          seriesPayload.lid_image_url = lidImageUrl;
+          seriesPayload.lid_label = lidLabel;
+          seriesPayload.lid_note = lidNote;
+        }
         const { error: sErr } = await supabase.from('series').upsert(seriesPayload as never, { onConflict: 'id' });
         if (sErr) { resetBtn(); showError(sErr.message); return; }
         if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
@@ -827,6 +846,9 @@ export default function EditSeries() {
         resetBtn();
         if (uploadErrors.length) {
           toast(`Saved, but some photo operations failed: ${uploadErrors[0]}`, 'error');
+        } else if (!lidColumnsAvailable) {
+          toast(editId ? 'Saved.' : 'Created.', 'success');
+          toast('Lid image skipped — the database is missing the series.lid_image_url column.', 'info');
         } else {
           toast(editId ? 'Saved.' : 'Created.', 'success');
         }

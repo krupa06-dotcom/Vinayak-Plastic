@@ -34,3 +34,8 @@ COMMENT ON COLUMN series.lid_label IS
   'Heading for the lid card on the series page. Defaults to "Crate Lid" when empty.';
 COMMENT ON COLUMN series.lid_note IS
   'Optional note shown on the lid card, e.g. "Fits every height in this series".';
+
+-- 4. Refresh the PostgREST schema cache so the new columns are served
+--    immediately (without this the API keeps answering
+--    "Could not find the 'lid_image_url' column of 'series' in the schema cache").
+NOTIFY pgrst, 'reload schema';
