@@ -4,6 +4,23 @@ import { useEffect } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import { gate, supabase, esc, slugify, href, toast, publicUrl, uploadFile, deleteFile, publishSiteNow, confirmDialog } from '@/scripts/admin/core';
 import { createImagePicker } from '@/scripts/admin/imagePicker';
+import {
+  formatHeightLabel,
+  friendlyDbError,
+  healHeight,
+  healModelCode,
+  parseHeight,
+  planSizeWrites,
+  planVersionWrites,
+  resolveSeriesId,
+  validateSeriesHasVariant,
+  validateSizes,
+  validateVersions,
+  type SizeDraft,
+  type SizePark,
+  type VersionDraft,
+  type VersionPark
+} from '@/lib/seriesPlan';
 
 // Edit series — the Phase 2 catalog editor. Port of the hand-rolled admin style
 // from EditProduct (gate'd effect, tabs, DOM-rendered nested builder):
@@ -143,6 +160,12 @@ export default function EditSeries() {
 
       function fmtNum(n: number): string {
         return Number.isInteger(n) ? String(n) : String(n);
+      }
+
+      /** Preview of the label that is stored for a height ("220 mm"). */
+      function sizeLabelPreview(height: string): string {
+        const parsed = parseHeight(height);
+        return parsed === null ? '' : formatHeightLabel(parsed);
       }
 
       // ================= APPLICATIONS =================
@@ -342,7 +365,7 @@ export default function EditSeries() {
               </div>
               <div class="a-field">
                 <label>Auto label</label>
-                <input class="a-input s-label" data-si="${si}" value="${esc(size.height ? size.height + ' mm' : '')}" disabled />
+                <input class="a-input s-label" data-si="${si}" value="${esc(sizeLabelPreview(size.height))}" disabled />
               </div>
             </div>
             <div class="a-var-head" style="margin-top:6px;">
@@ -375,7 +398,7 @@ export default function EditSeries() {
           const si = Number((e.target as HTMLElement).dataset.si);
           sizesState[si].height = (e.target as HTMLInputElement).value;
           const label = sizesEl.querySelector(`.a-var-card[data-size="${si}"] .s-label`) as HTMLInputElement;
-          if (label) label.value = sizesState[si].height ? sizesState[si].height + ' mm' : '';
+          if (label) label.value = sizeLabelPreview(sizesState[si].height);
         }));
         sizesEl.querySelectorAll<HTMLInputElement>('.s-active').forEach(el => el.addEventListener('change', (e) => {
           const si = Number((e.target as HTMLElement).dataset.si);
@@ -565,10 +588,10 @@ export default function EditSeries() {
           sizesState = sizes.sort((a, b) => (a.display_order || 0) - (b.display_order || 0)).map((sz, si): SizeRow => {
             const versions = ((sz.product_variants) || []).slice().sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
             return {
-              id: sz.id, key: sz.id, height: sz.height != null ? String(sz.height) : '', is_active: sz.is_active, order: sz.display_order || 0,
+              id: sz.id, key: sz.id, height: sz.height != null ? String(healHeight(Number(sz.height))) : '', is_active: sz.is_active, order: sz.display_order || 0,
               versions: versions.map((pv: any): VerRow => ({
                 id: pv.id, key: pv.id,
-                version_name: pv.version_name ?? '', version_code: pv.version_code ?? '', model_code: pv.model_code ?? '',
+                version_name: pv.version_name ?? '', version_code: pv.version_code ?? '', model_code: healModelCode(pv.model_code ?? ''),
                 description: pv.description ?? '', material: pv.material ?? '', load_capacity: pv.load_capacity ?? '',
                 outer_l: pv.outer_length != null ? String(pv.outer_length) : '', outer_w: pv.outer_width != null ? String(pv.outer_width) : '',
                 outer_h: pv.outer_height != null ? String(pv.outer_height) : '',
@@ -594,10 +617,28 @@ export default function EditSeries() {
       })();
 
       // ================= SAVE =================
+      // A second click on "Save" must not start a second save: both runs would
+      // write the same rows and the second one trips over the unique index the
+      // first one created.
+      let saving = false;
+      // The id of the series this form session works on. It is memoised so a
+      // retry (or a second click on Save) updates the same series instead of
+      // creating a second one.
+      let seriesId: string | null = editId;
+
       const onFormSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
+        if (saving) return;
         if (errorEl) errorEl.style.display = 'none';
+        saving = true;
+        try {
+          await save();
+        } finally {
+          saving = false;
+        }
+      };
 
+      async function save(): Promise<void> {
         const categoryId = catEl.value;
         if (!categoryId) { showError('Please select a category.'); return; }
         let name = nameEl.value.trim();
@@ -613,26 +654,54 @@ export default function EditSeries() {
           else { showError('A series name is required (or enter a footprint to auto-generate one).'); return; }
         }
         const slug = slugEl.value.trim() || slugify(name);
+        const seriesActive = activeEl.checked;
 
-        // Validate sizes & versions
-        if (sizesState.length === 0) { showError('Add at least one size (height).'); return; }
-        const seenHeights = new Map<string, string>();
+        // Resolve the database ids of the form rows once, so a retry after a
+        // failed save reuses the same rows instead of leaving orphans behind.
         for (const sz of sizesState) {
-          const h = sz.height.trim();
-          if (!h) { showError('Every size needs a height (mm) — remove empty sizes before saving.'); return; }
-          const hv = parseFloat(h);
-          if (!Number.isFinite(hv)) { showError(`Size "${h}" is not a valid height number.`); return; }
-          if (seenHeights.has(h)) { showError(`Duplicate size height "${h}" inside this series.`); return; }
-          seenHeights.set(h, sz.key);
-          if (sz.versions.length) {
-            const seen = new Set<string>();
-            for (const ver of sz.versions) {
-              const mc = ver.model_code.trim();
-              if (!mc) { showError('Every version needs a model code (e.g. VPC-600).'); return; }
-              if (seen.has(mc.toLowerCase())) { showError(`Duplicate model code "${mc}" in the same size.`); return; }
-              seen.add(mc.toLowerCase());
-            }
+          if (!sz.id) sz.id = crypto.randomUUID();
+          for (const ver of sz.versions) {
+            if (!ver.id) ver.id = crypto.randomUUID();
           }
+        }
+
+        // ---- Validate the hierarchy before anything is written ----
+        const sizeDrafts: SizeDraft[] = sizesState.map((sz, index) => ({
+          id: sz.id!,
+          height: sz.height,
+          isActive: sz.is_active,
+          order: index
+        }));
+        const versionDrafts: VersionDraft[][] = sizesState.map((sz) =>
+          sz.versions.map((ver, vi) => ({
+            id: ver.id!,
+            modelCode: ver.model_code,
+            isActive: ver.is_active,
+            order: vi
+          }))
+        );
+
+        const errors: string[] = validateSizes(sizeDrafts, seriesActive);
+        sizesState.forEach((sz, si) => {
+          const height = parseHeight(sz.height);
+          const label = height === null ? '' : formatHeightLabel(height);
+          errors.push(
+            ...validateVersions(versionDrafts[si], {
+              sizeLabel: label,
+              sizeActive: sz.is_active,
+              seriesActive
+            })
+          );
+        });
+        errors.push(
+          ...validateSeriesHasVariant(
+            versionDrafts.map((versions) => ({ versions })),
+            seriesActive
+          )
+        );
+        if (errors.length) {
+          showError(errors.length > 1 ? `${errors[0]} (+${errors.length - 1} more)` : errors[0]);
+          return;
         }
 
         submitBtn?.setAttribute('disabled', '');
@@ -647,7 +716,10 @@ export default function EditSeries() {
         const pickerValue = picker.getValue();
         let imageUrl: string | null = pickerValue.existing;
         const previousImage = pickerValue.existing;
-        const id = editId || crypto.randomUUID();
+        // Same series row for every attempt of this form session.
+        const id = resolveSeriesId(seriesId);
+        seriesId = id;
+        const now = new Date().toISOString();
 
         if (pickerValue.file) {
           const result = await picker.upload(`media/series/${slug}-${Date.now()}`);
@@ -679,7 +751,7 @@ export default function EditSeries() {
             .eq('category_id', categoryId)
             .eq('slug', slug);
           if (dsErr) { resetBtn(); showError(dsErr.message); return; }
-          if ((dupSeries || []).some((r: any) => r.id !== editId)) {
+          if ((dupSeries || []).some((r: any) => r.id !== id)) {
             resetBtn(); showError(`Another series in this category already uses the slug "${slug}".`); return;
           }
           // Footprint collision check (only if both set)
@@ -691,7 +763,7 @@ export default function EditSeries() {
               .eq('base_length', baseL)
               .eq('base_width', baseW);
             if (dfErr) { resetBtn(); showError(dfErr.message); return; }
-            if ((dupFoot || []).some((r: any) => r.id !== editId)) {
+            if ((dupFoot || []).some((r: any) => r.id !== id)) {
               resetBtn(); showError(`Another series in this category already has this footprint (${baseL} × ${baseW} mm).`); return;
             }
           }
@@ -729,71 +801,159 @@ export default function EditSeries() {
         if (previousImage && previousImage !== imageUrl) await deleteFile(previousImage);
         if (previousLidImage && previousLidImage !== lidImageUrl) await deleteFile(previousLidImage);
 
-        // ---- Save sizes (delete removed) ----
+        // ---- Save sizes ----
+        // The unique index idx_size_variants_series_height(series_id, height)
+        // is checked per row, so a height that moves from one size to another
+        // (the user swaps two heights) collides with the row that still holds
+        // the old value. Those rows are parked on a free placeholder first and
+        // get their final value in one batch afterwards.
         {
-          const { data: existingSizes } = await supabase.from('size_variants').select('id').eq('series_id', id);
-          const kept = sizesState.map(sz => sz.id).filter(Boolean) as string[];
-          const toDelete = ((existingSizes as any[]) || []).map(r => r.id).filter((rid: string) => !kept.includes(rid));
+          const { data: existingSizes, error: exSizeErr } = await supabase
+            .from('size_variants')
+            .select('id, height, label')
+            .eq('series_id', id);
+          if (exSizeErr) { resetBtn(); showError(`Failed to load sizes: ${friendlyDbError(exSizeErr.message)}`); return; }
+
+          const kept = sizeDrafts.map((d) => d.id);
+          const toDelete = ((existingSizes as any[]) || [])
+            .map((r) => r.id)
+            .filter((rid: string) => !kept.includes(rid));
           if (toDelete.length) {
             const { error: delErr } = await supabase.from('size_variants').delete().in('id', toDelete);
-            if (delErr) { resetBtn(); showError(`Failed to remove sizes: ${delErr.message}`); return; }
+            if (delErr) { resetBtn(); showError(`Failed to remove sizes: ${friendlyDbError(delErr.message)}`); return; }
           }
-        }
-        const sizeIdByKey = new Map<string, string>();
-        for (let si = 0; si < sizesState.length; si++) {
-          const sz = sizesState[si];
-          if (!sz.height.trim()) continue;
-          const hid = sz.id || crypto.randomUUID();
-          sizeIdByKey.set(sz.key, hid);
-          const { error: upErr } = await (supabase.from('size_variants') as any).upsert({
-            id: hid, series_id: id, label: `${sz.height.trim()} mm`, height: parseFloat(sz.height),
-            is_active: sz.is_active, display_order: si, updated_at: new Date().toISOString()
-          } as never, { onConflict: 'id' });
-          if (upErr) { resetBtn(); showError(`Failed to save size: ${upErr.message}`); return; }
+
+          const persistedSizes = ((existingSizes as any[]) || [])
+            .filter((r) => kept.includes(r.id))
+            .map((r) => ({ id: r.id, height: Number(r.height), label: r.label ?? '' }));
+          const sizePlan = planSizeWrites(sizeDrafts, persistedSizes, id);
+
+          // Phase 1 - release the slots that another size of the form wants.
+          const parkedSizes: SizePark[] = [];
+          if (sizePlan.park.length) {
+            const { error: parkErr } = await supabase.from('size_variants').upsert(
+              sizePlan.park.map((p) => ({
+                id: p.id, height: p.height, label: p.label, updated_at: now
+              })) as never,
+              { onConflict: 'id' }
+            );
+            if (parkErr) {
+              resetBtn(); showError(`Failed to prepare the sizes: ${friendlyDbError(parkErr.message)}`); return;
+            }
+            parkedSizes.push(...sizePlan.park);
+          }
+
+          // Phase 2 - write every size with its final value in one batch.
+          if (sizePlan.writes.length) {
+            const { error: upErr } = await supabase.from('size_variants').upsert(
+              sizePlan.writes.map((w) => ({
+                id: w.id, series_id: w.seriesId, label: w.label, height: w.height,
+                is_active: w.isActive, display_order: w.displayOrder, updated_at: now
+              })) as never,
+              { onConflict: 'id' }
+            );
+            if (upErr) {
+              // Put the parked rows back so the series keeps its old heights.
+              if (parkedSizes.length) {
+                await supabase.from('size_variants').upsert(
+                  parkedSizes.map((p) => ({
+                    id: p.id, height: p.originalHeight, label: p.originalLabel, updated_at: now
+                  })) as never,
+                  { onConflict: 'id' }
+                );
+              }
+              resetBtn(); showError(`Failed to save size: ${friendlyDbError(upErr.message)}`); return;
+            }
+          }
         }
 
         // ---- Save versions + their images ----
         const uploadErrors: string[] = [];
         for (let si = 0; si < sizesState.length; si++) {
           const sz = sizesState[si];
-          if (!sz.height.trim()) continue;
-          const sizeId = sizeIdByKey.get(sz.key)!;
+          const sizeId = sz.id!;
           const versions = sz.versions;
 
           // delete removed versions
-          {
-            const { data: existingVersions } = await supabase.from('product_variants').select('id').eq('size_variant_id', sizeId);
-            const keptV = versions.map(v => v.id).filter(Boolean) as string[];
-            const toDeleteV = ((existingVersions as any[]) || []).map(r => r.id).filter((rid: string) => !keptV.includes(rid));
-            if (toDeleteV.length) {
-              const { error: delVErr } = await supabase.from('product_variants').delete().in('id', toDeleteV);
-              if (delVErr) { resetBtn(); showError(`Failed to remove versions: ${delVErr.message}`); return; }
+          const { data: existingVersions, error: exVerErr } = await supabase
+            .from('product_variants')
+            .select('id, model_code')
+            .eq('size_variant_id', sizeId);
+          if (exVerErr) {
+            resetBtn(); showError(`Failed to load versions: ${friendlyDbError(exVerErr.message)}`); return;
+          }
+          const keptV = versions.map((v) => v.id!);
+          const toDeleteV = ((existingVersions as any[]) || []).map((r) => r.id).filter((rid: string) => !keptV.includes(rid));
+          if (toDeleteV.length) {
+            const { error: delVErr } = await supabase.from('product_variants').delete().in('id', toDeleteV);
+            if (delVErr) { resetBtn(); showError(`Failed to remove versions: ${friendlyDbError(delVErr.message)}`); return; }
+          }
+
+          // Same story as the sizes: idx_product_variants_size_model_code is
+          // checked per row, so a model code that moves between two versions
+          // has to release its slot before the new value can be written.
+          const versionPlan = planVersionWrites(
+            versionDrafts[si],
+            ((existingVersions as any[]) || []).map((r) => ({ id: r.id, modelCode: r.model_code ?? '' })),
+            sizeId
+          );
+
+          const parkedVersions: VersionPark[] = [];
+          if (versionPlan.park.length) {
+            const { error: parkErr } = await supabase.from('product_variants').upsert(
+              versionPlan.park.map((p) => ({
+                id: p.id, size_variant_id: sizeId, model_code: p.modelCode, updated_at: now
+              })) as never,
+              { onConflict: 'id' }
+            );
+            if (parkErr) {
+              resetBtn(); showError(`Failed to prepare the versions: ${friendlyDbError(parkErr.message)}`); return;
+            }
+            parkedVersions.push(...versionPlan.park);
+          }
+
+          if (versionPlan.writes.length) {
+            const num = (v: string) => { const x = parseFloat(v); return v && Number.isFinite(x) ? x : null; };
+            const verById = new Map(versions.map((v) => [v.id!, v]));
+            const { error: upErr } = await supabase.from('product_variants').upsert(
+              versionPlan.writes.map((w) => {
+                const ver = verById.get(w.id)!;
+                return {
+                  id: w.id, size_variant_id: w.sizeVariantId,
+                  version_name: ver.version_name.trim() || null,
+                  version_code: ver.version_code.trim() || null,
+                  model_code: w.modelCode,
+                  description: ver.description.trim() || null,
+                  material: ver.material.trim() || null,
+                  load_capacity: ver.load_capacity.trim() || null,
+                  outer_length: num(ver.outer_l), outer_width: num(ver.outer_w), outer_height: num(ver.outer_h),
+                  inner_length: num(ver.inner_l), inner_width: num(ver.inner_w), inner_height: num(ver.inner_h),
+                  colours: ver.colours.trim() || null,
+                  shape: ver.shape.trim() || null,
+                  price: null,
+                  is_active: w.isActive, display_order: w.displayOrder,
+                  updated_at: now
+                };
+              }) as never,
+              { onConflict: 'id' }
+            );
+            if (upErr) {
+              if (parkedVersions.length) {
+                await supabase.from('product_variants').upsert(
+                  parkedVersions.map((p) => ({
+                    id: p.id, size_variant_id: sizeId, model_code: p.originalModelCode, updated_at: now
+                  })) as never,
+                  { onConflict: 'id' }
+                );
+              }
+              resetBtn(); showError(`Failed to save version: ${friendlyDbError(upErr.message)}`); return;
             }
           }
 
           for (let vi = 0; vi < versions.length; vi++) {
             const ver = versions[vi];
             if (!ver.model_code.trim()) continue;
-            const vid = ver.id || crypto.randomUUID();
-            const num = (v: string) => { const x = parseFloat(v); return v && Number.isFinite(x) ? x : null; };
-            const { error: upErr } = await (supabase.from('product_variants') as any).upsert({
-              id: vid, size_variant_id: sizeId,
-              version_name: ver.version_name.trim() || null,
-              version_code: ver.version_code.trim() || null,
-              model_code: ver.model_code.trim(),
-              description: ver.description.trim() || null,
-              material: ver.material.trim() || null,
-              
-              load_capacity: ver.load_capacity.trim() || null,
-              outer_length: num(ver.outer_l), outer_width: num(ver.outer_w), outer_height: num(ver.outer_h),
-              inner_length: num(ver.inner_l), inner_width: num(ver.inner_w), inner_height: num(ver.inner_h),
-              colours: ver.colours.trim() || null,
-              shape: ver.shape.trim() || null,
-              price: null,
-              is_active: ver.is_active, display_order: vi,
-              updated_at: new Date().toISOString()
-            } as never, { onConflict: 'id' });
-            if (upErr) { uploadErrors.push(`Save version error: ${upErr.message}`); continue; }
+            const vid = ver.id!;
 
             // delete removed images
             {
@@ -854,7 +1014,7 @@ export default function EditSeries() {
         }
         await publishSiteNow();
         window.location.href = href('admin/series/');
-      };
+      }
 
       formEl?.addEventListener('submit', onFormSubmit);
       cleanups.push(() => formEl?.removeEventListener('submit', onFormSubmit));

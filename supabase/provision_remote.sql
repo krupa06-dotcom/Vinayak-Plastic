@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS series (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL UNIQUE,
+  slug VARCHAR(255) NOT NULL,
   base_length NUMERIC(10,2),
   base_width NUMERIC(10,2),
   description TEXT,
@@ -393,6 +393,9 @@ CREATE INDEX IF NOT EXISTS idx_series_display_order ON series(display_order);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_series_category_footprint
   ON series(category_id, base_length, base_width)
   WHERE base_length IS NOT NULL AND base_width IS NOT NULL;
+-- The slug only has to be unique inside its category, so the same footprint can
+-- be created in two categories (migration 20261021000000_series_slug_per_category.sql).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_series_category_slug ON series(category_id, slug);
 
 DROP TRIGGER IF EXISTS set_series_updated_at ON series;
 CREATE TRIGGER set_series_updated_at
