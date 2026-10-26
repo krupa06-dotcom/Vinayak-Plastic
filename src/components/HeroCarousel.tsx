@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import SafeImage from '@/components/SafeImage';
 
 export interface HeroSlide {
   img: string | null;
@@ -151,16 +152,13 @@ export default function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
           >
             <div className="hero__img-wrap">
               {s.img && (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="hero__img"
-                    src={s.img}
-                    alt={s.alt}
-                    loading={i === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
-                  />
-                </>
+                <SafeImage
+                  className="hero__img"
+                  src={s.img}
+                  alt={s.alt}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
               )}
             </div>
             <div className="hero__shade" aria-hidden="true"></div>

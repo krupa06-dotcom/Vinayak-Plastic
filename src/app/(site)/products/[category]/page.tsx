@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import SafeImage from '@/components/SafeImage';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
@@ -52,8 +53,7 @@ function SeriesCard({
     <a href={series.href} className="px-series">
       <div className="px-series__media">
         {series.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SafeImage
             src={series.image}
             alt={`${series.name} — ${contextName}`}
             width="560"
@@ -117,8 +117,7 @@ export default async function CategoryPage({
             </div>
             {cat.image && (
               <div className="page-hero__media" aria-hidden="true">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cat.image} alt="" width="560" height="360" decoding="async" />
+                <SafeImage src={cat.image} alt="" width="560" height="360" decoding="async" />
               </div>
             )}
           </div>
@@ -137,10 +136,11 @@ export default async function CategoryPage({
           {visibleTypes.length > 0 || directSeries.length > 0 ? (
             <div className="cat-subcategories-wrap">
               {directSeries.length > 0 && (
-                <div id="direct-series" className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
+                <div id="direct-series" className="cat-subtype-section">
                   <div className="reveal" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>
+                      <h3 className="display-600" style={{ margin: 0 }}>All {cat.name}</h3>
                       <span className="pl-chip pl-chip-outline">{directSeries.length} series</span>
                       <span className="pl-chip">{directModels} {directModels === 1 ? 'model' : 'models'}</span>
                     </div>
@@ -161,7 +161,7 @@ export default async function CategoryPage({
               )}
 
               {visibleTypes.map((subCat) => (
-                <div key={subCat.id} id={`type-${subCat.slug}`} className="cat-subtype-section" style={{ marginBottom: 48, scrollMarginTop: 90 }}>
+                <div key={subCat.id} id={`type-${subCat.slug}`} className="cat-subtype-section">
                   <div className="reveal" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--orange, #e8630c)', fontWeight: 700 }} aria-hidden="true">&#8627;</span>

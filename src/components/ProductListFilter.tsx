@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import SafeImage from '@/components/SafeImage';
 
 export interface RelativeProduct {
   id: string;
@@ -204,8 +205,7 @@ export default function ProductListFilter({
                   >
                     <div className="pl-card__img" style={{ background: '#f6f3ec', position: 'relative' }}>
                       {pt.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={pt.image} alt={`${pt.name} — ${pt.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
+                        <SafeImage src={pt.image} alt={`${pt.name} — ${pt.categoryName}`} width="480" height="360" loading="lazy" decoding="async" />
                       ) : (
                         <span className="pl-card__placeholder">{pt.name}</span>
                       )}
@@ -215,8 +215,8 @@ export default function ProductListFilter({
                       <h3 style={{ margin: '4px 0 6px', fontSize: '1.25rem' }}>{pt.name}</h3>
                       {pt.description && <p style={{ fontSize: '0.86rem', margin: '0 0 12px' }}>{pt.description}</p>}
                        <div className="pl-card__meta" style={{ marginTop: 'auto' }}>
-                         <span className="pl-chip pl-chip-ok" style={{ background: 'rgba(232, 99, 12, 0.1)', color: 'var(--orange-deep, #c84e08)' }}>
-                           {pt.seriesCount} {pt.seriesCount === 1 ? 'Size Series' : 'Size Series'}
+                         <span className="pl-chip pl-chip-ok">
+                           {pt.seriesCount} series
                          </span>
                          <span className="pl-chip pl-chip-outline">
                            {pt.modelsCount} {pt.modelsCount === 1 ? 'Model' : 'Models'}

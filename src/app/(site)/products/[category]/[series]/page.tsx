@@ -5,7 +5,8 @@ import '@/styles/subcategory.css';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
-import SeriesRail from '@/components/SeriesRail';
+import SafeImage from '@/components/SafeImage';
+import SizeMegaNav, { type MegaNavSize } from '@/components/SizeMegaNav';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
 import {
@@ -57,6 +58,25 @@ export default async function SeriesPage({
   /** One lid per series — the same lid fits every height in the footprint. */
   const showLid = Boolean(s.lid_image) && s.base_length != null && s.base_width != null;
 
+  // One tab per footprint/series in the category, matching the product detail
+  // page navigation. Each tab's panel lists every model in that footprint.
+  const megaSizes: MegaNavSize[] = cat.series
+    .map((series) => ({
+      key: series.series_key,
+      label: formatFootprint(series) || series.name,
+      href: series.href,
+      models: series.sizes.flatMap((size) =>
+        size.variants.map((v) => ({
+          href: v.href,
+          image: v.card_image,
+          modelCode: v.model_code,
+          name: v.display_name,
+          dimensions: formatVariantSize(series, size.height, v)
+        }))
+      )
+    }))
+    .filter((series) => series.models.length > 0);
+
   return (
     <main id="main">
       {/* ===== PAGE HERO ===== */}
@@ -77,100 +97,98 @@ export default async function SeriesPage({
       {/* ===== SERIES SPEC TABLE ===== */}
       <section className="section" id="series-specs">
         <div className="container">
-          <div className="sr-layout">
-            <SeriesRail category={cat} activeSeriesKey={s.series_key} />
-            <div className="sr-layout__main">
-              <header className="section-header reveal" style={{ textAlign: 'left' }}>
-                <p className="sec-index">Series Specification</p>
-                <h2 className="display-700">
-                  {s.name} — complete size range
-                </h2>
-                <p>
-                  All standard heights for the {formatFootprint(s) ? `${formatFootprint(s)} footprint` : s.name} with model
-                  codes, external dimensions and load capacity at a glance.
-                </p>
-              </header>
+          <SizeMegaNav categoryName={cat.name} activeKey={s.series_key} sizes={megaSizes} />
+          <header className="section-header reveal" style={{ textAlign: 'left' }}>
+            <p className="sec-index">Series Specification</p>
+            <h2 className="display-700">
+              {s.name} — complete size range
+            </h2>
+            <p>
+              All standard heights for the {formatFootprint(s) ? `${formatFootprint(s)} footprint` : s.name} with model
+              codes, external dimensions and load capacity at a glance.
+            </p>
+          </header>
 
-              {s.sizes.length > 0 || showLid ? (
-                <div className="st-catalog reveal">
-                  {s.sizes.flatMap((sz) =>
-                    sz.variants.map((v) => {
-                      const innerSize = formatInnerSize(v);
-                      return (
-                        <a key={`${sz.size_key}-${v.version_key}`} href={v.href} className="px-version">
-                          <div className="px-version__img">
-                            {v.card_image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
-                            ) : (
-                              <span className="px-version__placeholder">{v.model_code}</span>
-                            )}
-                          </div>
-                          <div className="px-version__body">
-                            <span className="px-version__code">{v.model_code}</span>
-                            <h3 className="px-version__name">{v.display_name}</h3>
-                            <span className="px-version__dims">
-                              {formatVariantSize(s, sz.height, v)}
-                            </span>
-                            {innerSize && (
-                              <span className="px-version__dims px-version__dims--inner">
-                                Inner {innerSize}
-                              </span>
-                            )}
-                            {v.load_capacity && <span className="st-catalog__load">{v.load_capacity}</span>}
-                            {v.version_code && v.version_code !== v.display_name && (
-                              <span className="st-catalog__ver">{v.version_code}</span>
-                            )}
-                            <div className="px-version__foot">
-                              <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
-                            </div>
-                          </div>
-                        </a>
-                      );
-                    })
-                  )}
-                  {showLid && (
-                    <div className="px-version px-version--static" role="group" aria-label={`${s.lid_title} for ${s.name}`}>
+          {s.sizes.length > 0 || showLid ? (
+            <div className="st-catalog reveal">
+              {s.sizes.flatMap((sz) =>
+                sz.variants.map((v) => {
+                  const innerSize = formatInnerSize(v);
+                  const showModelCode = Boolean(v.model_code) && v.model_code !== v.display_name;
+                  const alt = showModelCode ? `${v.display_name} — ${v.model_code}` : v.display_name;
+                  return (
+                    <a key={`${sz.size_key}-${v.version_key}`} href={v.href} className="px-version">
                       <div className="px-version__img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={s.lid_image!}
-                          alt={`${s.lid_title} fitting the ${formatFootprint(s) || s.name} series`}
-                          loading="lazy"
-                          decoding="async"
-                        />
+                        {v.card_image ? (
+                          <SafeImage src={v.card_image} alt={alt} width="480" height="300" loading="lazy" decoding="async" />
+                        ) : (
+                          <span className="px-version__placeholder">{v.model_code}</span>
+                        )}
                       </div>
                       <div className="px-version__body">
-                        <span className="px-version__code">Lid</span>
-                        <h3 className="px-version__name">{s.lid_title}</h3>
+                        {showModelCode && (
+                          <span className="px-version__code">{v.model_code}</span>
+                        )}
+                        <h3 className="px-version__name">{v.display_name}</h3>
                         <span className="px-version__dims">
-                          {s.base_length} × {s.base_width} mm footprint
+                          {formatVariantSize(s, sz.height, v)}
                         </span>
-                        {s.lid_note && (
+                        {innerSize && (
                           <span className="px-version__dims px-version__dims--inner">
-                            {s.lid_note}
+                            Inner {innerSize}
                           </span>
                         )}
+                        {v.load_capacity && <span className="st-catalog__load">{v.load_capacity}</span>}
+                        {v.version_code && v.version_code !== v.display_name && (
+                          <span className="st-catalog__ver">{v.version_code}</span>
+                        )}
                         <div className="px-version__foot">
-                          <span className="px-version__cta px-version__cta--muted">
-                            Available with all models
-                          </span>
+                          <span className="px-version__cta">View Details <span aria-hidden="true">→</span></span>
                         </div>
                       </div>
+                    </a>
+                  );
+                })
+              )}
+              {showLid && (
+                <div className="px-version px-version--static" role="group" aria-label={`${s.lid_title} for ${s.name}`}>
+                  <div className="px-version__img">
+                    <SafeImage
+                      src={s.lid_image!}
+                      alt={`${s.lid_title} fitting the ${formatFootprint(s) || s.name} series`}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="px-version__body">
+                    <span className="px-version__code">Lid</span>
+                    <h3 className="px-version__name">{s.lid_title}</h3>
+                    <span className="px-version__dims">
+                      {s.base_length} × {s.base_width} mm footprint
+                    </span>
+                    {s.lid_note && (
+                      <span className="px-version__dims px-version__dims--inner">
+                        {s.lid_note}
+                      </span>
+                    )}
+                    <div className="px-version__foot">
+                      <span className="px-version__cta px-version__cta--muted">
+                        Available with all models
+                      </span>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="empty-state reveal">
-                  <h3>No sizes available yet</h3>
-                  <p>
-                    We are finalising the dimensions for this series. <a href="/contact">Contact us</a> to
-                    check availability.
-                  </p>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="empty-state reveal">
+              <h3>No sizes available yet</h3>
+              <p>
+                We are finalising the dimensions for this series. <a href="/contact">Contact us</a> to
+                check availability.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

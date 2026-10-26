@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Product image coming soon">
+  <rect width="800" height="600" fill="#f6f3ec"/>
+  <g stroke="#e4ddd0" stroke-width="1">
+    <path d="M100 0v600M200 0v600M300 0v600M400 0v600M500 0v600M600 0v600M700 0v600"/>
+    <path d="M0 100h800M0 200h800M0 300h800M0 400h800M0 500h800"/>
+  </g>
+  <rect x="40" y="40" width="720" height="520" fill="none" stroke="#122a4e" stroke-opacity=".12" stroke-width="2"/>
+  <g transform="translate(400 258)">
+    <path d="M-74-46 0-84l74 38v92L0 84l-74-38z" fill="none" stroke="#122a4e" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M-74-46 0-8l74-38M0-8v92" fill="none" stroke="#122a4e" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M-37-65 37-27" stroke="#e8630c" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <rect x="340" y="372" width="120" height="4" fill="#e8630c"/>
+  <text x="400" y="430" text-anchor="middle" fill="#122a4e" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="4">VINAYAK PLASTICS</text>
+  <text x="400" y="466" text-anchor="middle" fill="#5b6472" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="3">PRODUCT IMAGE COMING SOON</text>
+</svg>

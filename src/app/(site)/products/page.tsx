@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import '@/styles/products.css';
 import '@/styles/catalogue.css';
 import BackButton from '@/components/BackButton';
+import SafeImage from '@/components/SafeImage';
 import ProductListFilter, { type ProductTypeCardData } from '@/components/ProductListFilter';
 import { CONTACT } from '@/lib/contact';
 import { formatFootprint, formatVariantSize, getHierarchyData } from '@/lib/hierarchy';
@@ -172,8 +173,7 @@ export default async function ProductsPage() {
                 <a key={card.slug} href={card.href} className="plx-cat reveal" aria-label={`Explore ${card.name}`}>
                   <div className="plx-cat__media">
                     {card.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.image} alt={`${card.name} — Vinayak Plastics`} width="640" height="420" loading="lazy" decoding="async" />
+                      <SafeImage src={card.image} alt={`${card.name} �?" Vinayak Plastics`} width="640" height="420" loading="lazy" decoding="async" />
                     ) : (
                       <span className="plx-cat__placeholder" aria-hidden="true">{card.name}</span>
                     )}
@@ -187,7 +187,7 @@ export default async function ProductsPage() {
                     {card.description && <p className="plx-cat__desc">{card.description}</p>}
                     <div className="plx-cat__meta">
                       <span className="pl-chip">{card.models} {card.models === 1 ? 'model' : 'models'}</span>
-                      <span className="pl-chip">{card.series} {card.series === 1 ? 'series' : 'series'}</span>
+                      <span className="pl-chip">{card.series} series</span>
                       {card.sizes.slice(0, 2).filter(Boolean).map((name) => (
                         <span key={name} className="pl-chip pl-chip-outline">{name}</span>
                       ))}

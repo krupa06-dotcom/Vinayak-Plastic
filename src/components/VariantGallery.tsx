@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import SafeImage from '@/components/SafeImage';
 
 export interface GalleryImage {
   src: string;
@@ -92,8 +93,7 @@ export default function VariantGallery({ images, name }: VariantGalleryProps) {
 
   return (
     <div className="cat-detail__media" ref={mediaRef}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <SafeImage
         className="pd-main-img"
         src={images[0].src}
         alt={images[0].alt || name}
@@ -110,8 +110,7 @@ export default function VariantGallery({ images, name }: VariantGalleryProps) {
               data-src={img.src}
               aria-label={`View image ${i + 1}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.src} alt="" loading="lazy" decoding="async" />
+              <SafeImage src={img.src} alt="" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

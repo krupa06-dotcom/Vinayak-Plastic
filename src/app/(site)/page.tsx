@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '@/styles/home.css';
 import Hero from '@/components/Hero';
+import SafeImage from '@/components/SafeImage';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
 import { CONTACT } from '@/lib/contact';
 import { getSiteSetting, getSiteImage } from '@/lib/db';
@@ -121,12 +122,14 @@ export default async function HomePage() {
         <div className="container">
           <div className="about-home__grid">
             <div className="about-home__media reveal">
-              {warehouseImage ? (
-                <img src={warehouseImage} alt="Spacious warehouse with organized storage and material handling" width={1125} height={750} loading="lazy" />
-              ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling" width={1125} height={750} loading="lazy" />
-              )}
+              <SafeImage
+                src={warehouseImage || warehouseInterior.src}
+                fallbackSrc={warehouseInterior.src}
+                alt="Spacious warehouse with organized storage and material handling"
+                width={1125}
+                height={750}
+                loading="lazy"
+              />
             </div>
             <div className="about-home__body reveal">
               <p className="sec-index">About Us</p>
@@ -156,8 +159,7 @@ export default async function HomePage() {
                   <a href={p.slug} className="ph-card__link">
                     <div className="ph-card__img">
                       {dbImg ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={dbImg} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
+                        <SafeImage src={dbImg} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
                       ) : (
                         <span className="ph-card__placeholder">{p.name}</span>
                       )}

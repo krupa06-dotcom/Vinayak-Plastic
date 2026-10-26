@@ -6,7 +6,9 @@ import '@/styles/catalogue.css';
 import '@/styles/variant.css';
 import BackButton from '@/components/BackButton';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
-import SeriesRail from '@/components/SeriesRail';
+import SafeImage from '@/components/SafeImage';
+import SizeMegaNav, { type MegaNavSize } from '@/components/SizeMegaNav';
+import SpecTable, { type SpecRow } from '@/components/SpecTable';
 import VariantGallery from '@/components/VariantGallery';
 import EnquiryForm, { type EnquiryPrefill } from '@/components/EnquiryForm';
 import { CONTACT } from '@/lib/contact';
@@ -36,10 +38,28 @@ function joinMm(a?: number | null, b?: number | null, c?: number | null): string
   return `${x} × ${y} × ${z} mm`;
 }
 
-function specsFor(ctx: ProductDetailContext): { name: string; value: string }[] {
+const COLOUR_SWATCHES: Record<string, string> = {
+  blue: '#1f5fae',
+  grey: '#7a828c',
+  gray: '#7a828c',
+  green: '#1f7a4d',
+  red: '#c0392b',
+  yellow: '#e8b81c',
+  black: '#23272c',
+  white: '#f1f1ec',
+  orange: '#e8630c',
+  turquoise: '#1aa6a6'
+};
+
+function colourSwatch(name: string): string {
+  const key = name.toLowerCase().split('/')[0].trim();
+  return COLOUR_SWATCHES[key] || '#9aa1a9';
+}
+
+function specsFor(ctx: ProductDetailContext): { dimensions: SpecRow[]; technical: SpecRow[] } {
   const { series, size, variant } = ctx;
   const add = (
-    rows: { name: string; value: string }[],
+    rows: SpecRow[],
     name: string,
     value: string | number | null | undefined
   ) => {
@@ -48,22 +68,25 @@ function specsFor(ctx: ProductDetailContext): { name: string; value: string }[] 
     return rows;
   };
 
-  const rows: { name: string; value: string }[] = [];
-  add(rows, 'Model Code', variant.model_code);
-  add(rows, 'Version', variant.version_name || variant.version_code);
+  const dimensions: SpecRow[] = [];
+  const technical: SpecRow[] = [];
+
   add(
-    rows,
+    dimensions,
     'External Size (L × W × H)',
     joinMm(variant.outer_length, variant.outer_width, variant.outer_height) ??
       joinMm(series.base_length, series.base_width, size.height)
   );
-  add(rows, 'Material', variant.material);
-  add(rows, 'Load Capacity', variant.load_capacity);
-  add(rows, 'Colours', variant.colours);
-  add(rows, 'Shape', variant.shape);
-  add(rows, 'Inner Size (L × W × H)', joinMm(variant.inner_length, variant.inner_width, variant.inner_height));
-  add(rows, 'Series Code', series.product_code);
-  return rows;
+  add(dimensions, 'Inner Size (L × W × H)', joinMm(variant.inner_length, variant.inner_width, variant.inner_height));
+
+  add(technical, 'Model Code', variant.model_code);
+  add(technical, 'Version', variant.version_name || variant.version_code);
+  add(technical, 'Material', variant.material);
+  add(technical, 'Load Capacity', variant.load_capacity);
+  add(technical, 'Shape', variant.shape);
+  add(technical, 'Series Code', series.product_code);
+
+  return { dimensions, technical };
 }
 
 export async function generateMetadata({
@@ -98,15 +121,39 @@ export default async function ProductDetailPage({
   const ctx = await getProductDetail(category, series, size, version);
   if (!ctx) notFound();
 
-  const { category: cat, series: s, size: sz, variant, siblingSizes, siblingVariants } = ctx;
+  const { category: cat, series: s, size: sz, variant, siblingVariants } = ctx;
   const features = (variant.description ? [variant.description] : []).concat(s.features || []);
   const applications = normalizeApplications(s.applications);
   const specs = specsFor(ctx);
   const fullSize = formatVariantSize(s, sz.height, variant);
-  const footprint = formatFootprint(s);
 
-  const siblingSizeHref = (sib: { size_key: string; variants: { href: string }[] }) =>
-    sib.variants[0]?.href ?? `${s.href}#size-${sib.size_key}`;
+  // Colour values live on the variant; crates without a stored value fall back
+  // to the standard crate colours so the swatches are always useful.
+  const colourValue =
+    variant.colours?.trim() || (cat.slug === 'plastic-crates' ? 'Blue, Grey' : '');
+  const colourList = colourValue
+    .split(',')
+    .map((colour) => colour.trim())
+    .filter(Boolean);
+
+  // One tab per footprint/series in the category. The mega menu lists every
+  // model (all heights and construction types) inside that footprint.
+  const megaSizes: MegaNavSize[] = cat.series
+    .map((series) => ({
+      key: series.series_key,
+      label: formatFootprint(series) || series.name,
+      href: series.href,
+      models: series.sizes.flatMap((size) =>
+        size.variants.map((v) => ({
+          href: v.href,
+          image: v.card_image,
+          modelCode: v.model_code,
+          name: v.display_name,
+          dimensions: formatVariantSize(series, size.height, v)
+        }))
+      )
+    }))
+    .filter((series) => series.models.length > 0);
 
   const galleryImages =
     variant.images.length > 0
@@ -126,8 +173,7 @@ export default async function ProductDetailPage({
     },
     { tag: 'Height', value: `${sz.height} mm` },
     { tag: 'Material', value: variant.material },
-    { tag: 'Load', value: variant.load_capacity },
-    { tag: 'Colours', value: variant.colours }
+    { tag: 'Load', value: variant.load_capacity }
   ].filter((f): f is { tag: string; value: string } => Boolean(f.value));
 
   const prefill: EnquiryPrefill = {
@@ -149,8 +195,9 @@ export default async function ProductDetailPage({
     category: cat.name,
     sku: variant.model_code,
     mpn: variant.model_code,
+    color: colourList.length > 0 ? colourList.join(', ') : undefined,
     image: galleryImages[0]?.src || `${SITE_URL}/images/vp-logo.png`,
-    additionalProperty: specs.map((row) => ({
+    additionalProperty: [...specs.dimensions, ...specs.technical].map((row) => ({
       '@type': 'PropertyValue',
       name: row.name,
       value: row.value
@@ -163,18 +210,18 @@ export default async function ProductDetailPage({
       <section className="page-hero">
         <div className="container">
           <div className="hero-top">
-            <p className="breadcrumb">
+            <nav aria-label="Breadcrumb" className="breadcrumb">
               <a href="/">Home</a> / <a href="/products">Products</a> /{' '}
               <a href={cat.href}>{cat.name}</a> /{' '}
               <a href={s.href}>{s.name}</a> /{' '}
-              {fullSize} / {variant.display_name}
-            </p>
+              <span aria-current="page">{variant.display_name}</span>
+            </nav>
             <BackButton href={`${s.href}#size-${sz.size_key}`} />
           </div>
           <h1 className="display-800">{variant.display_name}</h1>
           {fullSize && <p className="page-hero__dims">{fullSize}</p>}
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--white)' }}>
-            Model Code: <strong>{variant.model_code}</strong> · Series: <strong>{s.name}</strong>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+            Model Code: <strong>{variant.model_code}</strong> • Series: <strong>{s.name}</strong> • Category: <strong>{cat.name}</strong>
           </p>
         </div>
       </section>
@@ -182,16 +229,9 @@ export default async function ProductDetailPage({
       {/* ===== PRODUCT DETAIL ===== */}
       <section className="section" id="product-detail">
         <div className="container">
-          <div className="sr-layout reveal">
-            <SeriesRail
-              category={cat}
-              activeSeriesKey={s.series_key}
-              activeSizeKey={sz.size_key}
-              sizeHref={(series, size) => size.variants[0]?.href ?? `${series.href}#size-${size.size_key}`}
-            />
-            <div className="sr-layout__main">
-              <div className="cat-detail">
-                <div className="cat-detail__media-wrap reveal">
+          <SizeMegaNav categoryName={cat.name} activeKey={s.series_key} sizes={megaSizes} />
+          <div className="cat-detail">
+            <div className="cat-detail__media-wrap reveal">
               <VariantGallery images={galleryImages} name={variant.display_name} />
               <div className="lightbox" data-lightbox aria-modal="true" role="dialog" aria-label="Enlarged product image">
                 <div className="lightbox__backdrop" data-lightbox-close></div>
@@ -231,25 +271,31 @@ export default async function ProductDetailPage({
                   ))}
                 </ul>
               )}
-              <div className="cat-detail__types">
-                <span className="cat-detail__types-label">Other sizes in this series:</span>
-                <span className="cat-detail__chip cat-detail__chip--current" aria-current="true">{fullSize}</span>
-                {siblingSizes.map((sib) => (
-                  <a key={sib.size_key} href={siblingSizeHref(sib)} className="cat-detail__chip">
-                    {formatVariantSize(s, sib.height, sib.variants[0])}
-                  </a>
-                ))}
-              </div>
-              <a href="#quote" className="btn btn-primary">Request a Quote</a>
-            </div>
-          </div>
+              {colourList.length > 0 && (
+                <div className="pd-colours">
+                  <span className="pd-colours__label">Available Colours</span>
+                  <ul className="pd-colours__list">
+                    {colourList.map((colour) => (
+                      <li key={colour} className="pd-colours__chip">
+                        <span
+                          className="pd-colours__swatch"
+                          style={{ background: colourSwatch(colour) }}
+                          aria-hidden="true"
+                        />
+                        {colour}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <a href="#quote" className="btn btn-primary">Request Bulk Quote</a>
             </div>
           </div>
         </div>
       </section>
 
       {/* ===== SPECIFICATIONS ===== */}
-      {specs.length > 0 && (
+      {(specs.dimensions.length > 0 || specs.technical.length > 0) && (
         <section className="section-warm" id="specs">
           <div className="container">
             <div className="section-header reveal">
@@ -257,23 +303,9 @@ export default async function ProductDetailPage({
               <h2 className="display-700">{variant.display_name} technical specs</h2>
               <p>Key dimensions and properties for the {variant.model_code} model.</p>
             </div>
-            <div className="specs-table-wrap reveal">
-              <table className="specs-table">
-                <thead>
-                  <tr>
-                    <th>Specification</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {specs.map((row) => (
-                    <tr key={row.name}>
-                      <td>{row.name}</td>
-                      <td>{row.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="specs-tables">
+              <SpecTable title="Dimensions" rows={specs.dimensions} />
+              <SpecTable title="Technical Information" rows={specs.technical} />
             </div>
             <div className="reveal" style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--steel)', textAlign: 'center' }}>
               <p>Specifications are indicative and may vary by batch. Contact us for detailed technical drawings.</p>
@@ -328,8 +360,7 @@ export default async function ProductDetailPage({
                 <a key={v.version_key} href={v.href} className="px-version">
                   <div className="px-version__img">
                     {v.card_image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
+                      <SafeImage src={v.card_image} alt={`${v.display_name} — ${v.model_code}`} width="480" height="300" loading="lazy" decoding="async" />
                     ) : (
                       <span className="px-version__placeholder">{v.display_name}</span>
                     )}

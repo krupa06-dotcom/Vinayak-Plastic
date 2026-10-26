@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '@/styles/about.css';
 import BackButton from '@/components/BackButton';
+import SafeImage from '@/components/SafeImage';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
 import { CONTACT } from '@/lib/contact';
 import { getCatalogueData, getSiteSetting, getSiteImage, resolveFirstImage } from '@/lib/db';
@@ -99,12 +100,14 @@ export default async function AboutPage() {
         <div className="container">
           <div className="about-who__grid">
             <div className="about-who__media reveal">
-              {warehouseImage ? (
-                <img src={warehouseImage} alt="Spacious warehouse with organized storage and material handling equipment" width={1125} height={750} loading="lazy" />
-              ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={warehouseInterior.src} alt="Spacious warehouse with organized storage and material handling equipment" width={1125} height={750} loading="lazy" />
-              )}
+              <SafeImage
+                src={warehouseImage || warehouseInterior.src}
+                fallbackSrc={warehouseInterior.src}
+                alt="Spacious warehouse with organized storage and material handling"
+                width={1125}
+                height={750}
+                loading="lazy"
+              />
             </div>
             <div className="about-who__body reveal">
               <p className="sec-index">Who We Are</p>
@@ -178,8 +181,7 @@ export default async function AboutPage() {
               <a href={p.href} className="about-range__card reveal" key={p.name}>
                 <div className="about-range__img">
                   {p.img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.img} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
+                    <SafeImage src={p.img} alt={p.alt} width={600} height={450} loading="lazy" decoding="async" />
                   ) : (
                     <span className="about-range__placeholder">{p.name}</span>
                   )}
