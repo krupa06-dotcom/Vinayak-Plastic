@@ -232,7 +232,33 @@ export default async function ProductDetailPage({
           <SizeMegaNav categoryName={cat.name} activeKey={s.series_key} sizes={megaSizes} />
           <div className="cat-detail">
             <div className="cat-detail__media-wrap reveal">
-              <VariantGallery images={galleryImages} name={variant.display_name} />
+              <div className="pd-gallery-block">
+                <VariantGallery images={galleryImages} name={variant.display_name} />
+                {colourList.length > 0 && (
+                  <div className="pd-colours pd-colours--gallery">
+                    <span className="pd-colours__label">Available Colours</span>
+                    <ul className="pd-colours__list">
+                      {colourList.map((colour) => (
+                        <li key={colour}>
+                          <button
+                            type="button"
+                            className="pd-colours__chip-btn is-active"
+                            data-colour={colour.toLowerCase()}
+                            aria-pressed="true"
+                          >
+                            <span
+                              className="pd-colours__swatch"
+                              style={{ background: colourSwatch(colour) }}
+                              aria-hidden="true"
+                            />
+                            <span>{colour}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
               <div className="lightbox" data-lightbox aria-modal="true" role="dialog" aria-label="Enlarged product image">
                 <div className="lightbox__backdrop" data-lightbox-close></div>
                 <div className="lightbox__panel">
@@ -272,17 +298,24 @@ export default async function ProductDetailPage({
                 </ul>
               )}
               {colourList.length > 0 && (
-                <div className="pd-colours">
+                <div className="pd-colours pd-colours--body">
                   <span className="pd-colours__label">Available Colours</span>
                   <ul className="pd-colours__list">
                     {colourList.map((colour) => (
-                      <li key={colour} className="pd-colours__chip">
-                        <span
-                          className="pd-colours__swatch"
-                          style={{ background: colourSwatch(colour) }}
-                          aria-hidden="true"
-                        />
-                        {colour}
+                      <li key={colour}>
+                        <button
+                          type="button"
+                          className="pd-colours__chip-btn is-active"
+                          data-colour={colour.toLowerCase()}
+                          aria-pressed="true"
+                        >
+                          <span
+                            className="pd-colours__swatch"
+                            style={{ background: colourSwatch(colour) }}
+                            aria-hidden="true"
+                          />
+                          <span>{colour}</span>
+                        </button>
                       </li>
                     ))}
                   </ul>

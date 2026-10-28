@@ -442,10 +442,18 @@ export default function EditSeries() {
           if (!file) return;
           if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
           if (file.size > 10 * 1024 * 1024) { toast('Image must be 10 MB or smaller.', 'error'); return; }
+          const verImgs = sizesState[si].versions[vi].images;
+          if (verImgs.length >= 5 && !verImgs[ii]) {
+            toast('Maximum 5 images per product version.', 'error');
+            return;
+          }
           const preview = await toBase64(file);
-          const img = sizesState[si].versions[vi].images[ii] || newImgRow();
+          const img = verImgs[ii] || newImgRow();
           img.file = file; img.preview = preview;
-          if (!sizesState[si].versions[vi].images[ii]) { img.order = sizesState[si].versions[vi].images.length; sizesState[si].versions[vi].images.push(img); }
+          if (!verImgs[ii]) {
+            img.order = verImgs.length;
+            verImgs.push(img);
+          }
           renderSizes();
         }));
         sizesEl.querySelectorAll<HTMLButtonElement>('[data-sr-img-del]').forEach(btn => btn.addEventListener('click', async () => {
@@ -466,10 +474,15 @@ export default function EditSeries() {
         }));
         sizesEl.querySelectorAll<HTMLButtonElement>('[data-add-img]').forEach(btn => btn.addEventListener('click', () => {
           const [si, vi] = btn.dataset.addImg!.split('|').map(Number);
+          const imgs = sizesState[si].versions[vi].images;
+          if (imgs.length >= 5) {
+            toast('Maximum 5 images per product version.', 'error');
+            return;
+          }
           const img = newImgRow();
-          img.order = sizesState[si].versions[vi].images.length;
-          if (!sizesState[si].versions[vi].images.length) img.main = true;
-          sizesState[si].versions[vi].images.push(img);
+          img.order = imgs.length;
+          if (!imgs.length) img.main = true;
+          imgs.push(img);
           renderSizes();
         }));
         // Version field bindings

@@ -13,9 +13,8 @@ type VariantGalleryProps = {
   name: string;
 };
 
-// Model-image gallery for the variant page: thumbnail switcher for the main
-// image plus a zoom lightbox on click. Progressive enhancement — the first
-// thumb's image is always server-rendered so the page works without JS.
+// Model-image gallery for the variant page: horizontal thumbnail strip below
+// the main image with smooth transitions, active border, and horizontal scrolling.
 export default function VariantGallery({ images, name }: VariantGalleryProps) {
   const mediaRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +29,13 @@ export default function VariantGallery({ images, name }: VariantGalleryProps) {
     thumbs.forEach((btn) => {
       btn.addEventListener('click', () => {
         const src = btn.getAttribute('data-src');
-        if (src) mainEl.setAttribute('src', src);
+        if (src && src !== mainEl.getAttribute('src')) {
+          mainEl.style.opacity = '0.7';
+          setTimeout(() => {
+            mainEl.setAttribute('src', src);
+            mainEl.style.opacity = '1';
+          }, 120);
+        }
         thumbs.forEach((t) => t.classList.remove('is-active'));
         btn.classList.add('is-active');
       });
@@ -76,12 +81,14 @@ export default function VariantGallery({ images, name }: VariantGalleryProps) {
     document.addEventListener('keydown', onKeydown);
 
     return () => {
-      thumbs.forEach((t) => t.removeEventListener('click', t.onclick as never));
+      thumbs.forEach((t) => {
+        t.replaceWith(t.cloneNode(true));
+      });
       mainEl.removeEventListener('click', onMainClick);
       overlay.removeEventListener('click', onOverlayClick);
       document.removeEventListener('keydown', onKeydown);
     };
-  }, []);
+  }, [images]);
 
   if (!images.length) {
     return (
@@ -101,18 +108,20 @@ export default function VariantGallery({ images, name }: VariantGalleryProps) {
         decoding="async"
       />
       {images.length > 1 && (
-        <div className="pd-thumbs" role="group" aria-label="Size images">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              type="button"
-              className={i === 0 ? 'pd-thumb is-active' : 'pd-thumb'}
-              data-src={img.src}
-              aria-label={`View image ${i + 1}`}
-            >
-              <SafeImage src={img.src} alt="" loading="lazy" decoding="async" />
-            </button>
-          ))}
+        <div className="pd-thumbs-wrap">
+          <div className="pd-thumbs" role="group" aria-label="Product images">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                type="button"
+                className={i === 0 ? 'pd-thumb is-active' : 'pd-thumb'}
+                data-src={img.src}
+                aria-label={`View image ${i + 1}`}
+              >
+                <SafeImage src={img.src} alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
