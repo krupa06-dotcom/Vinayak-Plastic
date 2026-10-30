@@ -40,6 +40,11 @@
 .cat-detail__media {
   position: sticky;
   top: calc(var(--nav-height) + 24px);
+  /* Legacy category/subcategory styles pin this box to a 4:3 aspect ratio, but
+     the gallery now stacks the main photo, colour swatches and the horizontal
+     thumbnail strip inside it. Keep the height content-driven so the strip is
+     not clipped by `overflow: hidden`. */
+  aspect-ratio: auto;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--warm-off-white);
@@ -295,9 +300,9 @@
 }
 
 .pd-thumb {
-  flex: 0 0 80px !important;
-  width: 80px !important;
-  height: 64px !important;
+  flex: 0 0 96px !important;
+  width: 96px !important;
+  height: 76px !important;
   padding: 0 !important;
   border: 2px solid rgba(18, 42, 78, 0.12) !important;
   border-radius: var(--radius-sm) !important;
@@ -633,7 +638,11 @@
   }
 
   .pd-thumbs { gap: 8px; }
-  .pd-thumb { width: 70px; height: 54px; }
+  .pd-thumb {
+    flex-basis: 72px !important;
+    width: 72px !important;
+    height: 58px !important;
+  }
 
   .pd-colours__chip--btn { font-size: 0.8rem; padding: 5px 10px 5px 6px; }
 }
