@@ -13,7 +13,7 @@ import VariantGallery from '@/components/VariantGallery';
 import EnquiryForm, { type EnquiryPrefill } from '@/components/EnquiryForm';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
-import { parseColoursList, colourSwatch } from '@/lib/colorGallery';
+import { parseColoursList } from '@/lib/colorGallery';
 import {
   formatFootprint,
   formatVariantSize,
@@ -238,31 +238,6 @@ export default async function ProductDetailPage({
                     </li>
                   ))}
                 </ul>
-              )}
-              {colourList.length > 0 && (
-                <div className="pd-colours">
-                  <span className="pd-colours__label">Available Colours</span>
-                  <ul className="pd-colours__list">
-                    {colourList.map((colour) => (
-                      <li key={colour}>
-                        <button
-                          type="button"
-                          className="pd-colours__chip pd-colours__chip--btn"
-                          data-colour-chip={colour}
-                          aria-pressed="false"
-                          title={`Select ${colour}`}
-                        >
-                          <span
-                            className="pd-colours__swatch"
-                            style={{ background: colourSwatch(colour) }}
-                            aria-hidden="true"
-                          />
-                          {colour}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               )}
               <a href="#quote" className="btn btn-primary">Request Bulk Quote</a>
             </div>
