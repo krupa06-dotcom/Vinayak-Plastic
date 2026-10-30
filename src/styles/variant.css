@@ -31,10 +31,15 @@
 /* ===== SIZE DETAIL LAYOUT ===== */
 .cat-detail {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 56px;
   align-items: start;
   padding: 32px 0 40px;
+}
+
+.cat-detail__media-wrap,
+.cat-detail__body {
+  min-width: 0;
 }
 
 .cat-detail__media {
@@ -281,22 +286,12 @@
   padding: 4px 4px 8px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(18, 42, 78, 0.25) transparent;
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 
 .pd-thumbs::-webkit-scrollbar {
-  height: 6px;
-}
-
-.pd-thumbs::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.pd-thumbs::-webkit-scrollbar-thumb {
-  background: rgba(18, 42, 78, 0.2);
-  border-radius: 100px;
+  display: none;
 }
 
 .pd-thumb {
@@ -590,12 +585,20 @@
 
 @media (max-width: 960px) {
   .cat-detail {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr) instead of 1fr so the product gallery's intrinsic width
+       cannot force the single column (and the page) wider than the viewport. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
+  }
+
+  .cat-detail__media-wrap,
+  .cat-detail__body {
+    min-width: 0;
   }
 
   .cat-detail__media {
     position: static;
+    min-width: 0;
   }
 }
 

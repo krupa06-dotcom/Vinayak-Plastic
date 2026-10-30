@@ -66,8 +66,13 @@ export default async function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <div className="container">
+        <div className="container footer-bottom__inner">
           <p>&copy; 2026 Vinayak Plastics. All rights reserved.</p>
+          <nav className="footer-legal" aria-label="Legal and site information">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms &amp; Conditions</a>
+            <a href="/sitemap.xml">Sitemap</a>
+          </nav>
         </div>
       </div>
     </footer>

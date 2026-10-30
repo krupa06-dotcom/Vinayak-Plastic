@@ -313,7 +313,7 @@ a.cat-detail__chip:hover {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 960px) {
   .cat-detail {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
   

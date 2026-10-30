@@ -125,6 +125,9 @@
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --max-width: 1200px;
   --nav-height: 72px;
+  /* Vertical rhythm shared by every full-width section. Keeps the page from
+     collecting dead space where two sections meet. */
+  --section-pad: 76px;
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -149,12 +152,28 @@
 *::after {
   box-sizing: border-box;
   margin: 0;
-  padding: 0
+  padding: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: var(--nav-height)
+  scroll-padding-top: var(--nav-height);
+  color-scheme: light;
+  background: var(--white);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
 }
 
 body {
@@ -162,7 +181,13 @@ body {
   color: var(--ink);
   background: var(--white);
   line-height: 1.6;
-  -webkit-font-smoothing: antialiased
+  -webkit-font-smoothing: antialiased;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 img {
@@ -310,17 +335,17 @@ button {
 
 /* ===== SECTION ===== */
 .section {
-  padding: 88px 0
+  padding: var(--section-pad) 0
 }
 
 .section-warm {
   background: var(--warm-off-white);
-  padding: 88px 0
+  padding: var(--section-pad) 0
 }
 
 .section-header {
   text-align: center;
-  margin-bottom: 48px
+  margin-bottom: 40px
 }
 
 .section-header h2 {
@@ -653,7 +678,7 @@ button {
 /* ===== PAGE HERO ===== */
 .page-hero {
   background: var(--deep-navy);
-  padding: calc(var(--nav-height) + 40px) 0 48px;
+  padding: calc(var(--nav-height) + 24px) 0 32px;
   position: relative;
   overflow: hidden
 }
@@ -699,7 +724,7 @@ button {
 
 .page-hero h1 {
   color: var(--white);
-  margin-bottom: 12px
+  margin-bottom: 8px
 }
 
 .page-hero .breadcrumb {
@@ -1095,7 +1120,7 @@ button {
 
 /* ===== ABOUT (homepage) ===== */
 .about-home {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--white)
 }
 
@@ -1142,7 +1167,7 @@ button {
 
 /* ===== PRODUCTS (homepage) ===== */
 .products-home {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--warm-off-white)
 }
 
@@ -1266,7 +1291,7 @@ button {
 
 /* ===== APPLICATIONS (homepage) ===== */
 .apps-home {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--white)
 }
 
@@ -1343,7 +1368,7 @@ button {
 
 /* ===== WHY CHOOSE US (homepage) ===== */
 .why-home {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--warm-off-white)
 }
 
@@ -1544,6 +1569,33 @@ button {
   color: rgba(255, 255, 255, 0.5)
 }
 
+.footer-bottom__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 28px;
+  flex-wrap: wrap
+}
+
+.footer-legal {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 22px
+}
+
+.footer-legal a {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s ease
+}
+
+.footer-legal a:hover,
+.footer-legal a:focus-visible {
+  color: var(--orange-light)
+}
+
 /* ===== ABOUT PAGE ===== */
 .about-hero {
   background: var(--deep-navy);
@@ -1608,7 +1660,7 @@ button {
 }
 
 .about-who {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--white)
 }
 
@@ -1691,7 +1743,7 @@ button {
 }
 
 .about-values {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--warm-off-white)
 }
 
@@ -1750,7 +1802,7 @@ button {
 }
 
 .about-range {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--white)
 }
 
@@ -1829,7 +1881,7 @@ button {
 }
 
 .about-process {
-  padding: 96px 0;
+  padding: var(--section-pad) 0;
   background: var(--warm-off-white)
 }
 
@@ -2491,6 +2543,11 @@ html.js .reveal.visible {
     transition: transform 0.35s ease;
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .nav-inner::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-inner.is-open {
@@ -2643,7 +2700,7 @@ html.js .reveal.visible {
   }
 
   .about-home {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .about-home__grid {
@@ -2657,7 +2714,7 @@ html.js .reveal.visible {
   }
 
   .products-home {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .products-home__grid {
@@ -2666,7 +2723,7 @@ html.js .reveal.visible {
   }
 
   .apps-home {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .apps-home__grid {
@@ -2675,7 +2732,7 @@ html.js .reveal.visible {
   }
 
   .why-home {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .why-home__grid {
@@ -2685,7 +2742,7 @@ html.js .reveal.visible {
 
   .section,
   .section-warm {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .section-header {
@@ -2713,6 +2770,11 @@ html.js .reveal.visible {
     gap: 32px
   }
 
+  .footer-bottom__inner {
+    flex-direction: column;
+    text-align: center
+  }
+
   .about-hero {
     padding: calc(var(--nav-height) + 64px) 0
   }
@@ -2729,15 +2791,15 @@ html.js .reveal.visible {
   }
 
   .about-values {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .about-range {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .about-process {
-    padding: 64px 0
+    padding: 56px 0
   }
 
   .pd-intro {
@@ -2931,18 +2993,6 @@ html.js .reveal.visible {
     font-size: 0.9rem
   }
 
-  .page-hero {
-    padding: calc(var(--nav-height) + 28px) 0
-  }
-
-  .page-hero h1 {
-    font-size: clamp(1.3rem, 6vw, 1.8rem)
-  }
-
-  .page-hero p {
-    font-size: 0.9rem
-  }
-  
   .hero-top {
     gap: 8px 12px;
   }
@@ -3289,7 +3339,7 @@ html.js .reveal.visible {
 /* Category/Subcategory/Variant - Detail grid: 2→1 */
 @media (max-width: 768px) {
   .cat-detail {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
 }
@@ -3416,18 +3466,6 @@ html.js .reveal.visible {
   
   .container-sm {
     padding: 0 16px;
-  }
-}
-
-/* Section padding on mobile */
-@media (max-width: 640px) {
-  .section,
-  .section-warm {
-    padding: 56px 0;
-  }
-  
-  .section-header {
-    margin-bottom: 32px;
   }
 }
 
@@ -3627,5 +3665,89 @@ html.js .reveal.visible {
   
   .sec-index::before {
     width: 20px;
+  }
+}
+/* ===== LEGAL / POLICY PAGES ===== */
+.legal {
+  color: var(--steel)
+}
+
+.legal__meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange-deep);
+  margin-bottom: 18px
+}
+
+.legal__lead {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--ink);
+  padding-bottom: 8px
+}
+
+.legal h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--deep-navy);
+  margin: 34px 0 12px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(18, 42, 78, 0.1)
+}
+
+.legal p,
+.legal li {
+  font-size: 0.98rem;
+  line-height: 1.75;
+  margin-bottom: 12px
+}
+
+.legal ul {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 6px 0 18px
+}
+
+.legal li {
+  margin-bottom: 6px;
+  padding-left: 2px
+}
+
+.legal strong {
+  color: var(--ink);
+  font-weight: 600
+}
+
+.legal a {
+  color: var(--orange-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px
+}
+
+.legal a:hover,
+.legal a:focus-visible {
+  color: var(--orange)
+}
+
+@media (max-width: 480px) {
+  .legal h2 {
+    font-size: 1.2rem;
+    margin-top: 28px;
+    padding-top: 18px
+  }
+
+  .legal__lead {
+    font-size: 0.98rem
+  }
+
+  .legal p,
+  .legal li {
+    font-size: 0.92rem
   }
 }

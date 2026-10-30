@@ -267,7 +267,7 @@ export default async function ProductDetailPage({
 
       {/* ===== FEATURES & APPLICATIONS ===== */}
       {(features.length > 0 || applications.length > 0) && (
-        <section className="section section-warm" id="features">
+        <section className="section" id="features">
           <div className="container">
             <div className="section-header reveal">
               <p className="sec-index">Features &amp; Applications</p>
@@ -299,7 +299,7 @@ export default async function ProductDetailPage({
 
       {/* ===== OTHER VERSIONS IN THIS SIZE ===== */}
       {siblingVariants.length > 0 && (
-        <section className="section section-warm" id="other-versions">
+        <section className="section-warm" id="other-versions">
           <div className="container">
             <div className="section-header reveal">
               <p className="sec-index">Other models</p>

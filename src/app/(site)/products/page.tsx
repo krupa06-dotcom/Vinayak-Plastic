@@ -173,7 +173,7 @@ export default async function ProductsPage() {
                 <a key={card.slug} href={card.href} className="plx-cat reveal" aria-label={`Explore ${card.name}`}>
                   <div className="plx-cat__media">
                     {card.image ? (
-                      <SafeImage src={card.image} alt={`${card.name} �?" Vinayak Plastics`} width="640" height="420" loading="lazy" decoding="async" />
+                      <SafeImage src={card.image} alt={`${card.name} —" Vinayak Plastics`} width="640" height="420" loading="lazy" decoding="async" />
                     ) : (
                       <span className="plx-cat__placeholder" aria-hidden="true">{card.name}</span>
                     )}

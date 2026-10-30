@@ -1,10 +1,15 @@
 /* ===== categories/[category]/[sub].astro page style block (ported to global CSS) ===== */
 .cat-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 64px;
   align-items: center;
   padding: 72px 0 96px;
+}
+
+.cat-detail__media-wrap,
+.cat-detail__body {
+  min-width: 0;
 }
 
 .cat-detail__media-wrap {
@@ -370,7 +375,7 @@ a.cat-detail__chip:hover {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 960px) {
   .cat-detail {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
   

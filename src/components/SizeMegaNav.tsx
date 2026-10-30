@@ -134,7 +134,7 @@ export default function SizeMegaNav({ categoryName, activeKey, sizes }: SizeMega
                 }}
                 type="button"
                 tabIndex={size.key === focusKey ? 0 : -1}
-                className={`size-mega__tab${isCurrent ? ' is-current' : ''}${isActive ? ' is-active' : ''}`}
+                className={`size-mega__tab${isActive ? ' is-active' : ''}`}
                 aria-expanded={isActive}
                 aria-controls={panelId}
                 onMouseEnter={() => preview(size.key)}
@@ -145,9 +145,6 @@ export default function SizeMegaNav({ categoryName, activeKey, sizes }: SizeMega
                 onClick={() => preview(size.key)}
               >
                 <span className="size-mega__label">{size.label}</span>
-                <span className="size-mega__meta">
-                  {size.models.length} {size.models.length === 1 ? 'model' : 'models'}
-                </span>
               </button>
             );
           })}
@@ -163,15 +160,9 @@ export default function SizeMegaNav({ categoryName, activeKey, sizes }: SizeMega
         onMouseEnter={() => setIsOpen(true)}
       >
         <div className="size-mega__head">
-          <div>
-            <p className="size-mega__eyebrow">Available models</p>
-            <h3 id={titleId} className="size-mega__title">
-              Available Models in {displaySize.label}
-            </h3>
-          </div>
-          <span className="size-mega__count">
-            {modelCount} {modelCount === 1 ? 'model' : 'models'}
-          </span>
+          <h3 id={titleId} className="size-mega__title">
+            Available Models in {displaySize.label}
+          </h3>
         </div>
 
         {modelCount > 0 ? (
@@ -204,7 +195,7 @@ export default function SizeMegaNav({ categoryName, activeKey, sizes }: SizeMega
                     <span className="size-mega__code">Model {model.modelCode}</span>
                     <span className="size-mega__dims">{model.dimensions}</span>
                     <span className="size-mega__cta">
-                      View Product <span aria-hidden="true">→</span>
+                      View Product →
                     </span>
                   </span>
                 </a>
@@ -217,12 +208,6 @@ export default function SizeMegaNav({ categoryName, activeKey, sizes }: SizeMega
             <a href="/contact">Contact us for availability</a>
           </div>
         )}
-
-        <div className="size-mega__foot">
-          <a href={displaySize.href} className="size-mega__all">
-            View All Models in this Category <span aria-hidden="true">→</span>
-          </a>
-        </div>
       </div>
     </div>
   );

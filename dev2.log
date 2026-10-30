@@ -1,0 +1,15 @@
+﻿Γû▓ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.205.1:3000
+- Environments: .env
+Γ£ô Ready in 1797ms
+Γ£ô Running next.config.mjs took 54ms
+- Experiments (use with caution):
+  ┬╖ staleTimes
+
+Γùï Compiling / ...
+ GET / 200 in 5.8s (next.js: 5.1s, application-code: 685ms)
+ GET / 200 in 2.6s (next.js: 12ms, application-code: 2.6s)
+ GET / 200 in 433ms (next.js: 34ms, application-code: 399ms)
+ GET /products/plastic-crates 200 in 6.2s (next.js: 1739ms, generate-params: 3.3s, application-code: 1157ms)
+ GET /products/plastic-crates/300x200/300x200x200/302020 200 in 7.2s (next.js: 3.0s, generate-params: 3.3s, application-code: 825ms)
