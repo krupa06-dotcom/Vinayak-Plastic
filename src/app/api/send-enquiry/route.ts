@@ -208,7 +208,7 @@ function buildHtml(v: EnquiryInput): string {
     `<tr>
       <td style="padding:8px 16px 8px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">${e(label)}</td>
       <td style="padding:8px 0;color:#111827;font-size:14px;font-weight:600;">
-        ${href && value ? `<a href="${e(href)}" style="color:#1a3a5c;text-decoration:none;">${e(value)}</a>` : value ? e(value) : '—'}
+        ${href && value ? `<a href="${e(href)}" style="color:#034e94;text-decoration:none;">${e(value)}</a>` : value ? e(value) : '—'}
       </td>
     </tr>`;
 
@@ -219,14 +219,14 @@ function buildHtml(v: EnquiryInput): string {
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
         <tr>
-          <td style="background:#1a3a5c;padding:20px 28px;">
+          <td style="background:#034e94;padding:20px 28px;">
             <h1 style="margin:0;color:#ffffff;font-size:18px;line-height:1.3;">New Product Enquiry</h1>
-            <p style="margin:4px 0 0;color:#c7d7e8;font-size:13px;">Vinayak Plastics — website enquiry form</p>
+            <p style="margin:4px 0 0;color:#cfe3f6;font-size:13px;">Vinayak Plastics — website enquiry form</p>
           </td>
         </tr>
         <tr><td style="padding:24px 28px 8px;">
           <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.5;">
-            A new enquiry has been submitted${product ? ` for <strong style="color:#1a3a5c;">${e(product)}</strong>` : ''}.
+            A new enquiry has been submitted${product ? ` for <strong style="color:#034e94;">${e(product)}</strong>` : ''}.
           </p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             ${customerRows.map(rowHtml).join('')}
@@ -234,7 +234,7 @@ function buildHtml(v: EnquiryInput): string {
         </td></tr>
         ${productRows.length ? `<tr><td style="padding:12px 28px 4px;">
           <p style="margin:0 0 8px;color:#6b7280;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Product of Interest</p>
-          <table role="presentation" cellpadding="0" cellspacing="0" style="background:#f0f5fa;border-left:3px solid #1a3a5c;border-radius:4px;padding:4px 16px 4px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" style="background:#eaf3fb;border-left:3px solid #034e94;border-radius:4px;padding:4px 16px 4px 12px;">
             ${productRows.map(([k, val]) => `<tr>
               <td style="padding:6px 16px 6px 0;color:#6b7280;font-size:13px;white-space:nowrap;">${e(k)}</td>
               <td style="padding:6px 0;color:#111827;font-size:14px;font-weight:600;">${e(val)}</td>

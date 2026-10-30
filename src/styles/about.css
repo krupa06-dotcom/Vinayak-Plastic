@@ -1,4 +1,4 @@
-/* ===== about.astro page style block (ported to global CSS) ===== */
+/* ===== about page style block (ported to global CSS) ===== */
 .about-range__placeholder {
   display: flex;
   align-items: center;
@@ -11,30 +11,6 @@
   font-size: 1.2rem;
   text-transform: uppercase;
   text-align: center;
-  color: rgba(18, 42, 78, 0.25);
+  color: rgba(3, 78, 148, 0.25);
   background: var(--warm-off-white);
-}
-
-.about-who__list {
-  margin: 8px 0 20px;
-  padding: 0;
-  list-style: none;
-}
-
-.about-who__point {
-  color: var(--steel);
-  font-size: 0.95rem;
-  line-height: 1.7;
-  padding: 8px 0 8px 24px;
-  position: relative;
-}
-
-.about-who__point:before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 17px;
-  width: 10px;
-  height: 2px;
-  background: var(--orange);
 }

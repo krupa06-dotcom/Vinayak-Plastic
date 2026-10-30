@@ -1,7 +1,7 @@
 /* ==========================================
    VINAYAK PLASTICS — Admin Panel
    Restyled to match the public website identity.
-   Navy #122A4E | Deep Navy #0A1A33
+   Navy #034E94 (main) | Deep Navy #022544
    Orange #E8630C | Orange-Light #FF9142
    Warm Off-White #F6F3EC | Ink #1D2230 | Steel #5B6472
    ========================================== */
@@ -107,8 +107,19 @@
 }
 
 :root {
-  --a-navy: #122a4e;
-  --a-navy-deep: #0a1a33;
+  --a-navy-50: #eaf3fb;
+  --a-navy-100: #cfe3f6;
+  --a-navy-200: #a2c7ec;
+  --a-navy-300: #6ba6de;
+  --a-navy-400: #3583ca;
+  --a-navy-500: #1068b2;
+  --a-navy-600: #034e94;
+  --a-navy-700: #03417c;
+  --a-navy-800: #023361;
+  --a-navy-900: #022544;
+  --a-navy-950: #01182d;
+  --a-navy: var(--a-navy-600);
+  --a-navy-deep: var(--a-navy-900);
   --a-orange: #e8630c;
   --a-orange-light: #ff9142;
   --a-orange-deep: #c84e08;
@@ -199,7 +210,7 @@ html:has(.admin) body,
 .admin-sidebar {
   width: var(--a-sidebar-w);
   background: linear-gradient(180deg, var(--a-navy) 0%, var(--a-navy-deep) 100%);
-  color: #c7d2e5;
+  color: #cfe3f6;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -235,7 +246,7 @@ html:has(.admin) body,
 }
 .admin-logo-text span {
   font-size: 0.62rem;
-  color: #8fa3c0;
+  color: #a2c7ec;
   font-family: var(--a-font-mono);
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -247,7 +258,7 @@ html:has(.admin) body,
   font-family: var(--a-font-mono);
   text-transform: uppercase;
   letter-spacing: 1.4px;
-  color: #6879a0;
+  color: #6ba6de;
   padding: 14px 10px 6px;
 }
 .admin-nav a.admin-nav-link,
@@ -258,7 +269,7 @@ html:has(.admin) body,
   gap: 11px;
   padding: 9px 12px;
   border-radius: 8px;
-  color: #c7d2e5;
+  color: #cfe3f6;
   font-size: 0.87rem;
   font-weight: 500;
   margin-bottom: 2px;
@@ -296,7 +307,7 @@ html:has(.admin) body,
   height: var(--a-topbar-h);
   background: var(--a-surface);
   border-bottom: 1px solid var(--a-border);
-  box-shadow: 0 1px 2px rgba(10, 26, 51, 0.04);
+  box-shadow: 0 1px 2px rgba(2, 37, 68, 0.04);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -378,7 +389,7 @@ html:has(.admin) body,
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(10, 26, 51, 0.5);
+  background: rgba(2, 37, 68, 0.5);
   z-index: 35;
 }
 
@@ -460,7 +471,7 @@ html:has(.admin) body,
 /* ============ Cards / panels ============ */
 .a-card {
   background: var(--a-surface);
-  border: 1px solid rgba(18, 42, 78, 0.08);
+  border: 1px solid rgba(3, 78, 148, 0.08);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
   margin-bottom: 20px;
@@ -606,7 +617,7 @@ html:has(.admin) body,
   justify-content: center;
   gap: 8px;
   padding: 14px;
-  background: linear-gradient(180deg, rgba(10, 26, 51, 0) 0%, rgba(10, 26, 51, 0.55) 100%);
+  background: linear-gradient(180deg, rgba(2, 37, 68, 0) 0%, rgba(2, 37, 68, 0.55) 100%);
   opacity: 0;
   transition: opacity 0.16s ease;
 }
@@ -709,7 +720,7 @@ html:has(.admin) body,
   color: var(--a-navy);
   font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: rgba(18, 42, 78, 0.28);
+  text-decoration-color: rgba(3, 78, 148, 0.28);
   text-underline-offset: 2px;
   transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
@@ -813,7 +824,7 @@ html:has(.admin) body,
   border-radius: 9px;
   font-size: 0.85rem;
   font-weight: 500;
-  box-shadow: 0 10px 30px rgba(10, 26, 51, 0.35);
+  box-shadow: 0 10px 30px rgba(2, 37, 68, 0.35);
   max-width: 360px;
   border-left: 4px solid var(--a-orange);
   animation: a-toast-in 0.22s ease;
@@ -826,7 +837,7 @@ html:has(.admin) body,
 .a-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 26, 51, 0.55);
+  background: rgba(2, 37, 68, 0.55);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -839,7 +850,7 @@ html:has(.admin) body,
   border-radius: 14px;
   width: 100%;
   max-width: 460px;
-  box-shadow: 0 24px 60px rgba(10, 26, 51, 0.35);
+  box-shadow: 0 24px 60px rgba(2, 37, 68, 0.35);
   overflow: hidden;
 }
 .a-modal-head {
@@ -892,7 +903,7 @@ html:has(.admin) body,
   align-items: center;
   gap: 14px;
   background: var(--a-surface);
-  border: 1px solid rgba(18, 42, 78, 0.08);
+  border: 1px solid rgba(3, 78, 148, 0.08);
   border-top: 3px solid var(--a-orange);
   border-radius: 12px;
   padding: 16px 18px;
@@ -1133,7 +1144,7 @@ html:has(.admin) body,
   bottom: 0;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(18, 42, 78, 0.08);
+  border: 1px solid rgba(3, 78, 148, 0.08);
   border-radius: 12px;
   padding: 13px 18px;
   margin-top: 18px;
@@ -1202,7 +1213,7 @@ html:has(.admin) body,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--a-navy-deep) 0%, var(--a-navy) 60%, #1d3a63 100%);
+  background: linear-gradient(135deg, var(--a-navy-deep) 0%, var(--a-navy) 60%, #1068b2 100%);
   padding: 20px;
 }
 .admin-login-body::before {
@@ -1220,12 +1231,12 @@ html:has(.admin) body,
   width: 100%;
   max-width: 410px;
   padding: 36px 34px;
-  box-shadow: 0 30px 70px rgba(10, 26, 51, 0.45);
+  box-shadow: 0 30px 70px rgba(2, 37, 68, 0.45);
   position: relative;
   border-top: 4px solid var(--a-orange);
 }
 .a-login-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; text-align: center; }
-.a-login-logo img { width: 58px; height: 58px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 6px 18px rgba(10, 26, 51, 0.2); }
+.a-login-logo img { width: 58px; height: 58px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 6px 18px rgba(2, 37, 68, 0.2); }
 .a-login-logo h1 { font-family: var(--a-font-display); font-weight: 800; font-size: 1.45rem; margin: 0; color: var(--a-navy); text-transform: uppercase; letter-spacing: 0.4px; }
 .a-login-logo p { font-size: 0.72rem; color: var(--a-muted); margin: 4px 0 0; font-family: var(--a-font-mono); text-transform: uppercase; letter-spacing: 1.4px; }
 

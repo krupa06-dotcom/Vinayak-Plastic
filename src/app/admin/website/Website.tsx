@@ -22,9 +22,6 @@ export default function Website() {
       const whDesc = document.getElementById('wh-desc') as HTMLTextAreaElement;
       const whFeat = document.getElementById('wh-feat') as HTMLInputElement;
       const waDesc = document.getElementById('wa-desc') as HTMLTextAreaElement;
-      const waMission = document.getElementById('wa-mission') as HTMLTextAreaElement;
-      const waVision = document.getElementById('wa-vision') as HTMLTextAreaElement;
-      const waWhy = document.getElementById('wa-why') as HTMLTextAreaElement;
       
       // Image settings
       const logoUrl = document.getElementById('logo-url') as HTMLInputElement;
@@ -47,9 +44,6 @@ export default function Website() {
 
       const a = settings.about || {};
       waDesc.value = a.description ?? '';
-      waMission.value = a.mission ?? '';
-      waVision.value = a.vision ?? '';
-      waWhy.value = Array.isArray(a.why_choose_us) ? a.why_choose_us.join('\n') : (a.why_choose_us ?? '');
 
       // Load image settings
       const logo = settings.logo || {};
@@ -78,11 +72,18 @@ export default function Website() {
           featured_tagline: whFeat.value.trim() || null
         };
 
+        // The public page no longer renders mission/vision/why-choose-us, but
+        // keep any stored values so older content is not destroyed on save.
+        const existingAbout = (settings.about || {}) as {
+          mission?: string | null;
+          vision?: string | null;
+          why_choose_us?: string[];
+        };
         const aboutValue = {
           description: waDesc.value.trim() || null,
-          mission: waMission.value.trim() || null,
-          vision: waVision.value.trim() || null,
-          why_choose_us: waWhy.value.split('\n').map(l => l.trim()).filter(Boolean)
+          mission: existingAbout.mission ?? null,
+          vision: existingAbout.vision ?? null,
+          why_choose_us: Array.isArray(existingAbout.why_choose_us) ? existingAbout.why_choose_us : []
         };
 
         // Image settings values
@@ -161,18 +162,6 @@ export default function Website() {
               <div className="a-field a-field-full">
                 <label htmlFor="wa-desc">Company description</label>
                 <textarea id="wa-desc" className="a-textarea" rows={3} placeholder="Brief company description"></textarea>
-              </div>
-              <div className="a-field">
-                <label htmlFor="wa-mission">Mission</label>
-                <textarea id="wa-mission" className="a-textarea a-textarea-sm" rows={2}></textarea>
-              </div>
-              <div className="a-field">
-                <label htmlFor="wa-vision">Vision</label>
-                <textarea id="wa-vision" className="a-textarea a-textarea-sm" rows={2}></textarea>
-              </div>
-              <div className="a-field a-field-full">
-                <label htmlFor="wa-why">Why Choose Us (one point per line)</label>
-                <textarea id="wa-why" className="a-textarea" rows={4} placeholder="ISO 9001 certified\nFast turnaround\nEco-friendly materials"></textarea>
               </div>
             </div>
           </div>

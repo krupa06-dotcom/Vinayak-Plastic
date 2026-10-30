@@ -61,8 +61,8 @@
 .back-btn--on-light {
   --bb-fg: var(--deep-navy);
   --bb-bg: var(--white);
-  --bb-border: rgba(18, 42, 78, 0.22);
-  box-shadow: 0 1px 3px rgba(18, 42, 78, 0.08);
+  --bb-border: rgba(3, 78, 148, 0.22);
+  box-shadow: 0 1px 3px rgba(3, 78, 148, 0.08);
 }
 
 .back-btn--on-light:hover,

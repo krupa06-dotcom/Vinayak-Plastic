@@ -3,56 +3,87 @@ import '@/styles/about.css';
 import BackButton from '@/components/BackButton';
 import SafeImage from '@/components/SafeImage';
 import warehouseInterior from '@/assets/images/warehouse-interior.webp';
-import { CONTACT } from '@/lib/contact';
 import { getCatalogueData, getSiteSetting, getSiteImage, resolveFirstImage } from '@/lib/db';
 
 export const metadata: Metadata = {
   title: { absolute: 'About Vinayak Plastics | Material Handling & Packaging' },
   description:
-    'About Vinayak Plastics — business house supplying material handling & packaging products — plastic crates, pallets, waste bins and hand pallet trucks — to warehouses, dairy and municipal buyers across India.'
+    'About Vinayak Plastics — material handling and packaging supplier — plastic crates, pallets, waste bins and hand pallet trucks — serving warehouses, dairy and municipal buyers across India.'
 };
 
 export const revalidate = 3600;
+
+const DEFAULT_ABOUT_DESCRIPTION =
+  'Vinayak Plastics is a Vadodara-based material handling and packaging supplier, working directly with procurement teams since 2020. We keep supply practical — the right product, the right specification, and a dispatch timeline you can plan around.';
+
+/** Template copy contains bracketed placeholders like "[Company Name]". */
+function isTemplateCopy(text: string): boolean {
+  return /\[[^\]]+\]/.test(text);
+}
 
 export default async function AboutPage() {
   const catalogue = await getCatalogueData();
   const warehouseImage = await getSiteImage('warehouse');
 
   const aboutSetting = await getSiteSetting('about') as Record<string, unknown> | null;
+  const storedDescription = (aboutSetting?.description as string | undefined)?.trim();
   const aboutDescription =
-    (aboutSetting?.description as string | undefined) ||
-    'Vinayak Plastics is a business house engaged in the supply of all types of material handling and packaging products. We specialize in plastic crates, pallets, waste bins, hand pallet trucks, ice boxes, storage bins, and racking systems serving warehouses, dairy distributors, municipal corporations, and commercial buyers across India.';
-  const mission = (aboutSetting?.mission as string | null) ?? null;
-  const vision = (aboutSetting?.vision as string | null) ?? null;
-  const whyChooseUs: string[] = Array.isArray(aboutSetting?.why_choose_us)
-    ? (aboutSetting.why_choose_us as unknown[]).filter((x): x is string =>
-        typeof x === 'string' && Boolean(x.trim())
-      )
-    : [];
+    storedDescription && !isTemplateCopy(storedDescription)
+      ? storedDescription
+      : DEFAULT_ABOUT_DESCRIPTION;
+
+  // Highlights are derived from the live catalogue so the numbers stay accurate.
+  const categoryCount = catalogue.categories.length;
+  const rangeCount = catalogue.subCategories.length;
+  const modelCount = catalogue.categories.reduce(
+    (sum, category) => sum + category.variants_count + category.variants.length,
+    0
+  );
 
   const stats = [
-    { num: '25+', label: 'Years in Business' },
-    { num: '500+', label: 'Clients Served' },
-    { num: '6+', label: 'Product Categories' },
-    { num: 'Pan-India', label: 'Dispatch Network' }
+    { num: '2020', label: 'Established' },
+    { num: String(categoryCount), label: 'Product Categories' },
+    { num: String(rangeCount), label: 'Product Ranges' },
+    { num: `${modelCount}`, label: 'Models & Sizes' }
   ];
 
   const values = [
     {
-      label: 'Quality Materials',
-      text: 'Products molded from HDPE and PP grades — impact resistant, UV stabilized, and built for long service life in demanding industrial environments.'
+      label: 'Quality Products',
+      text: 'Molded from HDPE and PP grades — impact resistant, UV stabilized, and selected for daily industrial use.',
+      icon: (
+        <>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </>
+      )
     },
     {
-      label: 'Direct & Transparent',
-      text: 'No distributor layers, no automated systems. Every enquiry is handled by a person who knows the product, specification, and dispatch timelines.'
+      label: 'Business-Focused Solutions',
+      text: 'Sizes, colors, and load ratings matched to your racking, contract, or tender specifications.',
+      icon: (
+        <>
+          <rect x="2" y="7" width="20" height="13" rx="2" />
+          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </>
+      )
     },
     {
-      label: 'Custom Capability',
-      text: 'We work with buyers to deliver specific sizes, colors, and load-bearing requirements to match warehouse racking and contract specifications.'
+      label: 'Reliable Supply',
+      text: 'Stock and sourcing coordinated around your dispatch dates, with timelines confirmed before you commit.',
+      icon: (
+        <>
+          <path d="M1 5h13v10H1z" />
+          <path d="M14 8h4l3 3v4h-7z" />
+          <circle cx="6" cy="18" r="2" />
+          <circle cx="17" cy="18" r="2" />
+        </>
+      )
     },
     {
-      label: 'Pan-India Reach',
-      text: 'From a single enquiry to dispatch — pricing, spec sheets, and timelines coordinated in one call, serving buyers across the country.'
+      label: 'Customer Support',
+      text: 'One point of contact for pricing, spec sheets, order status, and repeat requirements.',
+      icon: <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     }
   ];
 
@@ -71,10 +102,10 @@ export default async function AboutPage() {
   });
 
   const process = [
-    { step: '01', title: 'Enquire', text: 'Call or WhatsApp with your product, quantity, and specification requirements.' },
-    { step: '02', title: 'Quote', text: 'Receive pricing, dimension sheets, and dispatch timelines directly from our team.' },
-    { step: '03', title: 'Supply', text: 'We coordinate manufacture or sourcing and dispatch to your location across India.' },
-    { step: '04', title: 'Support', text: 'Ongoing support for repeat orders, service, and custom product development.' }
+    { step: '01', title: 'Enquire', text: 'Call or WhatsApp with your product, quantity, and delivery location.' },
+    { step: '02', title: 'Get a Quote', text: 'Receive pricing, dimensions, and a confirmed dispatch date in writing.' },
+    { step: '03', title: 'Product Supply', text: 'We confirm stock or sourcing and dispatch to your location across India.' },
+    { step: '04', title: 'Support', text: 'Ongoing help with repeat orders, replacements, and new requirements.' }
   ];
 
   return (
@@ -87,7 +118,7 @@ export default async function AboutPage() {
             <BackButton href="/" />
           </div>
           <h1 className="about-hero__title">Industrial materials, handled <span className="text-orange">right.</span></h1>
-          <p className="about-hero__sub">Vinayak Plastics supplies material handling and packaging products that keep warehouses, dairy plants, and municipalities running — durable, dependable, and backed by direct service.</p>
+          <p className="about-hero__sub">Durable material handling and packaging products for warehouses, dairy plants, and municipal operations across India.</p>
           <div className="about-hero__actions">
             <a href="/products" className="btn btn-primary">Explore Our Products</a>
             <a href="/contact" className="btn btn-outline-light">Get a Quote</a>
@@ -111,30 +142,17 @@ export default async function AboutPage() {
             </div>
             <div className="about-who__body reveal">
               <p className="sec-index">Who We Are</p>
-              <h2 className="about-who__title">A business house built on <span className="text-orange">reliable supply</span></h2>
+              <h2 className="about-who__title">Reliable supply for <span className="text-orange">industrial operations</span></h2>
               <p className="about-who__text">{aboutDescription}</p>
-              {mission && (
-                <p className="about-who__text"><strong style={{ display: 'block', fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: 'var(--deep-navy)', marginBottom: 4, fontSize: '.95rem' }}>Our Mission</strong>{mission}</p>
-              )}
-              {vision && (
-                <p className="about-who__text"><strong style={{ display: 'block', fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: 'var(--deep-navy)', marginBottom: 4, fontSize: '.95rem' }}>Our Vision</strong>{vision}</p>
-              )}
-              {whyChooseUs.length > 0 && (
-                <ul className="about-who__list">
-                  {whyChooseUs.map((point, i) => (
-                    <li className="about-who__point" key={i}>{point}</li>
-                  ))}
-                </ul>
-              )}
-              <a href="/products" className="btn btn-ghost">See Our Full Product Range</a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ===== STATS ===== */}
-      <section className="about-stats-band">
+      {/* ===== COMPANY HIGHLIGHTS ===== */}
+      <section className="about-stats-band" aria-label="Company highlights">
         <div className="container">
+          <h2 className="sr-only">Company Highlights</h2>
           <div className="about-stats-grid">
             {stats.map((s) => (
               <div className="about-stat reveal" key={s.label}>
@@ -146,19 +164,19 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ===== VALUES ===== */}
+      {/* ===== WHAT WE STAND FOR ===== */}
       <section className="about-values">
         <div className="container-sm">
           <div className="section-header reveal">
             <p className="sec-index">What We Stand For</p>
-            <h2 className="display-700">The Vinayak difference</h2>
-            <p>Four principles guide how we work — from the first enquiry to every repeat order.</p>
+            <h2 className="display-700">The Vinayak standard</h2>
+            <p>What guides every enquiry, order, and dispatch.</p>
           </div>
           <div className="about-values__grid">
             {values.map((v) => (
               <article className="about-value reveal" key={v.label}>
                 <div className="about-value__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{v.icon}</svg>
                 </div>
                 <h3 className="about-value__label">{v.label}</h3>
                 <p className="about-value__text">{v.text}</p>
@@ -172,9 +190,9 @@ export default async function AboutPage() {
       <section className="about-range">
         <div className="container">
           <div className="section-header reveal">
-            <p className="sec-index">Our Range</p>
+            <p className="sec-index">Our Product Range</p>
             <h2 className="display-700">Everything for material handling, <span className="text-orange">under one roof</span></h2>
-            <p>From plastic crates for dairy and bakery storage to industrial pallets for warehouse racking — we cover the full spectrum of material handling needs.</p>
+            <p>Core categories with the sizes and models warehouses, dairy plants, and municipal buyers ask for.</p>
           </div>
           <div className="about-range__grid">
             {products.map((p) => (
@@ -217,14 +235,14 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ===== CTA ===== */}
-      <section className="cta-banner" aria-label="Get in touch">
+      {/* ===== FINAL CTA ===== */}
+      <section className="cta-banner" aria-label="Contact Vinayak Plastics">
         <div className="container reveal">
           <h2 className="display-700">Discuss Your Requirements</h2>
-          <p>Call or WhatsApp us for pricing, product specifications, and dispatch timelines.</p>
+          <p>Tell us the product, quantity, and delivery location. We'll take it from there.</p>
           <div className="cta-buttons">
-            <a href={CONTACT.phoneHref} className="btn btn-primary">Call {CONTACT.phoneDisplay}</a>
-            <a href={CONTACT.whatsappHref} className="btn btn-secondary" target="_blank" rel="noopener">WhatsApp Us</a>
+            <a href="/contact" className="btn btn-primary">Contact Us</a>
+            <a href="/products" className="btn btn-secondary">Explore Products</a>
           </div>
         </div>
       </section>
