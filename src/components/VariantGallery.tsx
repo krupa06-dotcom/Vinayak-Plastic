@@ -49,7 +49,6 @@ export default function VariantGallery({
   const [activeColour, setActiveColour] = useState<string | null>(initial.colour);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(initial.index);
 
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const thumbsRef = useRef<HTMLDivElement>(null);
 
   // Switch to a selected colour
@@ -133,20 +132,6 @@ export default function VariantGallery({
     });
   }, [activeColour]);
 
-  // Handle lightbox keyboard shortcuts and body scroll lock
-  useEffect(() => {
-    if (!isLightboxOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsLightboxOpen(false);
-    };
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [isLightboxOpen]);
-
   if (!images || images.length === 0) {
     return (
       <div className="cat-detail__media">
@@ -163,13 +148,7 @@ export default function VariantGallery({
       {/* ===== 1. MAIN LARGE PRODUCT IMAGE ===== */}
       <div className="pd-main-wrap">
         {currentImage ? (
-          <button
-            type="button"
-            className="pd-main-btn"
-            onClick={() => setIsLightboxOpen(true)}
-            aria-label={`Enlarge photo of ${name}${currentImage.color ? ` in ${currentImage.color}` : ''}`}
-            title="Click to enlarge"
-          >
+          <div className="pd-main-img-wrap">
             <SafeImage
               key={currentImage.src}
               className="pd-main-img pd-img-swap"
@@ -178,16 +157,7 @@ export default function VariantGallery({
               loading="eager"
               decoding="async"
             />
-            <span className="pd-main-zoom-hint" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                <line x1="11" y1="8" x2="11" y2="14" />
-                <line x1="8" y1="11" x2="14" y2="11" />
-              </svg>
-              Enlarge
-            </span>
-          </button>
+          </div>
         ) : (
           /* Graceful fallback when a colour is selected but has no uploaded image */
           <div className="pd-no-image-fallback" role="status" aria-live="polite">
@@ -276,45 +246,6 @@ export default function VariantGallery({
               </button>
             );
           })}
-        </div>
-      )}
-
-      {/* ===== 4. ENLARGED LIGHTBOX VIEW ===== */}
-      {isLightboxOpen && currentImage && (
-        <div
-          className="lightbox lightbox--open"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Enlarged product image"
-        >
-          <div
-            className="lightbox__backdrop"
-            onClick={() => setIsLightboxOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="lightbox__panel">
-            <button
-              type="button"
-              className="lightbox__close"
-              onClick={() => setIsLightboxOpen(false)}
-              aria-label="Close enlarged preview"
-            >
-              ✕
-            </button>
-            <div className="lightbox__imgwrap">
-              <SafeImage
-                src={currentImage.src}
-                alt={currentImage.alt || name}
-                loading="eager"
-              />
-            </div>
-            <div className="lightbox__foot">
-              <span className="lightbox__fig">VINAYAK PLASTICS</span>
-              <span className="lightbox__name">
-                {name} {currentImage.color ? `· ${currentImage.color}` : ''}
-              </span>
-            </div>
-          </div>
         </div>
       )}
     </div>
