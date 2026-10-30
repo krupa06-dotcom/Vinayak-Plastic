@@ -5,6 +5,12 @@ import AdminShell from '@/components/admin/AdminShell';
 import { gate, supabase, esc, slugify, href, toast, publicUrl, uploadFile, deleteFile, publishSiteNow, confirmDialog } from '@/scripts/admin/core';
 import { createImagePicker } from '@/scripts/admin/imagePicker';
 import {
+  MAX_GALLERY_IMAGES,
+  formatImageAltText,
+  parseColoursList,
+  parseImageColorAndAlt
+} from '@/lib/colorGallery';
+import {
   formatHeightLabel,
   friendlyDbError,
   healHeight,
@@ -194,6 +200,7 @@ export default function EditSeries() {
         id: string | null;
         url: string;
         alt: string;
+        color?: string | null;
         main: boolean;
         order: number;
         file?: File;
@@ -222,7 +229,7 @@ export default function EditSeries() {
       const removedImages: { id: string | null; url: string }[] = [];
 
       function newImgRow(): VerImg {
-        return { id: null, url: '', alt: '', main: false, order: 0 };
+        return { id: null, url: '', alt: '', color: null, main: false, order: 0 };
       }
       function newVerRow(): VerRow {
         return { id: null, key: crypto.randomUUID(), version_name: '', version_code: '', model_code: '',
@@ -236,29 +243,82 @@ export default function EditSeries() {
 
       function renderImages(si: number, vi: number): string {
         const ver = sizesState[si].versions[vi];
-        if (!ver.images.length) {
-          return `<div class="a-guide" style="margin-top:10px;padding:10px;font-size:0.8rem;">No photos for this version yet — click "+ Add photo".</div>`;
-        }
-        return ver.images.map((img, ii) => {
-          const preview = img.preview || (img.url ? publicUrl(img.url, 300) : '');
-          const hasImage = Boolean(preview);
-          return `
-            <div class="a-img-row ver-img" data-si="${si}" data-vi="${vi}" data-ii="${ii}">
-              <div class="a-var-photo-box" style="width:90px;height:60px;">
-                ${hasImage
-                  ? `<img src="${esc(preview)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />`
-                  : `<span class="a-var-photo-empty">No photo</span>`}
-              </div>
-              <div style="display:flex;flex-direction:column;gap:6px;">
-                <input type="file" class="a-input a-input-sm" data-sr-up="${si}|${vi}|${ii}" accept="image/*" />
-                <input type="text" class="a-input a-input-sm sr-alt" data-si="${si}" data-vi="${vi}" data-ii="${ii}" value="${esc(img.alt)}" placeholder="Alt text (optional)" />
-              </div>
-              <label class="a-check" style="font-size:0.75rem;justify-content:flex-start"><input type="radio" name="sr-main-${si}-${vi}" class="sr-main" data-si="${si}" data-vi="${vi}" data-ii="${ii}" ${img.main ? 'checked' : ''} /> Main</label>
-              <div class="a-row-tools">
-                <button type="button" data-sr-img-del="${si}|${vi}|${ii}" title="Remove photo">&times;</button>
-              </div>
-            </div>`;
+        const count = ver.images.length;
+        const isFull = count >= MAX_GALLERY_IMAGES;
+        const availableColours = parseColoursList(ver.colours);
+
+        const slotStrip = Array.from({ length: MAX_GALLERY_IMAGES }, (_, i) => {
+          const img = ver.images[i];
+          const preview = img ? img.preview || (img.url ? publicUrl(img.url, 120) : '') : '';
+          return `<span class="a-photo-slot${img ? ' is-filled' : ''}" title="Photo slot ${i + 1}${img ? '' : ' (empty)'}">
+            ${preview ? `<img src="${esc(preview)}" alt="" loading="lazy" />` : `<span aria-hidden="true">${i + 1}</span>`}
+          </span>`;
         }).join('');
+
+        let html = `
+          <div class="a-photo-head" style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;">
+            <span class="a-var-photo-label" style="margin:0;">
+              Photos for this version <strong style="color:var(--a-navy);">(${count}/${MAX_GALLERY_IMAGES})</strong>
+            </span>
+            <span style="font-size:0.75rem;font-weight:600;color:${isFull ? 'var(--a-orange)' : 'var(--a-muted)'};">
+              ${count > MAX_GALLERY_IMAGES ? `Over limit: remove ${count - MAX_GALLERY_IMAGES}` : isFull ? 'Limit reached (5/5 max)' : `${MAX_GALLERY_IMAGES - count} slot${MAX_GALLERY_IMAGES - count === 1 ? '' : 's'} available`}
+            </span>
+          </div>
+          <div class="a-photo-slots" aria-label="Five product photo slots">${slotStrip}</div>
+        `;
+
+        if (!count) {
+          html += `<div class="a-guide" style="margin-top:6px;padding:10px;font-size:0.8rem;">No photos for this version yet — click "+ Add photo" (max ${MAX_GALLERY_IMAGES} photos).</div>`;
+        } else {
+          html += `<div class="a-photo-list" style="display:flex;flex-direction:column;gap:8px;">`;
+          html += ver.images.map((img, ii) => {
+            const preview = img.preview || (img.url ? publicUrl(img.url, 300) : '');
+            const hasImage = Boolean(preview);
+
+            const colorOptions = [
+              `<option value="">— General / No colour —</option>`,
+              ...availableColours.map(c => `<option value="${esc(c)}"${(img.color || '').toLowerCase() === c.toLowerCase() ? ' selected' : ''}>Colour: ${esc(c)}</option>`)
+            ].join('');
+
+            return `
+              <div class="a-img-row ver-img" data-si="${si}" data-vi="${vi}" data-ii="${ii}">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-family:var(--a-font-mono);font-size:0.75rem;font-weight:700;color:var(--a-muted);width:22px;">#${ii + 1}</span>
+                  <div class="a-var-photo-box" style="width:74px;height:54px;">
+                    ${hasImage
+                      ? `<img src="${esc(preview)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />`
+                      : `<span class="a-var-photo-empty">Empty</span>`}
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <input type="file" class="a-input a-input-sm" data-sr-up="${si}|${vi}|${ii}" accept="image/*" />
+                  <input type="text" class="a-input a-input-sm sr-alt" data-si="${si}" data-vi="${vi}" data-ii="${ii}" value="${esc(img.alt)}" placeholder="Alt description (optional)" />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <select class="a-input a-input-sm sr-color" data-si="${si}" data-vi="${vi}" data-ii="${ii}" title="Associate image with a specific product colour">
+                    ${colorOptions}
+                  </select>
+                </div>
+                <label class="a-check" style="font-size:0.75rem;justify-content:flex-start">
+                  <input type="radio" name="sr-main-${si}-${vi}" class="sr-main" data-si="${si}" data-vi="${vi}" data-ii="${ii}" ${img.main ? 'checked' : ''} /> Main
+                </label>
+                <div class="a-row-tools">
+                  <button type="button" data-sr-img-up="${si}|${vi}|${ii}" title="Move photo up"${ii === 0 ? ' disabled style="opacity:0.35;cursor:not-allowed;"' : ''}>&uarr;</button>
+                  <button type="button" data-sr-img-down="${si}|${vi}|${ii}" title="Move photo down"${ii === count - 1 ? ' disabled style="opacity:0.35;cursor:not-allowed;"' : ''}>&darr;</button>
+                  <button type="button" data-sr-img-del="${si}|${vi}|${ii}" title="Remove photo">&times;</button>
+                </div>
+              </div>`;
+          }).join('');
+          html += `</div>`;
+        }
+
+        if (count < MAX_GALLERY_IMAGES) {
+          html += `<button type="button" class="a-btn a-btn-sm" data-add-img="${si}|${vi}" style="margin-top:8px;">+ Add photo (${count}/${MAX_GALLERY_IMAGES})</button>`;
+        } else {
+          html += `<p style="font-size:0.75rem;color:var(--a-muted);margin:8px 0 0;font-style:italic;">Maximum ${MAX_GALLERY_IMAGES} photos reached for this version. Choose a file on an existing slot to replace it, or remove a photo to free up a slot.</p>`;
+        }
+
+        return html;
       }
 
       function versionFieldsHtml(ver: VerRow, si: number, vi: number): string {
@@ -342,9 +402,7 @@ export default function EditSeries() {
             </div>
             ${versionFieldsHtml(ver, si, vi)}
             <div style="margin-top:12px;">
-              <div class="a-var-photo-label" style="margin-bottom:4px;">Photos for this version</div>
               <div id="ver-imgs-${si}-${vi}">${renderImages(si, vi)}</div>
-              <button type="button" class="a-btn a-btn-sm" data-add-img="${si}|${vi}" style="margin-top:8px;">+ Add photo</button>
             </div>
           </div>`).join('') : '<p style="color:var(--a-faint);font-size:0.82rem;margin:10px 0 2px;">No versions in this size yet.</p>';
 
@@ -461,7 +519,31 @@ export default function EditSeries() {
           const img = sizesState[si].versions[vi].images[ii];
           if (img && (img.id || img.url)) removedImages.push({ id: img.id, url: img.url });
           sizesState[si].versions[vi].images.splice(ii, 1);
+          sizesState[si].versions[vi].images.forEach((x, idx) => { x.order = idx; });
           renderSizes();
+        }));
+        sizesEl.querySelectorAll<HTMLButtonElement>('[data-sr-img-up]').forEach(btn => btn.addEventListener('click', () => {
+          const [si, vi, ii] = btn.dataset.srImgUp!.split('|').map(Number);
+          const arr = sizesState[si].versions[vi].images;
+          if (arr && ii > 0) {
+            const t = arr[ii]; arr[ii] = arr[ii - 1]; arr[ii - 1] = t;
+            arr.forEach((x, idx) => { x.order = idx; });
+            renderSizes();
+          }
+        }));
+        sizesEl.querySelectorAll<HTMLButtonElement>('[data-sr-img-down]').forEach(btn => btn.addEventListener('click', () => {
+          const [si, vi, ii] = btn.dataset.srImgDown!.split('|').map(Number);
+          const arr = sizesState[si].versions[vi].images;
+          if (arr && ii < arr.length - 1) {
+            const t = arr[ii]; arr[ii] = arr[ii + 1]; arr[ii + 1] = t;
+            arr.forEach((x, idx) => { x.order = idx; });
+            renderSizes();
+          }
+        }));
+        sizesEl.querySelectorAll<HTMLSelectElement>('.sr-color').forEach(el => el.addEventListener('change', (e) => {
+          const [si, vi, ii] = [Number((e.target as HTMLElement).dataset.si), Number((e.target as HTMLElement).dataset.vi), Number((e.target as HTMLElement).dataset.ii)];
+          const img = sizesState[si].versions[vi].images[ii];
+          if (img) img.color = (e.target as HTMLSelectElement).value.trim() || null;
         }));
         sizesEl.querySelectorAll<HTMLInputElement>('.sr-alt').forEach(el => el.addEventListener('input', (e) => {
           const [si, vi, ii] = [Number((e.target as HTMLElement).dataset.si), Number((e.target as HTMLElement).dataset.vi), Number((e.target as HTMLElement).dataset.ii)];
@@ -612,9 +694,12 @@ export default function EditSeries() {
                 inner_h: pv.inner_height != null ? String(pv.inner_height) : '',
                 colours: pv.colours ?? '', shape: pv.shape ?? '',
                 is_active: pv.is_active, order: pv.display_order || 0,
-                images: ((pv.product_images) || []).slice().sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((pi: any): VerImg => ({
-                  id: pi.id, url: pi.image_url ?? '', alt: pi.alt_text ?? '', main: pi.is_main, order: pi.display_order || 0
-                }))
+                images: ((pv.product_images) || []).slice().sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)).map((pi: any): VerImg => {
+                  const { color, alt } = parseImageColorAndAlt(pi.alt_text, pv.colours);
+                  return {
+                    id: pi.id, url: pi.image_url ?? '', alt, color: color ?? null, main: pi.is_main, order: pi.display_order || 0
+                  };
+                })
               }))
             };
           });
@@ -675,6 +760,18 @@ export default function EditSeries() {
           if (!sz.id) sz.id = crypto.randomUUID();
           for (const ver of sz.versions) {
             if (!ver.id) ver.id = crypto.randomUUID();
+          }
+        }
+
+        // Enforce strict 5-image limit across all versions
+        for (let si = 0; si < sizesState.length; si++) {
+          const sz = sizesState[si];
+          for (let vi = 0; vi < sz.versions.length; vi++) {
+            const ver = sz.versions[vi];
+            if (ver.images.length > MAX_GALLERY_IMAGES) {
+              showError(`Version "${ver.model_code || `#${vi + 1}`}" exceeds the maximum limit of ${MAX_GALLERY_IMAGES} photos (${ver.images.length}/${MAX_GALLERY_IMAGES}). Please remove extra photos.`);
+              return;
+            }
           }
         }
 
@@ -980,8 +1077,9 @@ export default function EditSeries() {
             }
 
             let mainAssigned = false;
-            for (let ii = 0; ii < ver.images.length; ii++) {
-              const img = ver.images[ii];
+            const finalImages = ver.images.slice(0, MAX_GALLERY_IMAGES);
+            for (let ii = 0; ii < finalImages.length; ii++) {
+              const img = finalImages[ii];
               let imgUrl = img.url;
               if (img.file) {
                 const result = await uploadFile(img.file, `media/series/${id}/${vid}-${ii}-${Date.now()}`);
@@ -993,7 +1091,7 @@ export default function EditSeries() {
               const isMain = img.main || (!mainAssigned && !ver.images.some(x => x.main));
               if (img.main || isMain) mainAssigned = true;
               const payload: Record<string, unknown> = {
-                product_variant_id: vid, image_url: imgUrl, alt_text: img.alt.trim() || null,
+                product_variant_id: vid, image_url: imgUrl, alt_text: formatImageAltText(img.color, img.alt) || null,
                 is_main: isMain, display_order: ii
               };
               if (img.id) {

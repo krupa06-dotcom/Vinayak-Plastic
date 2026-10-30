@@ -8,6 +8,11 @@ import {
 } from './db';
 import type { Category, FallbackDetail } from './db';
 import { cached, CACHE_TAGS } from './cache';
+import {
+  parseColoursList,
+  parseImageColorAndAlt,
+  MAX_GALLERY_IMAGES
+} from './colorGallery';
 
 // ============================================================
 // Phase 3 — New catalogue hierarchy (categories → series → sizes → versions)
@@ -97,6 +102,7 @@ export interface ProductImageRow {
 export interface HierarchyImage {
   src: string;
   alt: string;
+  color?: string | null;
 }
 
 export interface HierarchyVariant extends ProductVariantRow {
@@ -419,14 +425,49 @@ function buildHierarchy(
         const variants: HierarchyVariant[] = rawVariants.map((vr) => {
           const displayName = vr.version_name || vr.model_code;
           const versionKey = makeVersionKey(vr);
-          const images: HierarchyImage[] = (imagesByVariant.get(vr.id) || [])
-            .map((img) => {
-              const src = resolveImageUrl(img.image_url);
-              return src
-                ? { src, alt: img.alt_text || `${displayName} — ${cat.name}` }
-                : null;
-            })
-            .filter((x): x is HierarchyImage => x !== null);
+
+          // Colours come from the product record. If that column is empty but
+          // the photos carry explicit colour tags, derive the list from them so
+          // existing galleries keep working without duplicating data in code.
+          const declaredColours = parseColoursList(vr.colours);
+          const rawImages = imagesByVariant.get(vr.id) || [];
+          const resolvedImages: HierarchyImage[] = [];
+          for (const img of rawImages) {
+            const src = resolveImageUrl(img.image_url);
+            if (!src) continue;
+            const parsed = parseImageColorAndAlt(img.alt_text, declaredColours);
+            resolvedImages.push({
+              src,
+              alt:
+                parsed.alt ||
+                `${displayName} — ${cat.name}${parsed.color ? ` (${parsed.color})` : ''}`,
+              color: parsed.color ?? null
+            });
+          }
+
+          const availableColours =
+            declaredColours.length > 0
+              ? declaredColours
+              : parseColoursList(
+                  resolvedImages
+                    .map((image) => image.color)
+                    .filter((colour): colour is string => Boolean(colour))
+                    .join(', ')
+                );
+
+          // A single-colour product's photos are, by definition, that colour.
+          // Associate the main photo so choosing the only swatch never lands on
+          // a misleading "photo unavailable" state.
+          if (
+            availableColours.length === 1 &&
+            resolvedImages.length > 0 &&
+            !resolvedImages.some((image) => image.color)
+          ) {
+            resolvedImages[0].color = availableColours[0];
+          }
+
+          const images = resolvedImages.slice(0, MAX_GALLERY_IMAGES);
+          const effectiveColours = availableColours.length ? availableColours.join(', ') : null;
 
           const href = `/products/${cat.slug}/${seriesKey}/${sizeKey}/${versionKey}`;
           // Searchable haystack for the catalogue search box: names, model code,
@@ -441,7 +482,7 @@ function buildHierarchy(
             sr.name,
             sz.label,
             formatVariantSize(sr, sz.height, vr),
-            vr.colours || '',
+            effectiveColours || '',
             vr.load_capacity || '',
             sr.short_description || '',
             vr.description || ''
@@ -452,6 +493,7 @@ function buildHierarchy(
 
           return {
             ...vr,
+            colours: effectiveColours,
             display_name: displayName,
             version_key: versionKey,
             images,

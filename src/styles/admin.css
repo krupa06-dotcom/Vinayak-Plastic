@@ -1104,6 +1104,29 @@ html:has(.admin) body,
 }
 .a-row-tools button:hover { color: var(--a-danger); border-color: var(--a-danger); background: var(--a-danger-bg); }
 
+.a-img-row.ver-img { grid-template-columns: 110px minmax(160px, 1fr) 140px 70px 100px; }
+@media (max-width: 900px) {
+  .a-img-row.ver-img { grid-template-columns: 90px 1fr; }
+}
+.a-photo-slots { display: flex; gap: 6px; margin: 0 0 8px; }
+.a-photo-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 32px;
+  border: 1px dashed var(--a-border-strong);
+  border-radius: 6px;
+  background: #fbfaf7;
+  color: var(--a-faint);
+  font-family: var(--a-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  overflow: hidden;
+}
+.a-photo-slot.is-filled { border-style: solid; border-color: rgba(232, 99, 12, 0.45); background: #fff; }
+.a-photo-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 /* ============ Sticky form actions ============ */
 .a-sticky-actions {
   position: sticky;

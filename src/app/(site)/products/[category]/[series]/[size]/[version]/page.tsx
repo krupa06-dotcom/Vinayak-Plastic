@@ -13,6 +13,7 @@ import VariantGallery from '@/components/VariantGallery';
 import EnquiryForm, { type EnquiryPrefill } from '@/components/EnquiryForm';
 import { CONTACT } from '@/lib/contact';
 import { SITE_URL } from '@/lib/site';
+import { parseColoursList, colourSwatch } from '@/lib/colorGallery';
 import {
   formatFootprint,
   formatVariantSize,
@@ -36,24 +37,6 @@ function joinMm(a?: number | null, b?: number | null, c?: number | null): string
   const z = d(c);
   if (!(x && y && z)) return null;
   return `${x} × ${y} × ${z} mm`;
-}
-
-const COLOUR_SWATCHES: Record<string, string> = {
-  blue: '#1f5fae',
-  grey: '#7a828c',
-  gray: '#7a828c',
-  green: '#1f7a4d',
-  red: '#c0392b',
-  yellow: '#e8b81c',
-  black: '#23272c',
-  white: '#f1f1ec',
-  orange: '#e8630c',
-  turquoise: '#1aa6a6'
-};
-
-function colourSwatch(name: string): string {
-  const key = name.toLowerCase().split('/')[0].trim();
-  return COLOUR_SWATCHES[key] || '#9aa1a9';
 }
 
 function specsFor(ctx: ProductDetailContext): { dimensions: SpecRow[]; technical: SpecRow[] } {
@@ -127,14 +110,8 @@ export default async function ProductDetailPage({
   const specs = specsFor(ctx);
   const fullSize = formatVariantSize(s, sz.height, variant);
 
-  // Colour values live on the variant; crates without a stored value fall back
-  // to the standard crate colours so the swatches are always useful.
-  const colourValue =
-    variant.colours?.trim() || (cat.slug === 'plastic-crates' ? 'Blue, Grey' : '');
-  const colourList = colourValue
-    .split(',')
-    .map((colour) => colour.trim())
-    .filter(Boolean);
+  // Available colours defined for this product variant
+  const colourList = parseColoursList(variant.colours);
 
   // One tab per footprint/series in the category. The mega menu lists every
   // model (all heights and construction types) inside that footprint.
@@ -232,47 +209,12 @@ export default async function ProductDetailPage({
           <SizeMegaNav categoryName={cat.name} activeKey={s.series_key} sizes={megaSizes} />
           <div className="cat-detail">
             <div className="cat-detail__media-wrap reveal">
-              <div className="pd-gallery-block">
-                <VariantGallery images={galleryImages} name={variant.display_name} />
-                {colourList.length > 0 && (
-                  <div className="pd-colours pd-colours--gallery">
-                    <span className="pd-colours__label">Available Colours</span>
-                    <ul className="pd-colours__list">
-                      {colourList.map((colour) => (
-                        <li key={colour}>
-                          <button
-                            type="button"
-                            className="pd-colours__chip-btn is-active"
-                            data-colour={colour.toLowerCase()}
-                            aria-pressed="true"
-                          >
-                            <span
-                              className="pd-colours__swatch"
-                              style={{ background: colourSwatch(colour) }}
-                              aria-hidden="true"
-                            />
-                            <span>{colour}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-              <div className="lightbox" data-lightbox aria-modal="true" role="dialog" aria-label="Enlarged product image">
-                <div className="lightbox__backdrop" data-lightbox-close></div>
-                <div className="lightbox__panel">
-                  <button type="button" className="lightbox__close" data-lightbox-close aria-label="Close preview">✕</button>
-                  <div className="lightbox__imgwrap">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img id="lightbox-img" alt="" />
-                  </div>
-                  <div className="lightbox__foot">
-                    <span className="lightbox__fig">VINAYAK PLASTICS</span>
-                    <span className="lightbox__name">{variant.display_name}</span>
-                  </div>
-                </div>
-              </div>
+              <VariantGallery
+                images={galleryImages}
+                colours={colourList}
+                name={variant.display_name}
+                modelCode={variant.model_code}
+              />
             </div>
             <div className="cat-detail__body reveal">
               <span className="sec-index">Product · {cat.name}</span>
@@ -298,23 +240,24 @@ export default async function ProductDetailPage({
                 </ul>
               )}
               {colourList.length > 0 && (
-                <div className="pd-colours pd-colours--body">
+                <div className="pd-colours">
                   <span className="pd-colours__label">Available Colours</span>
                   <ul className="pd-colours__list">
                     {colourList.map((colour) => (
                       <li key={colour}>
                         <button
                           type="button"
-                          className="pd-colours__chip-btn is-active"
-                          data-colour={colour.toLowerCase()}
-                          aria-pressed="true"
+                          className="pd-colours__chip pd-colours__chip--btn"
+                          data-colour-chip={colour}
+                          aria-pressed="false"
+                          title={`Select ${colour}`}
                         >
                           <span
                             className="pd-colours__swatch"
                             style={{ background: colourSwatch(colour) }}
                             aria-hidden="true"
                           />
-                          <span>{colour}</span>
+                          {colour}
                         </button>
                       </li>
                     ))}
